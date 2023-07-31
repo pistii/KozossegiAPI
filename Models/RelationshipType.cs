@@ -12,7 +12,6 @@ namespace KozoskodoAPI.Models
     {
         public RelationshipType() 
         {
-            Relationshiptp = new HashSet<Relationship>();
         }
 
         [Key]
@@ -23,8 +22,9 @@ namespace KozoskodoAPI.Models
         public string relationshipTitle { get; set; } = null!;
 
 
+        [ForeignKey("typeID")]
+        [InverseProperty("RelationshipTypes")]
         [JsonIgnore]
-        [InverseProperty("RelationshipTp")]
-        public ICollection<Relationship> Relationshiptp { get; set; }
+        public virtual Relationship? RelationshipTp { get; set; }
     }
 }

@@ -10,10 +10,7 @@ namespace KozoskodoAPI.Models
 
     public partial class Friendship
     {
-        public Friendship()
-        {
-            Friendships = new HashSet<user>();
-        }
+
         [Key]
         [Column(TypeName = "int(11)")]
         public int? friendshipID { get; set; }
@@ -28,8 +25,9 @@ namespace KozoskodoAPI.Models
         public int followedPerson { get; set; }
 
 
-        [JsonIgnore]
-        [InverseProperty("friendship")]
-        public ICollection<user> Friendships { get; set; }
+        [ForeignKey("friendshipID")]
+        [InverseProperty("Friends")]
+
+        public virtual Personal? friendships { get; set; }
     }
 }

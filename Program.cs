@@ -20,13 +20,13 @@ namespace KozoskodoAPI
             builder.Services.AddDbContext<DBContext>(options =>
 
                 options.UseMySql(
-                    
+
                     builder.Configuration.GetConnectionString("MediaDB"),
                     ServerVersion.Parse("10.4.6-mariadb")));
 
             builder.Services.AddControllers().AddNewtonsoftJson();
             builder.Services.AddControllers();
-            
+
             var app = builder.Build();
 
             app.UseCors(x => x
@@ -36,12 +36,6 @@ namespace KozoskodoAPI
 
             app.MapControllers();
             app.Run();
-
-
         }
-
-
     }
-
-
 }

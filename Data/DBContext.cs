@@ -21,13 +21,13 @@ namespace KozoskodoAPI.Data
 
         public virtual DbSet<Friendship> Friendship { get; set; } = null!;
 
-        public virtual DbSet<Personal> Personal { get; set; } = null!;
+        public virtual DbSet<Personal> Personal { get; set; }
 
         public virtual DbSet<Relationship> Relationship { get; set; } = null!;
 
         public virtual DbSet<RelationshipType> Relationshiptype { get; set; } = null!;
 
-        public virtual DbSet<user> user { get; set; } = null!;
+        public virtual DbSet<user> user { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -41,28 +41,37 @@ namespace KozoskodoAPI.Data
                 .HasCharSet("utf8mb4");
 
 
-            modelBuilder.Entity<Relationship>(entity =>
+            modelBuilder.Entity<RelationshipType>(entity =>
             {
                 entity.HasOne(c => c.RelationshipTp)
-                    .WithMany(x => x.Relationshiptp)
-                    .HasForeignKey(c => c.typeID)
-                    .HasConstraintName("relationship_ibfk_1");
+                    .WithMany(x => x.RelationshipTypes)
+                    .HasForeignKey(c => c.relationshipTypeID);
             });
 
             modelBuilder.Entity<user>(entity =>
             {
-                entity.HasOne(c => c.friendship)
-                    .WithMany(x => x.Friendships)
-                    .HasForeignKey(c => c.friendshipID)
-                    .HasConstraintName("user_ibfk_1");
-                entity.HasOne(c => c.relationship)
-                    .WithMany(x => x.Relationships)
-                    .HasForeignKey(c => c.relationshipID)
-                    .HasConstraintName("user_ibfk_2");
-                entity.HasOne(c => c.personal)
-                    .WithMany(x => x.Personals)
-                    .HasForeignKey(c => c.personalID)
-                    .HasConstraintName("user_ibfk_3");
+                entity.HasMany(x => x.Personals)
+                .WithOne(x => x.personal)
+                .HasForeignKey(x => x.id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("user_ibfk_1");
+            });
+
+            //modelBuilder.Entity<user>(entity =>
+            //{
+            //    entity.HasOne(x => x.personal)
+            //    .WithMany( c => c.Personals)
+            //    .HasForeignKey(c => c.personalID);
+            //});
+
+            modelBuilder.Entity<Personal>(entity =>
+            {
+                entity.HasMany(c => c.Friends)
+                    .WithOne(x => x.friendships)
+                    .HasForeignKey(c => c.friendshipID);
+                entity.HasMany(c => c.Relationships)
+                    .WithOne(x => x.relationship)
+                    .HasForeignKey(c => c.relationshipID);
             });
 
             OnModelCreatingPartial(modelBuilder);

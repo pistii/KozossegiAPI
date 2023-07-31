@@ -7,12 +7,12 @@ using Newtonsoft.Json;
 
 namespace KozoskodoAPI.Models
 {
-    [MetadataType(typeof(user))]
+    [MetadataType(typeof(Personal))]
     public partial class Relationship
     {
         public Relationship()
         {
-            Relationships = new HashSet<user>();
+            //Relationships = new HashSet<Personal>();
         }
 
         [Key]
@@ -22,14 +22,14 @@ namespace KozoskodoAPI.Models
         [Column(TypeName = "int(11)")]
         public int? typeID { get; set; }
 
+        [ForeignKey("relationshipID")]
+        [InverseProperty("Relationships")]
         [JsonIgnore]
-        [InverseProperty("relationship")]
-        public ICollection<user> Relationships { get; set; }
-
-
-        [ForeignKey("typeID")]
-        [InverseProperty("Relationshiptp")]
+        public virtual Personal? relationship { get; set; }
+        
         [JsonIgnore]
-        public virtual RelationshipType? RelationshipTp { get; set; }
+        [InverseProperty("RelationshipTp")]
+        public virtual ICollection<RelationshipType>? RelationshipTypes { get; set; } = new HashSet<RelationshipType>();
+
     }
 }

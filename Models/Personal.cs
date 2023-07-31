@@ -13,32 +13,47 @@ namespace KozoskodoAPI.Models
     /// </summary>
     public partial class Personal
     {
-        public Personal()
-        {
-            Personals = new HashSet<user>();
-        }
-
-        [Key]
         [Column(TypeName = "int(11)")]
-        public int personalID { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+
+        public int? id { get; set; }
+        [StringLength(30)]
+        public string firstName { get; set; } = null!;
+
+        [StringLength(30)]
+        public string? middleName { get; set; }
+
+        [StringLength(30)]
+        public string lastName { get; set; } = null!;
+
+        public int? friendshipID { get; set; }
+
+        public int? relationshipID { get; set; }
+
+        [StringLength(120)]
+        public string? avatar { get; set; }
+
+        [Column(TypeName = "int(16)")]
+        public int phoneNumber { get; set; }
+
+        public DateTime DateOfBirth { get; set; }
 
         [StringLength(100)]
-        public string birthPlace { get; set; } = null!;
+        public string? BirthOfPlace { get; set; }
 
-        [StringLength(30)]
-        public string birthDay { get; set; } = null!;
 
-        [StringLength(70)]
-        public string email { get; set; } = null!;
+        [InverseProperty("Personals")]
+        [JsonIgnore]
 
-        [StringLength(40)]
-        public string password { get; set; } = null!;
+        public virtual user? personal { get; set; }
 
-        [StringLength(30)]
-        public string registrationDate { get; set; } = null!;
+        [InverseProperty("friendships")]
+        [JsonIgnore]
+        public virtual ICollection<Friendship>? Friends { get; } = new HashSet<Friendship>();
 
         [JsonIgnore]
-        [InverseProperty("personal")]
-        public ICollection<user> Personals { get; set; }
+        [InverseProperty("relationship")]
+
+        public virtual ICollection<Relationship>? Relationships { get; set; } = new HashSet<Relationship>();
     }
 }

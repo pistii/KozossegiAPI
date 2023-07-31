@@ -8,12 +8,13 @@ using Microsoft.EntityFrameworkCore;
 using KozoskodoAPI.Models;
 using KozoskodoAPI.Data;
 using Newtonsoft.Json;
+using KozoskodoAPI.DTOs;
 
 namespace KozoskodoAPI.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class usersController : ControllerBase, IController
+    public class usersController : ControllerBase
     {
         private readonly DBContext _context;
 
@@ -28,27 +29,43 @@ namespace KozoskodoAPI.Controllers
         {
             var res = await _context.user.FindAsync(id);
             if (res != null)
-            return res;
+                return res;
 
             return NotFound();
         }
 
-        [HttpPost]
-        public async Task<ActionResult<user>> Post(user user)
+        [HttpPost("{login}")]
+        public async Task<ActionResult<user>> Post(user user, bool login)
         {
+
             //Needed to deserialize the object because the nested relationships caused self reference error
-            var serializerSettings = new JsonSerializerSettings 
-            { PreserveReferencesHandling = PreserveReferencesHandling.Objects };
-            string json = JsonConvert.SerializeObject(user, Formatting.Indented, serializerSettings);
-            user? deserializedPeople = JsonConvert.DeserializeObject<user>(json, serializerSettings );
-            if (deserializedPeople != null)
+            //var serializerSettings = new JsonSerializerSettings
+            //{ PreserveReferencesHandling = PreserveReferencesHandling.Objects };
+            //string json = JsonConvert.SerializeObject(dto, Formatting.Indented, serializerSettings);
+
+            //user? deserializedPeople = JsonConvert.DeserializeObject<user>(json, serializerSettings);
+            
+
+            if (user.email != null && user.password != null && login)
             {
-                var value = _context.user.Add(deserializedPeople);
-                await _context.SaveChangesAsync();
-                return CreatedAtAction("Get", new { id = deserializedPeople.userID }, deserializedPeople);
+                var exist = await _context.user.AnyAsync(x => x.email == user.email && x.password == user.password);
+
+                if (exist)
+                {
+                    return NoContent();
+                }
+                return NotFound();
             }
-            return NotFound();
+
+            if (user != null && !login)
+            {
+                _context.user.Add(user);
+                await _context.SaveChangesAsync();
+                return CreatedAtAction("Get", new { id = user.userID }, user);
+            }
+            return BadRequest();
         }
+
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, user user) {
