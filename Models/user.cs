@@ -10,11 +10,9 @@ namespace KozoskodoAPI.Models
     public partial class user
     {
         public user() {
-            Personals = new HashSet<Personal>();
         }
 
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column(TypeName = "int(11)")]
         public int userID { get; set; }
 
@@ -27,11 +25,10 @@ namespace KozoskodoAPI.Models
 
         [StringLength(30)]
         public string? registrationDate { get; set; }
-
+        [Column(TypeName = "int(11)")]
         public int? personalID { get; set; }
 
-        [InverseProperty("personal")]
-        [ForeignKey("id")]
-        public virtual ICollection<Personal>? Personals { get; }
+        [ForeignKey("personalID")]
+        public virtual Personal? personal { get; set; }
     }
 }

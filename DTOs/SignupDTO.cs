@@ -1,21 +1,12 @@
 ﻿namespace KozoskodoAPI.DTOs
 {
-    public class SignupDTO
+    public class SignUpDto
     {
-        public SignupDTO(string first_name, string middle_name, string last_name, string email, string password, string birthday) { FirstName = first_name;
-            MiddleName = middle_name;
-            LastName = last_name;
-            Email = email;
-            Password = password;
-            Birthday = birthday;
-        }
-
-        public string FirstName { get; set; }
-        public string MiddleName { get; set; }
-        public string LastName { get; set; }
-        public string Email { get; set; }
-        public string Password { get; set; }
-        public string Birthday { get; set;
-        }
+        public string firstName { get; set; } = string.Empty;
+        public string? middleName { get; set; }
+        public string lastName { get; set; } = string.Empty;
+        public string email { get; set; } = string.Empty;
+        public string password { get; set; } = string.Empty;
+        public DateTime birthDay { get; set; }
     }
 }
