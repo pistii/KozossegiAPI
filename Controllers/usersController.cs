@@ -81,7 +81,7 @@ namespace KozoskodoAPI.Controllers
                 await _context.SaveChangesAsync();
 
                 SendMail e = new SendMail();
-                e.SendEmail("Teszt név", "kugli018@gmail.com");
+                e.SendEmail("Teszt név", "randomemail@gmail.com");
                 return CreatedAtAction("Get", new { id = user.userID }, user);
             }
             return BadRequest();
