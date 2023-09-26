@@ -48,7 +48,7 @@ namespace KozoskodoAPI
             builder.Services.AddControllers().AddNewtonsoftJson();
             builder.Services.AddControllers();
             builder.Services.AddScoped<IJwtTokenManager, JwtTokenManager>();
-
+            
             var app = builder.Build();
             app.UseRouting();
 
@@ -64,5 +64,7 @@ namespace KozoskodoAPI
             app.MapControllers();
             app.Run();
         }
+
+
     }
 }

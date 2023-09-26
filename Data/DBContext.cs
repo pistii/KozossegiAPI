@@ -11,6 +11,7 @@ using KozoskodoAPI.Auth;
 using Google.Apis.Auth.OAuth2;
 using FirebaseAdmin;
 using Google.Cloud.Firestore;
+using Microsoft.Extensions.Options;
 
 namespace KozoskodoAPI.Data
 {
@@ -38,38 +39,14 @@ namespace KozoskodoAPI.Data
         public virtual DbSet<Post>? Post { get; set; }
         public virtual DbSet<Comment>? Comment { get; set; }
         public virtual DbSet<Notification> Notification { get; set; }
-
+        public virtual DbSet<PersonalChatRoom> PersonalChatRoom { get; set; }
+        public virtual DbSet<ChatRoom> ChatRoom { get; set; }
+        public virtual DbSet<ChatContent> ChatContent { get; set; }
 
         protected override async void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-                ////initialize
-                //var credential = GoogleCredential.FromFile("./firebase_key.json");
-                //FirebaseApp app = FirebaseApp.Create(new AppOptions
-                //{
-                //    Credential = credential,
-                //});
-                ////Connection string
-                //FirestoreDb db = FirestoreDb.Create("socialmedia-397719");
-
-                ////Collection refs
-                //CollectionReference collection = db.Collection("media");
-                //DocumentSnapshot snapshot = await collection.Document("c356SK6AVIPWCksrg9DW").GetSnapshotAsync();
-                //if (snapshot.Exists)
-                //{
-                //    Dictionary<string, object> data = snapshot.ToDictionary();
-                //    //Vannak adatok.....
-                //}
-
-                //DocumentReference doc = db.Collection("media").Document("new-doc-id");
-                //Dictionary<string, object> newData = new Dictionary<string, object>
-                //{
-                //    { "testName", "John Test" },
-                //    { "testAdat", "Test" }
-                //};
-                //await doc.SetAsync(newData);
-
                 optionsBuilder.UseMySql("server=localhost;user id=root;database=mediadb", Microsoft.EntityFrameworkCore.ServerVersion.Parse("10.4.20-mariadb"));
             }
         }
@@ -112,9 +89,22 @@ namespace KozoskodoAPI.Data
 
                 entity.HasMany(c => c.Notifications)
                     .WithOne(x => x.notification)
-                    .HasForeignKey(c => c.personId)
-                    .HasPrincipalKey(_ => _.notificationId);
+                    .HasForeignKey(c => c.personId);
+
+                entity.HasMany(_ => _.PersonalChatRooms)
+                    .WithOne(_ => _.PersonalRoom)
+                    .HasForeignKey(_ => _.FK_PersonalId);
             });
+
+            modelBuilder.Entity<ChatRoom>()
+                .HasMany(x => x.ChatContents)
+                .WithOne(x => x.ChatRooms)
+                .HasForeignKey(x => x.chatContentId);
+
+
+            //Junction table 
+            modelBuilder.Entity<PersonalChatRoom>()
+                .HasKey(x => new { x.FK_PersonalId, x.FK_ChatRoomId });
 
             OnModelCreatingPartial(modelBuilder);
         }

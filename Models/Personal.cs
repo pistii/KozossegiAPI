@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 
@@ -64,6 +65,10 @@ namespace KozoskodoAPI.Models
         [JsonIgnore]
         [InverseProperty("notification")]
         public virtual ICollection<Notification>? Notifications { get; set; } = new HashSet<Notification>();
+
+        [JsonIgnore]
+        public virtual ICollection<PersonalChatRoom> PersonalChatRooms { get; set; } = new HashSet<PersonalChatRoom>();
+       
     }
 
     public partial class Image
