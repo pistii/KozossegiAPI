@@ -12,6 +12,7 @@ using Google.Apis.Auth.OAuth2;
 using FirebaseAdmin;
 using Google.Cloud.Firestore;
 using Microsoft.Extensions.Options;
+using System.Data;
 
 namespace KozoskodoAPI.Data
 {
@@ -100,7 +101,11 @@ namespace KozoskodoAPI.Data
                 .HasMany(x => x.ChatContents)
                 .WithOne(x => x.ChatRooms)
                 .HasForeignKey(x => x.chatContentId);
-
+            modelBuilder.Entity<ChatContent>()
+                 .Property(e => e.status)
+                 .HasConversion(
+                     c => c.ToString(),
+                     v => (Status)Enum.Parse(typeof(Status), v));
 
             //Junction table 
             modelBuilder.Entity<PersonalChatRoom>()

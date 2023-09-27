@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using KozoskodoAPI.Auth;
+using Google.Api;
 
 namespace KozoskodoAPI
 {
@@ -45,8 +46,8 @@ namespace KozoskodoAPI
                 });
             builder.Services.AddAuthorization();
 
-            builder.Services.AddControllers().AddNewtonsoftJson();
-            builder.Services.AddControllers();
+            builder.Services.AddControllers().AddNewtonsoftJson().AddJsonOptions(options =>
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter())); ;
             builder.Services.AddScoped<IJwtTokenManager, JwtTokenManager>();
             
             var app = builder.Build();

@@ -34,23 +34,47 @@ namespace KozoskodoAPI.Controllers
         }
 
         [HttpGet("{roomid}")]
-        public async Task<List<ChatContent>> GetChatContent(
-            int roomid, 
-            [FromQuery] int messagesPerPage = 10, 
-            [FromQuery] int currentPage = 1)
+        public async Task<IActionResult> GetChatContent(
+        int roomid,
+        [FromQuery] int messagesPerPage = 10,
+        [FromQuery] int currentPage = 1)
         {
-            //TODO: Get and return the chatcontent of the chatroom with the given id
-            var room = await _context.ChatRoom.FirstOrDefaultAsync(_ => _.chatRoomId == roomid);
-            var query = room.ChatContents.OrderByDescending(_ => _.sentDate).AsQueryable();
-            query = query.Skip((currentPage - 1) * messagesPerPage).Take(messagesPerPage);
-            return new List<ChatContent>(query);
+            try
+            {
+                //TODO: this should return all the contents for the chatroom
+                var room = await _context.ChatRoom
+                    .Include(r => r.ChatContents)
+                    .FirstOrDefaultAsync(r => r.chatRoomId == roomid);
+
+                if (room == null)
+                {
+                    return NotFound("Chat room not found.");
+                }
+
+                var sortedChatContents = _context.ChatContent.Where(_ => _.chatContentId == room.chatRoomId)
+                    .OrderBy(c => c.sentDate)
+                    .ToList();
+
+                var totalMessages = sortedChatContents.Count;
+                var totalPages = (int)Math.Ceiling((double)totalMessages / messagesPerPage);
+
+                // Az aktuális oldalon megjelenítendő üzenetek kiválasztása
+                var messagesToDisplay = sortedChatContents
+                    .Skip((currentPage - 1) * messagesPerPage)
+                    .Take(messagesPerPage)
+                    .ToList();
+
+                return Ok(messagesToDisplay);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"An error occurred: {ex.Message}");
+            }
         }
 
         [HttpPost]
         public async Task<ActionResult<ChatRoom>> CreateNewChatroom(ChatDto chatDto)
         {
-            //TODO: Az adatbázisban szintén tároljuk el a chatContent táblában a küldő Id-jét és kapcsoljuk össze a chatroom senderId-val
-            //chatContentId referáljon a chatroomId-ra
             try
             {
                 var chatContent = new ChatContent()
