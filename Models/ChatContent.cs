@@ -8,7 +8,6 @@ namespace KozoskodoAPI.Models
     [Table("chatContent")]
     public class ChatContent
     {
-        [JsonIgnore]
         public int chatContentId { get; set; }
         [StringLength(800)]
         public string message { get; set; } = null!;

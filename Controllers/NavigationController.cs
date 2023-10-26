@@ -7,31 +7,12 @@ namespace KozoskodoAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class NavigationController<T> : INavigation<T>
+    public class NavigationController : ControllerBase
     {
         private readonly DBContext _context;
         public NavigationController(DBContext context)
         {
             _context = context;
-        }
-        public Task<ActionResult> ListMainPageContent()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<ActionResult> ListMessages()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<ActionResult> ListPeople()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<List<T>> Search(int query = 1, int qprequest = 25, string? search = null)
-        {
-            throw new NotImplementedException();
         }
 
         //[HttpGet]
@@ -46,22 +27,26 @@ namespace KozoskodoAPI.Controllers
         //    return result; 
         //}
 
-        //[HttpGet("search/{param}")]
-        //[Route("api/[controller]/search")]
-        //public async Task<List<T>> Search(
-        //    int query = 1,
-        //    int qprequest = 25,
-        //    string? search = null)
-        //{
-        //    var result = await _context.Personal
-        //        .Where(x =>
-        //        x.middleName.Contains(search) ||
-        //        x.lastName.Contains(search) ||
-        //        x.firstName.Contains(search))
-        //        .OrderByDescending(x => x.PlaceOfResidence)
-        //        .OrderByDescending(x => x.PlaceOfBirth)
-        //        .OrderByDescending(x => x.DateOfBirth).ToListAsync();
-        //    return;
-        //}
+        [HttpGet("search/{search}")]
+        public async Task<ActionResult<IEnumerable<Personal>>> Search(
+            int th = 1,
+            int itemPerRequest = 25,
+            string? search = null)
+        {
+            //search for people
+            var result = _context.Personal
+                .Where(x =>
+                x.middleName.ToLower().Contains(search.ToLower()) ||
+                x.lastName.ToLower().Contains(search.ToLower()) ||
+                x.firstName.ToLower().Contains(search.ToLower()))
+                .OrderByDescending(x => x.PlaceOfResidence)
+                .OrderByDescending(x => x.PlaceOfBirth)
+                .OrderByDescending(x => x.DateOfBirth)
+                .AsQueryable();
+
+            result = result.Skip((th - 1) * itemPerRequest).Take(itemPerRequest);
+            
+            return await result.ToListAsync();
+        }
     }
 }

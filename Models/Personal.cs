@@ -32,6 +32,7 @@ namespace KozoskodoAPI.Models
 
         [StringLength(30)]
         public string? lastName { get; set; }
+        public bool isMale { get; set; }
         [StringLength(70)]
         public string? PlaceOfResidence { get; set; }
 
@@ -68,7 +69,10 @@ namespace KozoskodoAPI.Models
 
         [JsonIgnore]
         public virtual ICollection<PersonalChatRoom> PersonalChatRooms { get; set; } = new HashSet<PersonalChatRoom>();
-       
+
+        [JsonIgnore]
+        public virtual ICollection<PersonalPost> PersonalPosts { get; set; } = new HashSet<PersonalPost>();
+
     }
 
     public partial class Image

@@ -1,18 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using KozoskodoAPI.Models;
-using Newtonsoft.Json;
 using System.Reflection.Emit;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using KozoskodoAPI.Auth;
-using Google.Apis.Auth.OAuth2;
-using FirebaseAdmin;
-using Google.Cloud.Firestore;
-using Microsoft.Extensions.Options;
-using System.Data;
 
 namespace KozoskodoAPI.Data
 {
@@ -37,7 +25,9 @@ namespace KozoskodoAPI.Data
         public virtual DbSet<RelationshipType> Relationshiptype { get; set; } = null!;
 
         public virtual DbSet<user> user { get; set; }
-        public virtual DbSet<Post>? Post { get; set; }
+        public virtual DbSet<Post> Post { get; set; }
+        public virtual DbSet<PersonalPost> PersonalPost { get; set; }
+
         public virtual DbSet<Comment>? Comment { get; set; }
         public virtual DbSet<Notification> Notification { get; set; }
         public virtual DbSet<PersonalChatRoom> PersonalChatRoom { get; set; }
@@ -57,13 +47,6 @@ namespace KozoskodoAPI.Data
             modelBuilder
                 .UseCollation("utf8mb4_general_ci")
                 .HasCharSet("utf8mb4");
-
-            modelBuilder.Entity<Post>(entity =>
-            {
-                entity.HasOne(x => x.Comments)
-                .WithMany(x => x.comments)
-                .HasForeignKey(x => x.CommentId);
-            });
 
             modelBuilder.Entity<RelationshipType>(entity =>
             {
@@ -95,22 +78,57 @@ namespace KozoskodoAPI.Data
                 entity.HasMany(_ => _.PersonalChatRooms)
                     .WithOne(_ => _.PersonalRoom)
                     .HasForeignKey(_ => _.FK_PersonalId);
+
             });
 
-            modelBuilder.Entity<ChatRoom>()
-                .HasMany(x => x.ChatContents)
+            modelBuilder.Entity<ChatRoom>(entity => 
+            {
+                entity.HasMany(x => x.ChatContents)
                 .WithOne(x => x.ChatRooms)
                 .HasForeignKey(x => x.chatContentId);
-            modelBuilder.Entity<ChatContent>()
-                 .Property(e => e.status)
-                 .HasConversion(
-                     c => c.ToString(),
-                     v => (Status)Enum.Parse(typeof(Status), v));
+            });
+
+            modelBuilder.Entity<ChatContent>(entity =>
+            {           entity.Property(e => e.status)
+                         .HasConversion(
+                         c => c.ToString(),
+                         v => (Status)Enum.Parse(typeof(Status), v));
+            });
+
+            modelBuilder.Entity<Post>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+
+            });
+
+            modelBuilder.Entity<Comment>(entity => 
+            {
+                //entity.HasKey(p => p.commentId);
+
+                entity.HasOne(_ => _.Post)
+                    .WithMany(x => x.PostComments)
+                    .HasForeignKey(i => i.PostId);
+
+            });
+
+            //https://www.learnentityframeworkcore.com/configuration/many-to-many-relationship-configuration
+            modelBuilder.Entity<PersonalPost>(entity =>
+            {
+                entity.HasOne(p => p.Personal_posts)
+                .WithMany(p => p.PersonalPosts)
+                .HasForeignKey(p => p.personId);
+
+                 entity.HasOne(p => p.Posts)
+                .WithMany(p=> p.PersonalPosts)
+                .HasForeignKey(p => p.postId);
+
+                entity.HasKey(x => new { x.personId, x.postId });
+            });
 
             //Junction table 
             modelBuilder.Entity<PersonalChatRoom>()
                 .HasKey(x => new { x.FK_PersonalId, x.FK_ChatRoomId });
-
+            
             OnModelCreatingPartial(modelBuilder);
         }
 

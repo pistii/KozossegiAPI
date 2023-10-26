@@ -49,7 +49,8 @@ namespace KozoskodoAPI.Controllers
         {
             try
             {
-                var result = await _context.Notification.FirstOrDefaultAsync(x => x.notificationId == notificationId);
+                var result = await _context.Notification
+                    .FirstOrDefaultAsync(x => x.notificationId == notificationId);
                 if (!result.isReaded)
                 {
                     result.isReaded = true;
@@ -71,9 +72,11 @@ namespace KozoskodoAPI.Controllers
             {
                 return Unauthorized();
             }
-            var user = _context.user.Include(_ => _.personal).FirstOrDefault(_ => _.userID == notificationDto.applicantId);
+            var user = _context.user.Include(_ => _.personal)
+                .FirstOrDefault(_ => _.userID == notificationDto.applicantId);
 
-            var userToSendRequest = _context.user.Include(_ => _.personal).Where(_ => _.userID == notificationDto.toUserId).FirstOrDefault();
+            var userToSendRequest = _context.user.Include(_ => _.personal)
+                .Where(_ => _.userID == notificationDto.toUserId).FirstOrDefault();
 
             Notification nots = new Notification()
             {
@@ -101,22 +104,27 @@ namespace KozoskodoAPI.Controllers
         {
             try
             {
-                //var requestedFromUser = await _context.user.Include(_ => _.personal).FirstOrDefaultAsync(_ => _.personalID == dto.requestFrom);
-                //var requestedUser = await _context.user.Include(_ => _.personal).FirstOrDefaultAsync(_ => _.personalID == dto.requestTo);
-                var requestedFromUser = await _context.Personal.FirstOrDefaultAsync(_ => _.id == dto.requestFrom);
-                var requestedUser = await _context.Personal.FirstOrDefaultAsync(_ => _.id == dto.requestTo);
+                var requestedFromUser = await _context.Personal
+                    .FirstOrDefaultAsync(_ => _.id == dto.requestFrom);
+                var requestedUser = await _context.Personal
+                    .FirstOrDefaultAsync(_ => _.id == dto.requestTo);
 
                 Notification notification = new Notification()
                 {
-                    notificationContent = requestedFromUser.firstName + " " + requestedFromUser.lastName + " ismerősnek jelölt.",
+                    personId = requestedUser.id,
+                    notificationContent = requestedFromUser!.firstName + " " + 
+                                          requestedFromUser.lastName + " ismerősnek jelölt.",
                     createdAt = DateTime.Now,
                     notificationFrom = requestedUser.firstName + " " + requestedUser.lastName
                 };
+                //Todo: Handle the send request properly if the request was sent previously, eg. do not send, or resend but delete the previous one
+                if (requestedUser.Notifications.Contains(notification))
+                {
+                    requestedUser.Notifications.Add(notification);
+                    await _context.SaveChangesAsync();
+                }
 
-                requestedUser.Notifications.Add(notification);
-                await _context.SaveChangesAsync();
-
-                return Ok(notification);
+                return Ok("Success");
             } catch (Exception ex)
             {
                 return BadRequest(ex.Message);

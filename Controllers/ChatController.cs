@@ -19,7 +19,7 @@ namespace KozoskodoAPI.Controllers
             _context = context;
         }
 
-        [HttpGet("/room/{id}")]
+        [HttpGet("room/{id}")]
         public async Task<IActionResult> GetChatRoom(int id)
         {
             var room = _context.ChatRoom.Find(id);
@@ -27,10 +27,25 @@ namespace KozoskodoAPI.Controllers
             return BadRequest();
         }
 
-        [HttpGet]
-        public async Task<List<ChatRoom>> GetAllChatRoom()
+        [HttpGet("chatRooms/{userId}")]
+        public async Task<List<ChatRoom>> GetAllChatRoom(int userId)
         {
-            return await _context.ChatRoom.ToListAsync();
+
+            var userRooms = _context.PersonalChatRoom
+                .Where(_ => _.FK_PersonalId == userId)
+                .ToList();
+
+            var chatRooms = new List<ChatRoom>();
+            foreach (var room in userRooms)
+            {
+                var item = await _context.ChatRoom.Include(_ => _.ChatContents)
+                    .FirstOrDefaultAsync(_ => _.chatRoomId == room.FK_ChatRoomId);
+                chatRooms.Add(item);
+            }
+
+            var sort = chatRooms.OrderByDescending(_ => _.endedDateTime).ToList();
+            return sort;
+            
         }
 
         [HttpGet("{roomid}")]
@@ -51,7 +66,8 @@ namespace KozoskodoAPI.Controllers
                     return NotFound("Chat room not found.");
                 }
 
-                var sortedChatContents = _context.ChatContent.Where(_ => _.chatContentId == room.chatRoomId)
+                var sortedChatContents = _context.ChatContent
+                    .Where(_ => _.chatContentId == room.chatRoomId)
                     .OrderBy(c => c.sentDate)
                     .ToList();
 
@@ -72,6 +88,14 @@ namespace KozoskodoAPI.Controllers
             }
         }
 
+        //[HttpPost]
+        //[Route("chatMessage/")]
+        //public async Task<IActionResult> AddChatContent(ChatDto chatdto)
+        //{
+        //    var cr = _context.chatRoom.
+        //}
+
+        [Route("newChat")]
         [HttpPost]
         public async Task<ActionResult<ChatRoom>> CreateNewChatroom(ChatDto chatDto)
         {
@@ -111,10 +135,10 @@ namespace KozoskodoAPI.Controllers
                 }
                 else
                 {
-                    room.ChatContents.Add(chatContent);
+                    room.ChatContents.Add(chatContent); 
                     await _context.SaveChangesAsync();
                 }
-                return Ok();
+                return Ok("Insert success");
             }
             catch (Exception ex)
             {

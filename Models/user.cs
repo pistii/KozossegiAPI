@@ -24,7 +24,7 @@ namespace KozoskodoAPI.Models
         public string password { get; set; } = null!;
 
         [StringLength(30)]
-        public string? registrationDate { get; set; }
+        public string registrationDate { get; set; }
         [Column(TypeName = "int(11)")]
         public int? personalID { get; set; }
 

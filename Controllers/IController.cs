@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KozoskodoAPI.Controllers
 {
-    public interface IController
+    public interface IController<T>
     {
-        public Task<ActionResult<user>> Get(int id);
-        public Task<ActionResult<user>> Post(user user);
-        public Task<IActionResult> Put(int id, user user);
+        public Task<ActionResult<T>> Get(int id);
+        public Task<ActionResult> Post(int id, T data);
+        public Task<IActionResult> Put(int id, T data);
         public Task<IActionResult> Delete(int id);
     }
 }

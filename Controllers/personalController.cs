@@ -40,8 +40,8 @@ namespace KozoskodoAPI.Controllers
             return Ok(profile);
         }
 
-        [HttpGet("getAll/{userId}")]
-        public async Task<List<Personal>> GetAll(int userId, int page = 1, int itemPerRequest = 25)
+        [HttpGet("getAll/{userId}/{page}")]
+        public async Task<ListPagesDto<Personal>> GetAll(int userId, int page = 1, int itemPerRequest = 24)
         {
             var user = await _context.Personal.FindAsync(userId);
 
@@ -51,12 +51,15 @@ namespace KozoskodoAPI.Controllers
                 .OrderByDescending(_ => _.PlaceOfResidence)
                 .OrderByDescending(_ => _.DateOfBirth.Value.AddYears(10))
                 .Where(_ => _.id != userId);
+            int totalItems = query.Count()/itemPerRequest;
 
             if (page + itemPerRequest > 0)
             {
                 query = query.Skip((page - 1) * itemPerRequest).Take(itemPerRequest);
             }
-            return await query.ToListAsync();
+            var items = await query.ToListAsync();
+
+            return new ListPagesDto<Personal>(items, totalItems);
         }
 
         // GET: personal
@@ -72,7 +75,7 @@ namespace KozoskodoAPI.Controllers
             return NotFound();
         }
 
-        //POST: 
+        //Adds a new Person
         [HttpPost]
         public async Task<ActionResult<Personal>> Post(Personal personal)
         {
@@ -82,5 +85,7 @@ namespace KozoskodoAPI.Controllers
             
             return CreatedAtAction("Get", new { id = personal.id }, personal);
         }
+
+
     }
 }
