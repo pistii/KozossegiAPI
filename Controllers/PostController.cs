@@ -102,7 +102,7 @@ namespace KozoskodoAPI.Controllers
                     newPost.DateOfPost = DateTime.UtcNow;
                     newPost.DisLoves = 0;
                     newPost.Loves = 0;
-                    
+
                     _context.Post.Add(newPost);
                     await _context.SaveChangesAsync();
 
@@ -126,15 +126,68 @@ namespace KozoskodoAPI.Controllers
             }
         }
 
-
-        public Task<IActionResult> Put(int id, Post data)
+        //Gets the postId and the modified content of the post
+        [HttpPut("{id}")] 
+        public async Task<IActionResult> Put(int id, Post data)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var post = await _context.Post.FindAsync(id);
+                if (post == null || post.Id != id) 
+                    return NotFound("The post id and the given id is incorrect.");
+
+                post.PostComments = null;
+                //Modify only the content and the date of post
+                post.DateOfPost = DateTime.Now;
+                post.PostContent = data.PostContent;
+                _context.Entry(post).State = EntityState.Modified;
+
+                await _context.SaveChangesAsync();
+                return Ok();
+                
+            } catch (Exception ex)
+            {
+                return BadRequest(ex);
+            }
         }
 
-        public Task<IActionResult> Delete(int id)
+        //Deletes the post if exists and can be found
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id) 
         {
-            throw new NotImplementedException();
+            var post = await _context.Post.FindAsync(id);
+            if (post == null)
+                return NotFound();
+
+            //Find the person in the personalPost junction table and remove the connection
+            var personalPost = _context.PersonalPost.FirstOrDefault(_ => _.postId == post.Id);
+            _context.PersonalPost.Remove(personalPost);
+            _context.Post.Remove(post);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        //Likes or dislikes a post.
+        //Also increments or decrements the number of likes or dislikes
+        [HttpPut("{postId}/{isLikes}/{isIncrement}")]
+        public async Task<IActionResult> DoAction(int postId, bool isLikes, bool isIncrement)
+        {
+            var post = await _context.Post.FindAsync(postId);
+            if (post == null) return NotFound();
+            //Todo: store also the name of the liker or disliker
+            if (isLikes)
+            {
+                post.Loves = isIncrement ? post.Loves + 1 : post.Loves - 1;
+            }
+            else
+            {
+                post.DisLoves = isIncrement ? post.DisLoves + 1 : post.DisLoves - 1;
+            }
+
+            _context.Update(post);
+            await _context.SaveChangesAsync();
+            return Ok();
         }
     }
 }
