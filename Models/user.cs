@@ -2,33 +2,36 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using KozoskodoAPI.DTOs;
+using Microsoft.AspNetCore.Components.RenderTree;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 
 namespace KozoskodoAPI.Models
 {
-    public partial class user
+   public partial class user
     {
-        public user() {
+        public user()
+        {
+            UserRestriction = new HashSet<UserRestriction>();
         }
 
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column(TypeName = "int(11)")]
         public int userID { get; set; }
 
-
         [StringLength(70)]
-        public string email { get; set; } = null!;
+        public string? email { get; set; }
 
         [StringLength(40)]
-        public string password { get; set; } = null!;
-
-        [StringLength(30)]
-        public string registrationDate { get; set; }
-        [Column(TypeName = "int(11)")]
-        public int? personalID { get; set; }
-
-        [ForeignKey("personalID")]
+        [JsonIgnore]
+        public string? password { get; set; }
+        public DateTime? registrationDate { get; set; } = DateTime.UtcNow;
+        public bool isActivated { get; set; } = false;
+        [JsonIgnore]
+        public string? Guid { get; set; }
+        public virtual ICollection<UserRestriction> UserRestriction { get; }
         public virtual Personal? personal { get; set; }
     }
 }

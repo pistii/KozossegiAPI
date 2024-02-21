@@ -2,24 +2,15 @@
 using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis.Elfie.Diagnostics;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
-using Newtonsoft.Json;
-using Org.BouncyCastle.Asn1.Pkcs;
-using Org.BouncyCastle.Ocsp;
-using System.Drawing.Imaging;
-using System.Linq;
-using System.Net;
-
+using Firebase.Database;
 namespace KozoskodoAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class personalController : ControllerBase
+    public class personalController : ControllerBase, IControllerBase<ContentDto<Personal>>
     {
         public readonly DBContext _context;
 
@@ -28,20 +19,8 @@ namespace KozoskodoAPI.Controllers
             _context = context;
         }
 
-        [HttpGet("myProfile")]
-        [Authorize]
-        public async Task<ActionResult<Personal>> GetProfile()
-        {
-            var profile = await _context.Personal.FindAsync();
-            if (profile == null)
-            {
-                return BadRequest();
-            }
-            return Ok(profile);
-        }
-
         [HttpGet("getAll/{userId}/{page}")]
-        public async Task<ListPagesDto<Personal>> GetAll(int userId, int page = 1, int itemPerRequest = 24)
+        public async Task<ContentDto<Personal>> GetAll(int userId, int page = 1, int itemPerRequest = 24)
         {
             var user = await _context.Personal.FindAsync(userId);
 
@@ -51,23 +30,22 @@ namespace KozoskodoAPI.Controllers
                 .OrderByDescending(_ => _.PlaceOfResidence)
                 .OrderByDescending(_ => _.DateOfBirth.Value.AddYears(10))
                 .Where(_ => _.id != userId);
-            int totalItems = query.Count()/itemPerRequest;
+            
 
             if (page + itemPerRequest > 0)
             {
                 query = query.Skip((page - 1) * itemPerRequest).Take(itemPerRequest);
             }
             var items = await query.ToListAsync();
+            int totalItems = items.Count() / itemPerRequest;
 
-            return new ListPagesDto<Personal>(items, totalItems);
+            return new ContentDto<Personal>(items, totalItems);
         }
 
-        // GET: personal
         [HttpGet("{id}")]
         [Authorize]
         public async Task<ActionResult<Personal>> Get(int id)
         {
-            var token = HttpContext.GetTokenAsync("access_token").Result;
             var res = await _context.Personal.FindAsync(id);
             if (res != null)
                 return res;
@@ -85,7 +63,6 @@ namespace KozoskodoAPI.Controllers
             
             return CreatedAtAction("Get", new { id = personal.id }, personal);
         }
-
 
     }
 }

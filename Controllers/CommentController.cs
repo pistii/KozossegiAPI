@@ -1,5 +1,5 @@
 ﻿using KozoskodoAPI.Data;
-using KozoskodoAPI.DTOs.Post;
+using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

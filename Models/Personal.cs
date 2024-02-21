@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Diagnostics.CodeAnalysis;
+using KozoskodoAPI.DTOs;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 
@@ -17,13 +15,12 @@ namespace KozoskodoAPI.Models
     {
         public Personal()
         {
-            personals = new HashSet<user>();
+            //users = new HashSet<user>();
         }
 
-        [Key]
-        [Column(TypeName = "int(11)")]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [ForeignKey("users")]
         public int id { get; set; }
+        
         [StringLength(30)]
         public string? firstName { get; set; }
 
@@ -35,29 +32,23 @@ namespace KozoskodoAPI.Models
         public bool isMale { get; set; }
         [StringLength(70)]
         public string? PlaceOfResidence { get; set; }
-
-        public int? friendshipID { get; set; }
-
-        public int? relationshipID { get; set; }
-
-        public string? avatar { get; set; }
+        [StringLength(150)]
+        public string? avatar { get; set; } = string.Empty;
 
         [Column(TypeName = "int(16)")]
         public int? phoneNumber { get; set; }
 
-        public DateTime? DateOfBirth { get; set; }
+        public DateOnly? DateOfBirth { get; set; }
 
         [StringLength(100)]
         public string? PlaceOfBirth { get; set; }
 
-        public int? notificationId { get; set; }
-
+        
         [JsonIgnore]
-        public virtual ICollection<user> personals { get; set; }
-
-        [InverseProperty("friendships")]
+        public virtual Friend? friends { get; set; }
+        
         [JsonIgnore]
-        public virtual ICollection<Friendship>? Friends { get; set; } = new HashSet<Friendship>();
+        public virtual user? users { get; set; }
 
         [JsonIgnore]
         [InverseProperty("relationship")]
@@ -75,9 +66,8 @@ namespace KozoskodoAPI.Models
 
     }
 
-    public partial class Image
+    public partial class Personal_IsOnlineDto : Personal
     {
-        public string ImageName { get; set; }
-        public string ImgType { get; set; }
+        public bool isOnline { get; set; } = false;
     }
 }

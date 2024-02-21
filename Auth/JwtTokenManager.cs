@@ -1,43 +1,33 @@
 ﻿using KozoskodoAPI.Data;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-
+using KozoskodoAPI.DTOs;
+using KozoskodoAPI.Models;
+using Microsoft.EntityFrameworkCore;
 namespace KozoskodoAPI.Auth
 {
     public class JwtTokenManager : IJwtTokenManager
     {
-        //Todo: validate token
-        private readonly IConfiguration _configuration;
+        private readonly IJwtUtils _jwtUtils;
         private readonly DBContext _context;
-        public JwtTokenManager(IConfiguration configuration, DBContext context)
+
+        public JwtTokenManager(IJwtUtils jwtUtils, DBContext context)
         {
-            _configuration = configuration;
+            _jwtUtils = jwtUtils;
             _context = context;
         }
-        public string Authenticate(string email, string password)
+
+        public AuthenticateResponse Authenticate(LoginDto login)
         {
-            if (!_context.user.Any(x => x.email == email && x.password == password))
+            //user? user = _context.user.Include(p => p.personal).FirstOrDefault(x => x.email == login.Email && x.password == login.Password);
+            var user = _context.user.Include(x => x.personal).First(x => x.email == login.Email);
+            bool pwIsCorrect = BCrypt.Net.BCrypt.Verify(login.Password, user.password);
+
+            if (user != null && pwIsCorrect)
             {
-                return null;
+
+                var token = _jwtUtils.GenerateJwtToken(user);
+                return new AuthenticateResponse(user.personal!, token);
             }
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("JwtConfig:Key").Value!));
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new Claim[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, email)
-                }),
-                Expires = DateTime.UtcNow.AddMinutes(30),
-                SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+            return null;
         }
     }
 }

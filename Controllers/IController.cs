@@ -10,4 +10,9 @@ namespace KozoskodoAPI.Controllers
         public Task<IActionResult> Put(int id, T data);
         public Task<IActionResult> Delete(int id);
     }
+
+    public interface IControllerBase<T>
+    {
+        public Task<T> GetAll(int id, int currentPage = 1, int qty = 25);
+    }
 }

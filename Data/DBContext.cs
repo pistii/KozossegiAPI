@@ -1,6 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using KozoskodoAPI.Models;
 using System.Reflection.Emit;
+using static Grpc.Core.Metadata;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using KozoskodoAPI.Controllers;
+using System.Diagnostics;
 
 namespace KozoskodoAPI.Data
 {
@@ -16,32 +20,32 @@ namespace KozoskodoAPI.Data
         {
         }
 
-        public virtual DbSet<Friendship> Friendship { get; set; } = null!;
-
+        public virtual DbSet<Friend> Friendship { get; set; } = null!;
         public virtual DbSet<Personal> Personal { get; set; }
-
         public virtual DbSet<Relationship> Relationship { get; set; } = null!;
-
         public virtual DbSet<RelationshipType> Relationshiptype { get; set; } = null!;
-
         public virtual DbSet<user> user { get; set; }
+        public virtual DbSet<UserStatus> UserStatus { get; set; }
+        public virtual DbSet<UserRestriction> UserRestriction { get; set; }
+        public virtual DbSet<Restriction> Restriction { get; set; }
         public virtual DbSet<Post> Post { get; set; }
         public virtual DbSet<PersonalPost> PersonalPost { get; set; }
-
         public virtual DbSet<Comment>? Comment { get; set; }
         public virtual DbSet<Notification> Notification { get; set; }
         public virtual DbSet<PersonalChatRoom> PersonalChatRoom { get; set; }
         public virtual DbSet<ChatRoom> ChatRoom { get; set; }
         public virtual DbSet<ChatContent> ChatContent { get; set; }
+        public virtual DbSet<MediaContent> MediaContent { get; set; }
+        public virtual DbSet<PostReaction> PostReaction { get; set; }
 
         protected override async void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseMySql("server=localhost;user id=root;database=mediadb", Microsoft.EntityFrameworkCore.ServerVersion.Parse("10.4.20-mariadb"));
+                optionsBuilder.UseMySql("server=localhost;user id=root;database=mediadb;Convert Zero Datetime=True", Microsoft.EntityFrameworkCore.ServerVersion.Parse("10.4.20-mariadb"));
             }
-        }
-        
+        } //"Server=aws.connect.psdb.cloud;Database=socialmedia;"
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder
@@ -55,18 +59,40 @@ namespace KozoskodoAPI.Data
                     .HasForeignKey(c => c.relationshipTypeID);
             });
 
+            modelBuilder.Entity<user>(entity =>
+            {
+                entity.HasOne(p => p.personal)
+                .WithOne(p => p.users)
+                .IsRequired();
+
+            });
+
+            modelBuilder.Entity<Restriction>(entity =>
+            {
+                entity.HasMany(s => s.UserRestriction)
+               .WithOne(g => g.restriction)
+               .HasForeignKey(s => s.RestrictionId);
+
+                entity.HasOne(s => s.UserStatus)
+                  .WithMany(g => g.restrictions)
+                  .HasForeignKey(s => s.FK_StatusId);
+            });
+
+            modelBuilder.Entity<UserRestriction>( entity => 
+            {
+                entity.HasOne(p => p.user)
+                .WithMany(p => p.UserRestriction)
+                .HasForeignKey(p => p.UserId);
+
+                entity.HasOne(p => p.restriction)
+               .WithMany(p => p.UserRestriction)
+               .HasForeignKey(p => p.RestrictionId);
+
+                entity.HasKey(x => new { x.UserId, x.RestrictionId });
+            });
+
             modelBuilder.Entity<Personal>(entity =>
             {
-                entity.HasMany(x => x.personals)
-                .WithOne(x => x.personal)
-                .HasForeignKey(x => x.personalID)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("user_ibfk_1");
-
-                entity.HasMany(c => c.Friends)
-                    .WithOne(x => x.friendships)
-                    .HasForeignKey(c => c.friendshipID);
-
                 entity.HasMany(c => c.Relationships)
                     .WithOne(x => x.relationship)
                     .HasForeignKey(c => c.relationshipID);
@@ -79,35 +105,60 @@ namespace KozoskodoAPI.Data
                     .WithOne(_ => _.PersonalRoom)
                     .HasForeignKey(_ => _.FK_PersonalId);
 
+                entity.HasOne(p => p.friends)
+                    .WithMany(p => p.GetPersonals)
+                    .HasForeignKey(p => p.id);
+
             });
 
-            modelBuilder.Entity<ChatRoom>(entity => 
+            
+
+            modelBuilder.Entity<ChatRoom>(entity =>
             {
                 entity.HasMany(x => x.ChatContents)
-                .WithOne(x => x.ChatRooms)
-                .HasForeignKey(x => x.chatContentId);
+                    .WithOne(x => x.ChatRooms)
+                    .HasForeignKey(x => x.chatContentId);
             });
 
             modelBuilder.Entity<ChatContent>(entity =>
-            {           entity.Property(e => e.status)
-                         .HasConversion(
-                         c => c.ToString(),
-                         v => (Status)Enum.Parse(typeof(Status), v));
+            {
+                entity.Property(e => e.status)
+                    .HasConversion(
+                    c => c.ToString(),
+                    v => (Status)Enum.Parse(typeof(Status), v));
+
+                entity.HasIndex(e => e.chatContentId).IsUnique();
             });
 
             modelBuilder.Entity<Post>(entity =>
             {
                 entity.HasKey(p => p.Id);
 
+                entity.HasMany(r => r.PostReactions)
+                    .WithOne(p => p.post)
+                    .HasForeignKey(p => p.PostId);
             });
 
-            modelBuilder.Entity<Comment>(entity => 
+            modelBuilder.Entity<Comment>(entity =>
             {
                 //entity.HasKey(p => p.commentId);
 
                 entity.HasOne(_ => _.Post)
                     .WithMany(x => x.PostComments)
                     .HasForeignKey(i => i.PostId);
+
+            });
+
+            modelBuilder.Entity<MediaContent>(entity =>
+            {
+                entity.HasOne(p => p.Post)
+                .WithMany(p => p.MediaContents)
+                .HasForeignKey(id => id.MediaContentId);
+
+                entity.Property(e => e.ContentType)
+                .HasConversion(
+                    c => Enum.GetName(typeof(ContentType), c), // Enum.GetName használata
+                    v => (ContentType)Enum.Parse(typeof(ContentType), v, true));
 
             });
 
@@ -118,17 +169,28 @@ namespace KozoskodoAPI.Data
                 .WithMany(p => p.PersonalPosts)
                 .HasForeignKey(p => p.personId);
 
-                 entity.HasOne(p => p.Posts)
-                .WithMany(p=> p.PersonalPosts)
-                .HasForeignKey(p => p.postId);
+                entity.HasOne(p => p.Posts)
+               .WithMany(p => p.PersonalPosts)
+               .HasForeignKey(p => p.postId);
 
                 entity.HasKey(x => new { x.personId, x.postId });
             });
 
+
             //Junction table 
             modelBuilder.Entity<PersonalChatRoom>()
                 .HasKey(x => new { x.FK_PersonalId, x.FK_ChatRoomId });
-            
+
+
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.Property(e => e.notificationType)
+                         .HasConversion(
+                         c => c.ToString(),
+                         type => (NotificationType)Enum.Parse(typeof(NotificationType), type));
+            });
+
+
             OnModelCreatingPartial(modelBuilder);
         }
 

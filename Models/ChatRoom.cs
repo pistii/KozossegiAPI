@@ -10,13 +10,13 @@ namespace KozoskodoAPI.Models
         [Column(TypeName = "int(11)")]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         //[JsonIgnore]
+        [Key]
         public int chatRoomId { get; set; }
         public int senderId { get; set; }
         public int receiverId { get; set; }
-        public DateTime? startedDateTime { get; set; }
-        public DateTime? endedDateTime { get; set; }
+        public DateTime? startedDateTime { get; set; } 
+        public DateTime? endedDateTime { get; set; } = DateTime.UtcNow;
 
-        [ForeignKey("chatContentId")]
         public virtual ICollection<ChatContent> ChatContents { get; set; } = new HashSet<ChatContent>();
 
     }

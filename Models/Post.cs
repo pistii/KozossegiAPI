@@ -13,12 +13,16 @@ namespace KozoskodoAPI.Models
         [Column(TypeName = "int(11)")]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-        public uint? Loves { get; set; }
-        public uint? DisLoves { get; set; }
-        public DateTime DateOfPost { get; set; }
+        public int SourceId { get; set; }
+        public int? Likes { get; set; }
+        public int? Dislikes { get; set; }
+        public DateTime DateOfPost { get; set; } = DateTime.Now;
         [StringLength(500)]
         public string? PostContent { get; set; }
         public virtual ICollection<Comment> PostComments { get; set; } = new HashSet<Comment>();
+        public virtual ICollection<MediaContent>? MediaContents { get; set; } = new HashSet<MediaContent>();
+        public virtual ICollection<PostReaction>? PostReactions { get; set; } = new HashSet<PostReaction>();
+
         [JsonIgnore]
         public virtual ICollection<PersonalPost> PersonalPosts { get; set; } = new HashSet<PersonalPost>();
     }
