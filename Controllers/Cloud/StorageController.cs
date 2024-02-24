@@ -142,6 +142,18 @@ namespace KozoskodoAPI.Controllers.Cloud
     public class AvatarUpload : FileUpload
     {
         public int UserId { get; set; }
+
+        public AvatarUpload(int UserId, string Name, IFormFile File)
+        {
+            this.UserId = UserId;
+            this.Name = Name;
+            this.File = File;
+        }
+
+        public AvatarUpload()
+        {
+            
+        }
     }
 
     public interface IStorageController

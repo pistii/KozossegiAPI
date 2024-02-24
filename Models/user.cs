@@ -21,8 +21,10 @@ namespace KozoskodoAPI.Models
         [Column(TypeName = "int(11)")]
         public int userID { get; set; }
 
-        [StringLength(70)]
+        [StringLength(30)]
         public string? email { get; set; }
+        [StringLength(30)]
+        public string? SecondaryEmailAddress { get; set; }
 
         [StringLength(40)]
         [JsonIgnore]
@@ -31,7 +33,10 @@ namespace KozoskodoAPI.Models
         public bool isActivated { get; set; } = false;
         [JsonIgnore]
         public string? Guid { get; set; }
+        public DateTime LastOnline { get; set; }
         public virtual ICollection<UserRestriction> UserRestriction { get; }
         public virtual Personal? personal { get; set; }
+        public virtual ICollection<Studies>? Studies { get; set; }
+
     }
 }

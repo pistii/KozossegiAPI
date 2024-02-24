@@ -9,5 +9,6 @@ namespace KozoskodoAPI.DTOs
         public ContentDto<PostDto> Posts { get; set; }
         public IActionResult Friends { get; set; }
         public string PublicityStatus { get; set; }
+        public bool RemindUserOfUnfulfilledReg { get; set; } = false;
     }
 }

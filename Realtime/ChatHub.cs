@@ -12,8 +12,8 @@ namespace KozoskodoAPI.Realtime
         private readonly IMapConnections _connections;
         private readonly IFriendRepository _friendRepo;
 
-        public ChatHub(IJwtUtils utils, IMapConnections mapConnections, IFriendRepository friendRepository)
-        : base(utils, mapConnections) // Öröklés a szülőosztályból, meg kell hívni a konstruktorát
+        public ChatHub(IJwtUtils utils, IMapConnections mapConnections, DBContext context, IFriendRepository friendRepository)
+        : base(utils, mapConnections, context) // Öröklés a szülőosztályból, meg kell hívni a konstruktorát
         {
             _connectionHandler = this;
             _connections = mapConnections;

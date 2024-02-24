@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.SignalR;
 using KozoskodoAPI.Realtime.Helpers;
 using KozoskodoAPI.Auth;
 using KozoskodoAPI.Realtime.Connection;
+using KozoskodoAPI.Data;
 
 namespace KozoskodoAPI.Realtime
 {
@@ -12,8 +13,8 @@ namespace KozoskodoAPI.Realtime
     {
         private readonly ConnectionHandler<INotificationClient> _connectionHandler;
 
-        public NotificationHub(IJwtUtils utils, IMapConnections mapConnections)
-        : base(utils, mapConnections) // Öröklés a szülőosztályból, meg kell hívni a konstruktorát
+        public NotificationHub(IJwtUtils utils, IMapConnections mapConnections, DBContext context)
+        : base(utils, mapConnections, context) // Öröklés a szülőosztályból, meg kell hívni a konstruktorát
         {
             _connectionHandler = this; 
         }

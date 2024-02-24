@@ -4,6 +4,7 @@ using KozoskodoAPI.Controllers.Cloud;
 using KozoskodoAPI.Data;
 using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
+using KozoskodoAPI.Repo;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +12,7 @@ namespace KozoskodoAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ImageController : ControllerBase, IControllerBase<List<PostDto>>
+    public class ImageController : ControllerBase, IImageRepository
     {
         private StorageController _storageController;
         private DBContext _ctx;

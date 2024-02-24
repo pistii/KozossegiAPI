@@ -37,6 +37,9 @@ namespace KozoskodoAPI.Data
         public virtual DbSet<ChatContent> ChatContent { get; set; }
         public virtual DbSet<MediaContent> MediaContent { get; set; }
         public virtual DbSet<PostReaction> PostReaction { get; set; }
+        public virtual DbSet<Studies> Studies { get; set; }
+        public virtual DbSet<Settings> Settings { get; set; }
+
 
         protected override async void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -65,6 +68,9 @@ namespace KozoskodoAPI.Data
                 .WithOne(p => p.users)
                 .IsRequired();
 
+                entity.HasMany(p => p.Studies)
+                .WithOne(u => u.user)
+                .HasForeignKey(p => p.FK_UserId);
             });
 
             modelBuilder.Entity<Restriction>(entity =>
@@ -109,9 +115,11 @@ namespace KozoskodoAPI.Data
                     .WithMany(p => p.GetPersonals)
                     .HasForeignKey(p => p.id);
 
+                entity.HasOne(p => p.Settings)
+                    .WithOne(p => p.personal);
+                    
             });
 
-            
 
             modelBuilder.Entity<ChatRoom>(entity =>
             {

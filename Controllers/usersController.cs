@@ -1,27 +1,18 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using KozoskodoAPI.Models;
+﻿using KozoskodoAPI.Models;
 using KozoskodoAPI.Auth;
 using KozoskodoAPI.Auth.Helpers;
 using KozoskodoAPI.Data;
-using Microsoft.EntityFrameworkCore;
-using KozoskodoAPI.DTOs;
-using System.Security.Claims;
 using KozoskodoAPI.Repo;
 using KozoskodoAPI.SMTP;
-using Humanizer;
-using Google.Api;
-using System.Web;
-using File = System.IO.File;
 using KozoskodoAPI.SMTP.Storage;
-using BCrypt.Net;
-using Microsoft.AspNetCore.Routing.Template;
-using System.ComponentModel.DataAnnotations;
 using KozoskodoAPI.Security;
-using Microsoft.AspNetCore.DataProtection;
-using System.Text;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System.Net.Sockets;
-using System.Drawing.Imaging;
+using KozoskodoAPI.DTOs;
+
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using KozoskodoAPI.Controllers.Cloud;
+using Google.Api;
 
 namespace KozoskodoAPI.Controllers
 {
@@ -33,8 +24,11 @@ namespace KozoskodoAPI.Controllers
         private readonly IJwtTokenManager _jwtTokenManager;
         private readonly IJwtUtils _jwtUtils;
         private readonly DBContext _context;
+
         private readonly IFriendRepository _friendRepository;
+        private readonly IImageRepository _imageRepository;
         private readonly IPostRepository _postRepository;
+
         private readonly IMailSender _mailSender;
         private readonly IVerificationCodeCache _verCodeCache;
         private readonly IEncodeDecode _encodeDecode;
@@ -44,7 +38,8 @@ namespace KozoskodoAPI.Controllers
             IJwtTokenManager jwtTokenManager, 
             IJwtUtils jwtUtils, 
             IFriendRepository friendRepository, 
-            IPostRepository postRepository, 
+            IPostRepository postRepository,
+            IImageRepository imageRepository,
             IMailSender mailSender,
             IVerificationCodeCache verCodeCache,
             IEncodeDecode encodeDecode,
@@ -54,7 +49,9 @@ namespace KozoskodoAPI.Controllers
             _jwtUtils = jwtUtils;
             _context = context;
             _friendRepository = friendRepository;
+            _imageRepository = imageRepository;
             _postRepository = postRepository;
+
             _mailSender = mailSender;
             _verCodeCache = verCodeCache;
             _encodeDecode = encodeDecode;
@@ -101,7 +98,8 @@ namespace KozoskodoAPI.Controllers
         public async Task<IActionResult> GetProfilePage(int profileToViewId, int viewerUserId)
         {
 
-            var user = await _context.Personal.FindAsync(profileToViewId);
+            var user = await _context.Personal.Include(p => p.Settings).FirstOrDefaultAsync(p => p.id == profileToViewId);
+            const int REMINDER_OF_UNFULFILLED_PERSONAL_INFOS_IN_DAYS = 7;
             if (user != null)
             {
                 try
@@ -109,12 +107,23 @@ namespace KozoskodoAPI.Controllers
                     var posts = await _postRepository.GetAllPost(profileToViewId, viewerUserId);
                     var friends = await _friendRepository.GetAll(profileToViewId);
                     var familiarityStatus = await _friendRepository.GetFamiliarityStatus(profileToViewId, viewerUserId);
+                    bool reminduser = false;
+                    
+                    if (familiarityStatus == "self" && user.users.LastOnline.Year == 1 || //If first login
+                        familiarityStatus == "self" && (DateTime.UtcNow - user.users.LastOnline).TotalDays > REMINDER_OF_UNFULFILLED_PERSONAL_INFOS_IN_DAYS || //if the last login was more than 7 days ago,
+                        familiarityStatus == "self" && DateTime.UtcNow > user.Settings.NextReminder
+                        )  
+                    {
+                        reminduser = true;
+                    }
+                    
                     ProfilePageDto profilePageDto = new ProfilePageDto()
                     {
                         PersonalInfo = user,
                         Posts = posts,
                         Friends = friends,
-                        PublicityStatus = familiarityStatus
+                        PublicityStatus = familiarityStatus,
+                        RemindUserOfUnfulfilledReg = reminduser
                     };
                     return Ok(profilePageDto);
 
@@ -125,7 +134,32 @@ namespace KozoskodoAPI.Controllers
                 }
             }
             return NotFound();
+        }
 
+        //TODO: The method itself is not so relevant and if there will be implemented an interval communication between the server, this method also can be used cabcatenated
+        /// <summary>
+        /// Turns off or extends the reminder of unfulfilled registration process.
+        /// </summary>
+        /// <returns></returns>
+        [HttpPut("turnOffReminder")]
+        public async Task<IActionResult> TurnOffReminder(UnfulfilledRegDto dto)
+        {
+            var user = (user?)HttpContext.Items["User"];
+            var personal = await _context.Personal.Include(s => s.Settings).FirstOrDefaultAsync(p => p.id == user.userID);
+            var userSettings = personal.Settings;
+            if (userSettings == null)
+            {
+                userSettings = new Settings();
+                userSettings.FK_UserId = user.userID;
+                userSettings.NextReminder = DateTime.Now.AddDays(1);
+            }
+            
+            userSettings.NextReminder.AddDays(dto.Days);
+            
+            _context.Settings.Update(userSettings);
+            await _context.SaveChangesAsync();
+
+            return Ok("Next reminder: " + userSettings.NextReminder);
         }
 
         [HttpPost("Signup")]
@@ -135,11 +169,11 @@ namespace KozoskodoAPI.Controllers
 
             if (user != null)
             {
-                //user? userExistsByEmail = await _context.user.FirstOrDefaultAsync(u => u.email == user.email);
-                //if (userExistsByEmail != null)
-                //{
-                //    return Ok("used email");
-                //}
+                user? userExistsByEmail = await _context.user.FirstOrDefaultAsync(u => u.email == user.email);
+                if (userExistsByEmail != null)
+                {
+                    return Ok("used email");
+                }
 
                 user newUser = user;
                 newUser.password = BCrypt.Net.BCrypt.HashPassword(user.Password);
@@ -164,6 +198,59 @@ namespace KozoskodoAPI.Controllers
             }
             return BadRequest("error");
         }
+
+        /// <summary>
+        /// The method used when the user completes the registration process, or modifies the personal information about him/herself.
+        /// </summary>
+        /// <param name="userInfoDTO"></param>
+        /// <returns></returns>
+        [HttpPost("modify")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ModifyUserInfo([FromForm] ModifyUserInfoDTO userInfoDTO)
+        {
+            user? user = await _context.user.Include(p => p.personal).FirstOrDefaultAsync(p => p.userID == userInfoDTO.UserId);
+            if (user != null)
+            {//will be checked the values individually because the user can update one, or more info.
+                if (!string.IsNullOrEmpty(userInfoDTO.Name) && userInfoDTO.File != null)
+                {
+                    AvatarUpload avatarUpload = new AvatarUpload(userInfoDTO.UserId, userInfoDTO.Name, userInfoDTO.File);
+
+                    await _imageRepository.Upload(avatarUpload);
+                }
+                if (!string.IsNullOrEmpty(userInfoDTO.PlaceOfResidence))
+                {
+                    user.personal.PlaceOfResidence = userInfoDTO.PlaceOfResidence;
+                }
+                if (!string.IsNullOrEmpty(userInfoDTO.PhoneNumber))
+                {
+                    user.personal.phoneNumber = userInfoDTO.PhoneNumber;
+                }
+                if (!string.IsNullOrEmpty(userInfoDTO.SecondaryEmailAddress))
+                {
+                    user.SecondaryEmailAddress = userInfoDTO.SecondaryEmailAddress;
+                }
+                if (!string.IsNullOrEmpty(userInfoDTO.Profession))
+                {
+                    user.personal.Profession = userInfoDTO.Profession;
+                }
+                if (!string.IsNullOrEmpty(userInfoDTO.Workplace))
+                {
+                    user.personal.Workplace = userInfoDTO.Workplace;
+                }
+
+                if (!string.IsNullOrEmpty(userInfoDTO.SchoolName) || !string.IsNullOrEmpty(userInfoDTO.Class) || userInfoDTO.StartYear != null || userInfoDTO.EndYear != null)
+                {
+                    Studies newStudy = new Studies(user.userID, userInfoDTO.SchoolName, userInfoDTO.Class, userInfoDTO.StartYear, userInfoDTO.EndYear);
+                    await _context.Studies.AddAsync(newStudy);
+                }
+                _context.user.Update(user);
+                await _context.SaveChangesAsync();
+
+                return Ok("modified");
+            }
+            return NotFound();
+        }
+
 
         /// <summary>
         /// This method is used when the user registered and the required to activate the email
@@ -202,6 +289,7 @@ namespace KozoskodoAPI.Controllers
         [HttpPost("ForgotPw")]
         public async Task<IActionResult> ForgotPw([FromBody]  EncryptedDataDto dto) 
         {
+            var ip = HttpContext.Connection.RemoteIpAddress.ToString();
             var decryptedEmail = _encodeDecode.Decrypt(dto.Data, "I love chocolate");
             int verificationCode = 123456;
             user? user = await _context.user.Include(p => p.personal).FirstOrDefaultAsync(user => user.email == decryptedEmail);
@@ -232,9 +320,12 @@ namespace KozoskodoAPI.Controllers
 
         [AllowAnonymous]
         [HttpPost("checkVerCode")]
-        public async Task<IActionResult> IsVercodeCorrect(EncryptedDataDto dto) 
+        public async Task<IActionResult> IsVercodeCorrect(EncryptedDataDto dto)  //TODO: Add rate limiting to requests: https://learn.microsoft.com/en-us/aspnet/core/performance/rate-limit?view=aspnetcore-8.0
         {
             string verCode = _encodeDecode.Decrypt(dto.Data, "I love chocolateI love chocolate");
+            //var splitted = data.Split('&');
+            //var verCode = splitted[0];
+            //var tries = splitted[1];
             var matchVercode = _verCodeCache.GetValue(verCode);
             if (!string.IsNullOrEmpty(matchVercode))
             {
@@ -253,7 +344,22 @@ namespace KozoskodoAPI.Controllers
             return NotFound("");
         }
 
-
+        [HttpPost("changePw")]
+        public async Task<IActionResult> ModifyPassword(ModifyPassword form)
+        {
+            if (form.Password == form.Password2)
+            {
+                var user = await _context.user.FindAsync(form.id);
+                if (user != null)
+                {
+                    user.password = BCrypt.Net.BCrypt.HashPassword(form.Password);
+                    _context.Personal.Update(form);
+                    await _context.SaveChangesAsync();
+                    return Ok("Jelszó módosítás megtörtént.");
+                }
+            }
+            return BadRequest("Nem egyezik a jelszó.");
+        }
 
         [HttpPost("Restrict")]
         [AllowAnonymous] //TODO: IT'S IMPORTANT
@@ -310,6 +416,13 @@ namespace KozoskodoAPI.Controllers
             return NoContent();
         }
 
+        public async Task LogoutUser()
+        {
+            var userId = (user?)HttpContext.Items["User"];
+            var user = _context.user.FindAsync(userId.userID).Result;
+            user.LastOnline = DateTime.Now;
+            return;
+        }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)

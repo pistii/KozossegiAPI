@@ -35,14 +35,19 @@ namespace KozoskodoAPI.Models
         [StringLength(150)]
         public string? avatar { get; set; } = string.Empty;
 
-        [Column(TypeName = "int(16)")]
-        public int? phoneNumber { get; set; }
+        [StringLength(15)]
+        public string? phoneNumber { get; set; }
 
         public DateOnly? DateOfBirth { get; set; }
 
         [StringLength(100)]
         public string? PlaceOfBirth { get; set; }
 
+        [StringLength(60)]
+        public string? Profession { get; set; }
+
+        [StringLength(120)]
+        public string? Workplace { get; set; }
         
         [JsonIgnore]
         public virtual Friend? friends { get; set; }
@@ -63,6 +68,8 @@ namespace KozoskodoAPI.Models
 
         [JsonIgnore]
         public virtual ICollection<PersonalPost> PersonalPosts { get; set; } = new HashSet<PersonalPost>();
+        [JsonIgnore]
+        public virtual Settings? Settings { get; set; }
 
     }
 

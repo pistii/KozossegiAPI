@@ -1,9 +1,12 @@
 ﻿using Google.Api;
 using KozoskodoAPI.Auth;
 using KozoskodoAPI.Auth.Helpers;
+using KozoskodoAPI.Data;
+using KozoskodoAPI.Models;
 using KozoskodoAPI.Realtime.Connection;
 using KozoskodoAPI.Realtime.Helpers;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 
 namespace KozoskodoAPI.Realtime.Connection
 {
@@ -12,10 +15,12 @@ namespace KozoskodoAPI.Realtime.Connection
     {
         IMapConnections _connections;
         IJwtUtils _jwtUtils;
-        public ConnectionHandler(IJwtUtils utils, IMapConnections mapConnections)
+        protected readonly DBContext _context;
+        public ConnectionHandler(IJwtUtils utils, IMapConnections mapConnections, DBContext context)
         {
             _jwtUtils = utils;
             _connections = mapConnections;
+            _context = context;
         }
 
         public override Task OnConnectedAsync()
@@ -37,7 +42,13 @@ namespace KozoskodoAPI.Realtime.Connection
         //TODO: HAndle disconnection https://learn.microsoft.com/en-us/aspnet/core/signalr/hubs?view=aspnetcore-8.0
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
+            var userId = _connections.GetUserById(Context.ConnectionId); //(user?)HttpContext.Items["User"];
+            var user = await _context.user.FirstOrDefaultAsync(p => p.userID == userId);
+            user.LastOnline = DateTime.Now;
+            await _context.SaveChangesAsync();
+
             _connections.Remove(Context.ConnectionId);
+
             await base.OnDisconnectedAsync(exception);
         }
     }
