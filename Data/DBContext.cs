@@ -21,6 +21,7 @@ namespace KozoskodoAPI.Data
         }
 
         public virtual DbSet<Friend> Friendship { get; set; } = null!;
+        public virtual DbSet<FriendshipStatus> FriendshipStatus { get; set; }
         public virtual DbSet<Personal> Personal { get; set; }
         public virtual DbSet<Relationship> Relationship { get; set; } = null!;
         public virtual DbSet<RelationshipType> Relationshiptype { get; set; } = null!;
@@ -120,6 +121,12 @@ namespace KozoskodoAPI.Data
                     
             });
 
+            //1-1 kapcsolat a friend-friendshipStatus táblák között.
+            modelBuilder.Entity<Friend>(entity =>
+            {
+                entity.HasOne(x => x.friendship_status)
+                    .WithOne(x => x.friendship);
+            });
 
             modelBuilder.Entity<ChatRoom>(entity =>
             {

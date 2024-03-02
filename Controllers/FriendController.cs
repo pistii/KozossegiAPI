@@ -20,10 +20,10 @@ namespace KozoskodoAPI.Controllers
         {
             var friends = await _context.Personal
             .Where(p => _context.Friendship
-                .Where(f => f.FriendId == userId)
+                .Where(f => f.FriendId == userId && f.StatusId == 1)
                 .Select(f => f.UserId)
                 .Union(_context.Friendship
-                    .Where(f => f.UserId == userId)
+                    .Where(f => f.UserId == userId && f.StatusId == 1)
                     .Select(f => f.FriendId)
                 )
                 .Contains(p.id)
@@ -37,18 +37,17 @@ namespace KozoskodoAPI.Controllers
         public async Task<IActionResult> GetAll(int personalId, int currentPage = 1, int qty = 9)
         {
             var user = await _context.Personal
-            .Where(p => _context.Friendship
-                .Where(f => f.FriendId == personalId)
+            .Where(p => _context.Friendship.Include(stat => stat.friendship_status)
+                .Where(f => f.FriendId == personalId && f.StatusId == 1)
                 .Select(f => f.UserId)
                 .Union(_context.Friendship
-                    .Where(f => f.UserId == personalId)
+                    .Where(f => f.UserId == personalId && f.StatusId == 1)
                     .Select(f => f.FriendId)
                 )
                 .Contains(p.id)
             )
             .ToListAsync();
 
-            //TODO: friendshipdto
             var sorted = user?.Skip((currentPage - 1) * qty).Take(qty);
             return Ok(sorted);
             
@@ -90,6 +89,7 @@ namespace KozoskodoAPI.Controllers
             return Ok("removed");
         }
 
+        [HttpGet("relation")]
         public async Task<string> GetFamiliarityStatus(int userId, int viewerId)
         {
             if (userId == viewerId)
