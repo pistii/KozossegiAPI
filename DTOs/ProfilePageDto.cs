@@ -6,9 +6,10 @@ namespace KozoskodoAPI.DTOs
     public class ProfilePageDto
     {
         public Personal PersonalInfo { get; set; }
-        public ContentDto<PostDto> Posts { get; set; }
-        public IActionResult Friends { get; set; }
-        public string PublicityStatus { get; set; }
-        public bool RemindUserOfUnfulfilledReg { get; set; } = false;
+        public ContentDto<PostDto>? Posts { get; set; }
+        public IActionResult? Friends { get; set; }
+        public string? PublicityStatus { get; set; }
+        //public bool RemindUserOfUnfulfilledReg { get; set; } = false;
+        public UserSettingsDTO? settings { get; set; }
     }
 }

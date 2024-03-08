@@ -13,7 +13,8 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using KozoskodoAPI.Controllers.Cloud;
 using Google.Api;
-
+using Newtonsoft.Json;
+using Bcry = BCrypt.Net.BCrypt;
 namespace KozoskodoAPI.Controllers
 {
     [ApiController]
@@ -98,7 +99,7 @@ namespace KozoskodoAPI.Controllers
         public async Task<IActionResult> GetProfilePage(int profileToViewId, int viewerUserId)
         {
 
-            var user = await _context.Personal.Include(p => p.Settings).FirstOrDefaultAsync(p => p.id == profileToViewId);
+            var user = await _context.Personal.Include(p => p.Settings).Include(u => u.users).FirstOrDefaultAsync(p => p.id == profileToViewId);
             const int REMINDER_OF_UNFULFILLED_PERSONAL_INFOS_IN_DAYS = 7;
             if (user != null)
             {
@@ -106,15 +107,21 @@ namespace KozoskodoAPI.Controllers
                 {
                     var posts = await _postRepository.GetAllPost(profileToViewId, viewerUserId);
                     var friends = await _friendRepository.GetAll(profileToViewId);
-                    var familiarityStatus = await _friendRepository.GetFamiliarityStatus(profileToViewId, viewerUserId);
+                     var familiarityStatus = await _friendRepository.GetFamiliarityStatus(profileToViewId, viewerUserId);
                     bool reminduser = false;
-                    
+
+
                     if (familiarityStatus == "self" && user.users.LastOnline.Year == 1 || //If first login
-                        familiarityStatus == "self" && (DateTime.UtcNow - user.users.LastOnline).TotalDays > REMINDER_OF_UNFULFILLED_PERSONAL_INFOS_IN_DAYS || //if the last login was more than 7 days ago,
-                        familiarityStatus == "self" && DateTime.UtcNow > user.Settings.NextReminder
+                        familiarityStatus == "self" && (DateTime.UtcNow - user.users.LastOnline).TotalDays > REMINDER_OF_UNFULFILLED_PERSONAL_INFOS_IN_DAYS //if the last login was more than 7 days ago,
                         )  
                     {
-                        reminduser = true;
+                        if (user.Settings == null)
+                            reminduser = true;
+                        else if (familiarityStatus == "self" && DateTime.UtcNow > user.Settings.NextReminder)
+                        {
+                            reminduser = true;
+                        }
+                        else reminduser = false;
                     }
                     
                     ProfilePageDto profilePageDto = new ProfilePageDto()
@@ -123,14 +130,20 @@ namespace KozoskodoAPI.Controllers
                         Posts = posts,
                         Friends = friends,
                         PublicityStatus = familiarityStatus,
-                        RemindUserOfUnfulfilledReg = reminduser
+                        settings = new()
+                        {
+                            isOnlineEnabled = user.users.isOnlineEnabled,
+                            RemindUserOfUnfulfilledReg = reminduser
+                        }
+                        
+                        
                     };
                     return Ok(profilePageDto);
 
                 }
-                catch (Exception ex)
+                catch (NullReferenceException ex)
                 {
-                    return NotFound("Something went wrong...");
+                    Console.WriteLine("Something went wrong.... " + ex);
                 }
             }
             return NotFound();
@@ -142,7 +155,7 @@ namespace KozoskodoAPI.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPut("turnOffReminder")]
-        public async Task<IActionResult> TurnOffReminder(UnfulfilledRegDto dto)
+        public async Task<IActionResult> TurnOffReminder(UserSettingsDTO dto)
         {
             var user = (user?)HttpContext.Items["User"];
             var personal = await _context.Personal.Include(s => s.Settings).FirstOrDefaultAsync(p => p.id == user.userID);
@@ -176,11 +189,12 @@ namespace KozoskodoAPI.Controllers
                 }
 
                 user newUser = user;
-                newUser.password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+                newUser.password = Bcry.HashPassword(user.Password);
                 //Guid: https://stackoverflow.com/a/4458925/16689442
                 Guid guid = Guid.NewGuid();
                 user.Guid = guid.ToString("N");
                 _context.user.Add(newUser);
+                
                 await _context.SaveChangesAsync();
 
                 var token = _jwtUtils.GenerateJwtToken(newUser); //TODO: generate 15min access tokens
@@ -204,18 +218,33 @@ namespace KozoskodoAPI.Controllers
         /// </summary>
         /// <param name="userInfoDTO"></param>
         /// <returns></returns>
-        [HttpPost("modify")]
+        [HttpPut("modify")]
         [AllowAnonymous]
         public async Task<IActionResult> ModifyUserInfo([FromForm] ModifyUserInfoDTO userInfoDTO)
         {
-            user? user = await _context.user.Include(p => p.personal).FirstOrDefaultAsync(p => p.userID == userInfoDTO.UserId);
+            
+            user? user = await _context.user.Include(p => p.personal).Include(s => s.Studies).FirstOrDefaultAsync(p => p.userID == userInfoDTO.UserId);
+            bool emailOrPasswordChanged = false;
+
             if (user != null)
-            {//will be checked the values individually because the user can update one, or more info.
+            {//will be checked the values individually because the user can update one, or more info and don't want to change the non null values to null.
                 if (!string.IsNullOrEmpty(userInfoDTO.Name) && userInfoDTO.File != null)
                 {
                     AvatarUpload avatarUpload = new AvatarUpload(userInfoDTO.UserId, userInfoDTO.Name, userInfoDTO.File);
 
                     await _imageRepository.Upload(avatarUpload);
+                }
+                if (!string.IsNullOrEmpty(userInfoDTO.firstName))
+                {
+                    user.personal.firstName = userInfoDTO.firstName;
+                }
+                if (!string.IsNullOrEmpty(userInfoDTO.middleName))
+                {
+                    user.personal.middleName = userInfoDTO.middleName;
+                }
+                if (!string.IsNullOrEmpty(userInfoDTO.lastName))
+                {
+                    user.personal.lastName = userInfoDTO.lastName;
                 }
                 if (!string.IsNullOrEmpty(userInfoDTO.PlaceOfResidence))
                 {
@@ -225,9 +254,22 @@ namespace KozoskodoAPI.Controllers
                 {
                     user.personal.phoneNumber = userInfoDTO.PhoneNumber;
                 }
+                if (!string.IsNullOrEmpty(userInfoDTO.PlaceOfBirth))
+                {
+                    user.personal.PlaceOfBirth = userInfoDTO.PlaceOfBirth;
+                }
+                if (!string.IsNullOrEmpty(userInfoDTO.EmailAddress))
+                {
+                    emailOrPasswordChanged = true;
+                    user.email = userInfoDTO.EmailAddress;
+                }
                 if (!string.IsNullOrEmpty(userInfoDTO.SecondaryEmailAddress))
                 {
-                    user.SecondaryEmailAddress = userInfoDTO.SecondaryEmailAddress;
+                    emailOrPasswordChanged = true;
+                    if (userInfoDTO.SecondaryEmailAddress != user.email) //Egyéb hibakezelésre nincs szükség, mivel a frontend elvégzi
+                    {
+                        user.SecondaryEmailAddress = userInfoDTO.SecondaryEmailAddress;
+                    }
                 }
                 if (!string.IsNullOrEmpty(userInfoDTO.Profession))
                 {
@@ -237,16 +279,65 @@ namespace KozoskodoAPI.Controllers
                 {
                     user.personal.Workplace = userInfoDTO.Workplace;
                 }
-
-                if (!string.IsNullOrEmpty(userInfoDTO.SchoolName) || !string.IsNullOrEmpty(userInfoDTO.Class) || userInfoDTO.StartYear != null || userInfoDTO.EndYear != null)
+                if (!string.IsNullOrEmpty(userInfoDTO.Pass1) && !string.IsNullOrEmpty(userInfoDTO.Pass2) && userInfoDTO.Pass1 == userInfoDTO.Pass2)
                 {
-                    Studies newStudy = new Studies(user.userID, userInfoDTO.SchoolName, userInfoDTO.Class, userInfoDTO.StartYear, userInfoDTO.EndYear);
-                    await _context.Studies.AddAsync(newStudy);
+                    emailOrPasswordChanged = true;
+                    user.password = Bcry.HashPassword(userInfoDTO.Pass1);
                 }
+                user.isOnlineEnabled = userInfoDTO.isOnline;
+
+                if (emailOrPasswordChanged)
+                {
+                    //send an email about the email/password change
+                    string fullName;
+                    if (!string.IsNullOrEmpty(user.personal.middleName))
+                    {
+                        fullName = user.personal.firstName + " " + user.personal.middleName + " " + user.personal.lastName;
+                    }
+                    else
+                    {
+                        fullName = user.personal.firstName + " " + user.personal.lastName;
+                    }
+
+                    var htmlTemplate = getEmailTemplate("userDataChanged.html");
+                    htmlTemplate.Replace("{userFullName}", user.personal.lastName);
+                    //TODO: Enable the email sending
+                    //_mailSender.SendMail("Módosítás történt a felhasználói fiókodban", htmlTemplate, fullName, user.email);
+                }
+
+                if ((!string.IsNullOrEmpty(userInfoDTO.SchoolName) || !string.IsNullOrEmpty(userInfoDTO.Class) || userInfoDTO.StartYear != null || userInfoDTO.EndYear != null) )
+                {
+                    
+                    if (user.Studies == null)
+                    {
+                        Studies newStudy = new Studies(user.userID, userInfoDTO.SchoolName, userInfoDTO.Class, DateOnly.Parse(userInfoDTO.StartYear ?? null), DateOnly.Parse(userInfoDTO.EndYear ?? null));
+                        await _context.Studies.AddAsync(newStudy);
+                    } else
+                    {
+                        var userStudy = await _context.Studies.FirstOrDefaultAsync(s => s.FK_UserId == user.userID);
+                        if (!string.IsNullOrEmpty(userInfoDTO.SchoolName))
+                        {
+                            userStudy.SchoolName = userInfoDTO.SchoolName;
+                        }
+                        if (!string.IsNullOrEmpty(userInfoDTO.Class))
+                        {
+                            userStudy.Class = userInfoDTO.Class;
+                        }
+                        if (userInfoDTO.StartYear != null)
+                        {
+                            userStudy.StartYear = DateOnly.Parse(userInfoDTO.StartYear ?? null);
+                        }
+                        if (userInfoDTO.EndYear != null)
+                        {
+                            userStudy.EndYear = DateOnly.Parse(userInfoDTO.EndYear ?? null);
+                        }
+                    }
+                }
+
                 _context.user.Update(user);
                 await _context.SaveChangesAsync();
 
-                return Ok("modified");
+                return Ok(user.personal);
             }
             return NotFound();
         }
@@ -302,10 +393,8 @@ namespace KozoskodoAPI.Controllers
 
                 _verCodeCache.Create(verificationCode.ToString(), user.Guid);
 
-                string fullpath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "templates");
-                string templatePath = Path.Combine(fullpath, "forgotPassword.html");
+                string htmlTemplate = getEmailTemplate("forgotPassword.html");
 
-                string htmlTemplate = System.IO.File.ReadAllText(templatePath);
                 htmlTemplate = htmlTemplate.Replace("{LastName}", user.personal.lastName);
                 htmlTemplate = htmlTemplate.Replace("{VerificationCode}", verificationCode.ToString());
 
@@ -334,7 +423,7 @@ namespace KozoskodoAPI.Controllers
                 {
                     _verCodeCache.Remove(verCode);
 
-                    user.password = BCrypt.Net.BCrypt.HashPassword(verCode);
+                    user.password = Bcry.HashPassword(verCode);
                     _context.user.Update(user);
                     await _context.SaveChangesAsync();
 
@@ -352,7 +441,7 @@ namespace KozoskodoAPI.Controllers
                 var user = await _context.user.FindAsync(form.id);
                 if (user != null)
                 {
-                    user.password = BCrypt.Net.BCrypt.HashPassword(form.Password);
+                    user.password = Bcry.HashPassword(form.Password);
                     _context.Personal.Update(form);
                     await _context.SaveChangesAsync();
                     return Ok("Jelszó módosítás megtörtént.");
@@ -422,6 +511,20 @@ namespace KozoskodoAPI.Controllers
             var user = _context.user.FindAsync(userId.userID).Result;
             user.LastOnline = DateTime.Now;
             return;
+        }
+
+        /// <summary>
+        /// Waits a fileName as parameter which will be used as a template.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns>
+        /// The template with the given name.
+        /// </returns>
+        public string getEmailTemplate(string fileName)
+        {
+            string fullpath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "templates");
+            string templatePath = Path.Combine(fullpath, fileName);
+            return System.IO.File.ReadAllText(templatePath);
         }
 
         [HttpDelete("{id}")]
