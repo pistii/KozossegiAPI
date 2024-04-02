@@ -10,26 +10,39 @@ using System;
 using System.Drawing;
 using System.Runtime.Intrinsics.X86;
 using KozoskodoAPI.Repo;
+
 namespace KozoskodoAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     //[Authorize]
-    public class PostController : ControllerBase, IPostRepository
+    public class PostController : ControllerBase
     {
         public readonly DBContext _context;
         public StorageController? _storageController;
-        public PostController(DBContext context, StorageController? storageController)
+        public INotificationRepository _InotificationRepository;
+        public IPostRepository<PostDto> _PostRepository;
+        public PostController(DBContext context, 
+            StorageController? storageController,
+            INotificationRepository notificationRepository,
+            IPostRepository<PostDto> postRepository)
         {
             _context = context;
             _storageController = storageController;
+            _InotificationRepository = notificationRepository;
+            _PostRepository = postRepository;
         }
 
+        public PostController(IPostRepository<PostDto> postRepository)
+        {
+            _PostRepository = postRepository;
+        }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<Post>> Get(int id)
         {
-            var res = await _context.Post.FindAsync(id);
+            //var res = await _context.Post.FindAsync(id);
+            var res = _PostRepository.GetByIdAsync<Post>(id).Result;
             if (res != null)
             {
                 return Ok(res);
@@ -47,47 +60,12 @@ namespace KozoskodoAPI.Controllers
         [HttpGet("GetAllPost/{profileId}/{userId}/{currentPage}/{itemPerRequest}/")]
         public async Task<ContentDto<PostDto>> GetAllPost(int profileId, int userId, int currentPage = 1, int itemPerRequest = 10)
          {
-            var sortedItems = await _context.PersonalPost
-                .Include(p => p.Posts.MediaContents)
-                .Include(p => p.Posts.PostComments)
-                .Where(p => p.Posts.SourceId == profileId)
-                .OrderByDescending(_ => _.Posts.DateOfPost)
-                .Select(p => new PostDto
-                {
-                    PersonalPostId = p.personalPostId,
-                    FullName = $"{p.Personal_posts.firstName} {p.Personal_posts.middleName} {p.Personal_posts.lastName}",
-                    PostId = p.Posts.Id,
-                    AuthorAvatar = p.Personal_posts.avatar!,
-                    AuthorId = p.Personal_posts.id,
-                    Likes = p.Posts.Likes,
-                    Dislikes = p.Posts.Dislikes,
-                    DateOfPost = p.Posts.DateOfPost,
-                    PostContent = p.Posts.PostContent!,
-                    PostComments = p.Posts.PostComments
-                        .Select(c => new CommentDto
-                        {
-                            CommentId = c.commentId,
-                            AuthorId = c.FK_AuthorId,
-                            CommenterFirstName = _context.Personal.First(_ => _.id == c.FK_AuthorId).firstName!,
-                            CommenterMiddleName = _context.Personal.First(_ => _.id == c.FK_AuthorId).middleName!,
-                            CommenterLastName = _context.Personal.First(_ => _.id == c.FK_AuthorId).lastName!,
-                            CommenterAvatar = _context.Personal.First(_ => _.id == c.FK_AuthorId).avatar!,
-                            CommentDate = c.CommentDate,
-                            CommentText = c.CommentText!
-                        })
-                        .ToList(),
-                    MediaContents = p.Posts.MediaContents.ToList(),
-                    userReaction = _context.PostReaction.SingleOrDefault(u => p.Posts.Id == u.PostId && u.UserId == userId).ReactionType
-                })
-                .ToListAsync();
-
-
-            var totalItems = sortedItems.Count;
-            var totalPages = (int)Math.Ceiling((double)totalItems / itemPerRequest);
-
-            var returnValue = sortedItems
-            .Skip((currentPage - 1) * itemPerRequest)
-            .Take(itemPerRequest).ToList();
+            var sortedItems = _PostRepository.GetAllPost(profileId, userId, currentPage, itemPerRequest);
+            int totalPages = _PostRepository.GetTotalPages(sortedItems.Result, itemPerRequest).Result;
+            //var returnValue = sortedItems
+            //.Skip((currentPage - 1) * itemPerRequest)
+            //.Take(itemPerRequest).ToList();
+            var returnValue = _PostRepository.Paginator(sortedItems.Result, currentPage, itemPerRequest).ToList();
 
             return new ContentDto<PostDto>(returnValue, totalPages);
         }
@@ -98,8 +76,9 @@ namespace KozoskodoAPI.Controllers
         {
             try
             {
-                var user = await _context.Personal.AnyAsync(_ => _.id == dto.userId);
-                if (user)
+                //var user = await _context.Personal.FirstOrDefaultAsync(_ => _.id == dto.userId);
+                var user = await _PostRepository.GetByIdAsync<Personal>(dto.userId);
+                if (user != null)
                 {
                     Post newPost = new()
                     {
@@ -109,8 +88,9 @@ namespace KozoskodoAPI.Controllers
                         Likes = 0
                     };
 
-                    _context.Post.Add(newPost);
-                    await _context.SaveChangesAsync();
+                    //_context.Post.Add(newPost);
+                    //await _context.SaveChangesAsync();
+                    await _PostRepository.InsertSaveAsync<Post>(newPost);
 
                     ContentType type = 
                         dto.Type == "image/jpg" || 
@@ -121,24 +101,13 @@ namespace KozoskodoAPI.Controllers
                     
                     if (dto.File != null)
                     {
-                        MediaContent media = new() //mentés az adatbázisba
-                        {
-                            MediaContentId = newPost.Id, //Index és egyedi kulcs, ami a post Id-jére fog referálni
-                            FileName = dto.Name,
-                            ContentType = type,
-                        };
-
-                        FileUpload newFile = new FileUpload() //mentés a felhőbe
-                        {
-                            Name = dto.Name,
-                            Type = dto.Type,
-                            File = dto.File                            
-                        };
+                        MediaContent media = new(newPost.Id, dto.Name, type); //mentés az adatbázisba
+                        FileUpload newFile = new FileUpload(dto.Name, dto.Type, dto.File); //mentés a felhőbe
                         
                         var fileName = await _storageController.AddFile(newFile, StorageController.BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
                         media.FileName = fileName.ToString();
-                        _context.MediaContent.Add(media);
-
+                        //_context.MediaContent.Add(media);
+                        _PostRepository.InsertAsync<MediaContent>(media);
                         //await _context.SaveChangesAsync(); Elég a végén menteni most még...
                     }
 
@@ -149,8 +118,32 @@ namespace KozoskodoAPI.Controllers
                         postId = newPost.Id
                     };
 
-                    _context.PersonalPost.Add(personalPost);
-                    await _context.SaveChangesAsync();
+                    //_context.PersonalPost.Add(personalPost);
+                    //await _context.SaveChangesAsync();
+                    await _PostRepository.InsertSaveAsync<PersonalPost>(personalPost);
+
+
+                    //var closerFriends = _context.ChatRoom.Where(
+                    //    u => u.senderId == dto.userId || u.receiverId == dto.userId)
+                    //    .Select(f => f.senderId == dto.userId ? f.receiverId : f.senderId).ToList();
+
+                    var closerFriends = _PostRepository.GetCloserFriendIds(dto.userId).Result;
+                    var stringLength = dto.postContent.Length > 60 ? dto.postContent.Take(50) + "..." : dto.postContent;
+
+                    foreach (var friendId in closerFriends)
+                    {
+                        NotificationWithAvatarDto notificationWithAvatarDto = 
+                            new NotificationWithAvatarDto(
+                                friendId, 
+                                user.id, 
+                                user.avatar, 
+                                dto.postContent, 
+                                NotificationType.NewPost);
+                        await _InotificationRepository.RealtimeNotification(friendId, notificationWithAvatarDto);
+                        //_context.Notification.Add(notificationWithAvatarDto);
+                        await _PostRepository.InsertAsync(notificationWithAvatarDto);
+                    }
+                    await _PostRepository.SaveAsync();
 
                     return Ok(newPost);
                 }
@@ -168,16 +161,17 @@ namespace KozoskodoAPI.Controllers
         {
             try
             {
-                var post = await _context.Post.FindAsync(id);
+                //var post = await _context.Post.FindAsync(id);
+                var post = await _PostRepository.GetByIdAsync<Post>(id);
                 if (post == null || post.Id != id) 
                     return NotFound("The post id and the given id is incorrect.");
 
                 post.PostComments = null;
                 //Modify only the content and the date of post
                 post.PostContent = data.postContent;
-                _context.Entry(post).State = EntityState.Modified;
-
-                await _context.SaveChangesAsync();
+                //_context.Entry(post).State = EntityState.Modified;
+                //await _context.SaveChangesAsync();
+                await _PostRepository.InsertSaveAsync(post);
                 return Ok("Sikeres módosítás");
                 
             } catch (Exception ex)
@@ -190,15 +184,20 @@ namespace KozoskodoAPI.Controllers
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(int id) 
         {
-            var post = await _context.Post.FindAsync(id);
+            //var post = await _context.Post.FindAsync(id);
+            var post = _PostRepository.GetByIdAsync<Post>(id).Result;
             if (post == null)
                 return NotFound();
 
             //Find the person in the personalPost junction table and remove the connection
-            var personalPost = _context.PersonalPost.FirstOrDefault(_ => _.postId == post.Id);
-            _context.PersonalPost.Remove(personalPost);
-            _context.Post.Remove(post);
-            await _context.SaveChangesAsync();
+            //var personalPost = _context.PersonalPost.FirstOrDefault(_ => _.postId == post.Id);
+            var personalPost = _PostRepository.GetByIdAsync<PersonalPost>(post.Id).Result;
+            //_context.PersonalPost.Remove(personalPost);
+            await _PostRepository.RemoveAsync<PersonalPost>(personalPost);
+            await _PostRepository.RemoveAsync(post);
+            await _PostRepository.SaveAsync();
+            //_context.Post.Remove(post);
+            //await _context.SaveChangesAsync();
 
             return NoContent();
         }
@@ -267,5 +266,8 @@ namespace KozoskodoAPI.Controllers
             await _context.SaveChangesAsync();
             return Ok(post);
         }
+
+        
     }
+
 }

@@ -5,10 +5,16 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KozoskodoAPI.Repo
 {
-    public interface IFriendRepository
+    public interface IFriendRepository : IHelperRepository<Friend>
     {
-        Task<List<Personal>> GetAllFriend(int userId);
-        Task<IActionResult> GetAll(int id, int currentPage = 1, int qty = 9);
-        public Task<string> GetFamiliarityStatus(int userId, int viewerId);
+        Task<IEnumerable<Personal>> GetAll(int id);
+        Task<IEnumerable<Personal>> GetAllFriendAsync(int id);
+        public Task<string> CheckIfUsersInRelation(int userId, int viewerId);
+        public Task Delete(Friend request);
+        public Task Put(Friend_notificationId friendship);
+        //public Task<List<Personal>> GetAllFriend(int userId);
+        public Task<Friend?> FriendshipExists(Friend friendship);
+        Task<IEnumerable<Personal>> GetAllUserWhoHasBirthdayToday();
+        Task<Friend?> GetByIdAsync(int id);
     }
 }

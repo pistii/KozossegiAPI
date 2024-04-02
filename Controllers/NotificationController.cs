@@ -1,49 +1,47 @@
-﻿using KozoskodoAPI.Data;
+﻿using Humanizer;
+using KozoskodoAPI.Data;
 using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
 using KozoskodoAPI.Realtime;
 using KozoskodoAPI.Realtime.Connection;
+using KozoskodoAPI.Repo;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
+using System;
 
 namespace KozoskodoAPI.Controllers
 {
     [ApiController]
     [Route("/api/[controller]")]
-    public class NotificationController : ControllerBase, IControllerBase<IActionResult>
+    public class NotificationController : ControllerBase
     {
-        private readonly DBContext _context;
         private readonly IHubContext<NotificationHub, INotificationClient> _notificationHub;
         private readonly IMapConnections _connections;
+        private readonly INotificationRepository _notificationRepository;
+        private readonly IFriendRepository _friendRepository;
 
-        public NotificationController(DBContext context,
+
+
+        public NotificationController(
           IHubContext<NotificationHub, INotificationClient> hub, 
-          IMapConnections mapConnections)
+          IMapConnections mapConnections,
+          INotificationRepository notificationRepository,
+          IFriendRepository friendRepository)
         {
-            _context = context;
             _notificationHub = hub;
             _connections = mapConnections;
+            _notificationRepository = notificationRepository;
+            _friendRepository = friendRepository;
         }
 
         [HttpGet("{userId}/{currentPage}")]
         [HttpGet("{userId}")]
         public async Task<IActionResult> GetAll(int userId, int currentPage = 1, int itemPerRequest = 10)
         {
-            //Search the Person's notifications, and create a new Dto from the inherited notification class
-            var notifications = await _context.Notification
-                .Where(_ => _.personId == userId).Select(n => new NotificationWithAvatarDto
-                {
-                    personId = n.personId,
-                    notificationId = n.notificationId,
-                    notificationContent = n.notificationContent,
-                    notificationFrom = n.notificationFrom,
-                    notificationType = n.notificationType,
-                    notificationAvatar = _context.Personal.FirstOrDefault(p => p.id == n.personId).avatar,
-                    createdAt = n.createdAt,
-                    isNew = n.isNew
-                }).ToListAsync();
-
+            var notifications = _notificationRepository.GetAll_PersonNotifications(userId).Result;
+                        
             //sort, and return the elements
             var few = notifications.OrderByDescending(item => item.createdAt)
                 .Skip((currentPage - 1) * itemPerRequest)
@@ -59,13 +57,13 @@ namespace KozoskodoAPI.Controllers
         {
             try
             {
-                var result = await _context.Notification
-                    .FirstOrDefaultAsync(x => x.notificationId == notificationId);
+                var result = _notificationRepository.Get(notificationId).Result;
                 if (result.isNew)
                 {
                     result.isNew = false;
-                    _context.SaveChanges();
-                    return Ok();
+                    await _notificationRepository.Update(result);
+                    await _notificationRepository.SaveAsync();
+                    return Ok(result);
                 }
                 return NoContent();
             }
@@ -74,87 +72,56 @@ namespace KozoskodoAPI.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
-        [HttpPut("putNotification/{id}")]
-        public async Task<IActionResult> putUserRequest(int id, NotificationDto notificationDto)
-        {
-            Notification nots = new Notification()
-            {
-                notificationId = id,
-                personId = notificationDto.toUserId,
-                notificationFrom = notificationDto.applicantId,
-                notificationContent = notificationDto.content,
-                notificationType = notificationDto.notificationType
-            };
-            
-            try
-            {
-                _context.Entry(nots).State = EntityState.Modified;
-                await _context.SaveChangesAsync();
-            
-                return Ok("siker");
-            } catch (Exception e)
-            {
-                return BadRequest(e);
-            }
-        }
-
-        [HttpPost("postFriendRequest")]
-        public async Task<IActionResult> postFriendRequest(NotificationDto dto)
-        {
-           
-            try
-            {
-                var requestedFromUser = await _context.Personal
-                    .FirstOrDefaultAsync(_ => _.id == dto.applicantId);
-                var requestedUser = await _context.Personal
-                    .FirstOrDefaultAsync(_ => _.id == dto.toUserId);
                 
-                Notification notification = new Notification()
-                {
-                    personId = dto.applicantId,
-                    notificationFrom = requestedFromUser.id,
-                    notificationType = dto.notificationType,
-                };
-                //Todo: Handle the send request properly if the request was sent previously, eg. do not send, or update the previous one
-                if (!requestedUser.Notifications.Contains(notification) )
-                {
-                    NotificationWithAvatarDto avatarDto = new NotificationWithAvatarDto()
-                    {
-                        personId = dto.applicantId,
-                        notificationFrom = requestedFromUser.id,
+        /// <summary>
+        /// Searches the users who celebrates the birthday and sends a notification to the user's friends.
+        /// </summary>
+        /// <returns></returns>
+        public async Task BirthdayNotification()
+        {
+            var birthdayUsers = _friendRepository.GetAllUserWhoHasBirthdayToday().Result;
 
-                        notificationAvatar = requestedFromUser.avatar,
-                        notificationContent = requestedFromUser.firstName + " " + requestedFromUser.lastName + " ismerősnek jelölt.",
-                        notificationType = dto.notificationType
-                    };
-                    RealtimeNotification(dto.toUserId, avatarDto);
-
-                    requestedUser.Notifications.Add(notification);
-                    await _context.SaveChangesAsync();
-                }
-
-
-
-                return Ok("Success");
-            } catch (Exception ex)
+            foreach (var person in birthdayUsers)
             {
-                return BadRequest(ex.Message);
+                //Friend Id-k kigyűjtése. StatusId = 1: ha barátok
+                //var friendIds = await _context.Friendship
+                //    .Where(f => f.UserId == person.id && f.StatusId == 1 || f.FriendId == person.id && f.StatusId == 1)
+                //    .Select(f => f.UserId == person.id && f.StatusId == 1 ? f.FriendId : f.UserId)
+                //    .ToListAsync();
+                var friendIds = await _friendRepository.GetAll(person.id); //TODO: tesztelésre vár
+
+                //Formázás
+                string personName = person.middleName == "" ? person.firstName + " " + person.lastName : person.firstName + " " + person.middleName + " " + person.lastName;
+                string birthdayContent = personName + " ma ünnepli a születésnapját.";
+
+                foreach (var friend in friendIds)
+                {
+                    NotificationWithAvatarDto notification = new NotificationWithAvatarDto(friend.id, person.id, person.avatar, birthdayContent, NotificationType.Birthday);
+
+                    //Ha online a felhasználó akkor hubon keresztül értesítjük.
+                    await RealtimeNotification(friend.id, notification);
+
+                    await _notificationRepository.InsertAsync(notification);
+                    await _notificationRepository.SaveAsync();
+                }
+            }
+        }
+        
+        
+        public async Task SelectNotification()
+        {
+            var totalNotification = _notificationRepository.DeletableNotifications().Result;
+
+            if (totalNotification.Count() > 1)
+            {
+                await _notificationRepository.RemoveNotifications(totalNotification);
+                await _notificationRepository.SaveAsync();
             }
         }
 
-        public async Task RealtimeNotification(int toUserId, NotificationWithAvatarDto dto)
+        public async Task RealtimeNotification(int toUserId, NotificationWithAvatarDto dto) 
         {
-            //Get the userId from user table because in the token it is the reference id
-            var userId = _context.user.FirstOrDefault(_ => _.userID == toUserId).userID;
-
-            var connectionId = _connections.GetConnectionById(userId);
-            await _notificationHub.Clients.User(userId.ToString()).ReceiveNotification(userId, dto);
-        }
-
-        public bool userExists(int id)
-        {
-            return _context.user.Any(e => e.userID == id);
-        }
+            await _notificationHub.Clients.Client(_connections.GetConnectionById(toUserId)).ReceiveNotification(toUserId, dto);
+        }    
     }
 }

@@ -11,64 +11,60 @@ namespace KozoskodoAPI.Controllers
 {
     [ApiController]
     [Route("/api/[controller]")]
-    public class FriendController : ControllerBase, IFriendRepository
+    public class FriendController : ControllerBase
     {
-        private readonly DBContext _context;
+        private readonly IFriendRepository _friendRepository;
+        private readonly IPersonalRepository<Personal> _personalRepository;
+        private readonly INotificationRepository _notificationRepository;
         private readonly IHubContext<NotificationHub, INotificationClient> _notificationHub;
         private readonly IMapConnections _connections;
 
-        public FriendController(DBContext dbContext, IHubContext<NotificationHub, INotificationClient> hub, IMapConnections connections)
+        public FriendController(
+            IFriendRepository friendRepository,
+            IPersonalRepository<Personal> personalRepository,
+            INotificationRepository notificationRepository,
+            IHubContext<NotificationHub, INotificationClient> hub,
+            IMapConnections connections)
         {
-            _context = dbContext;
+            _friendRepository = friendRepository;
+            _personalRepository = personalRepository;
+            _notificationRepository = notificationRepository;
             _notificationHub = hub;
             _connections = connections;
         }
 
-        //For online status
+        /// <summary>
+        /// Tartalmazza az user táblát, ezt nem szabad vissza küldeni a kliensnek!
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
         public async Task<List<Personal>> GetAllFriend(int userId)
         {
-            var friends = await _context.Personal
-            .Where(p => _context.Friendship
-                .Where(f => f.FriendId == userId && f.StatusId == 1)
-                .Select(f => f.UserId)
-                .Union(_context.Friendship
-                    .Where(f => f.UserId == userId && f.StatusId == 1)
-                    .Select(f => f.FriendId)
-                )
-                .Contains(p.id)
-            )
-            .ToListAsync();
-
+            var friends = _friendRepository.GetAllFriendAsync(userId).Result.ToList();
             return friends;
         }
 
+        /// <summary>
+        /// Általános lekérdezésnek
+        /// </summary>
+        /// <param name="personalId"></param>
+        /// <param name="currentPage"></param>
+        /// <param name="qty"></param>
+        /// <returns></returns>
         [HttpGet("{personalId}/{currentPage}/{qty}")]
         public async Task<IActionResult> GetAll(int personalId, int currentPage = 1, int qty = 9)
         {
-            var user = await _context.Personal
-            .Where(p => _context.Friendship.Include(stat => stat.friendship_status)
-                .Where(f => f.FriendId == personalId && f.StatusId == 1)
-                .Select(f => f.UserId)
-                .Union(_context.Friendship
-                    .Where(f => f.UserId == personalId && f.StatusId == 1)
-                    .Select(f => f.FriendId)
-                )
-                .Contains(p.id)
-            )
-            .ToListAsync();
+            var users = await _friendRepository.GetAll(personalId);
+            var some = users?.Skip((currentPage - 1) * qty).Take(qty);
 
-            var sorted = user?.Skip((currentPage - 1) * qty).Take(qty);
-            return Ok(sorted);
-
+            return Ok(some);
         }
 
         [HttpPost("postFriendRequest")]
         public async Task<IActionResult> postFriendRequest(Notification notification)
         {
-            var requestedFromUser = await _context.Personal
-                .FirstOrDefaultAsync(_ => _.id == notification.SenderId);
-            var requestedUser = await _context.Personal.Include(n => n.Notifications)
-                .FirstOrDefaultAsync(_ => _.id == notification.ReceiverId);
+            var requestedFromUser = await _personalRepository.Get(notification.SenderId);
+            var requestedUser = await _personalRepository.Get(notification.ReceiverId);
 
             if (requestedUser != null)
             {
@@ -94,10 +90,10 @@ namespace KozoskodoAPI.Controllers
                 ////Ha nem létezik, létrehozunk egyet.
                 //else
                 //{
-                    notification.notificationContent = avatarDto.notificationContent;
-                    requestedUser?.Notifications?.Add(notification);
-                    await _context.SaveChangesAsync();
-                    avatarDto.notificationId = notification.notificationId;
+                notification.notificationContent = avatarDto.notificationContent;
+                requestedUser?.Notifications?.Add(notification);
+                await _friendRepository.SaveAsync();
+                avatarDto.notificationId = notification.notificationId;
                 //}
 
 
@@ -108,42 +104,54 @@ namespace KozoskodoAPI.Controllers
                     //Értesítés küldése az összes létező kapcsolat felé.
                     foreach (var item in AllUserConnection)
                     {
-                        //await _notificationHub.Clients.User(notification.personId.ToString()).ReceiveNotification(notification.personId, avatarDto);
-                        //await _notificationRepository.RealtimeNotification(notification.personId, avatarDto);
-                        //await _notificationHub.Clients.Client(item.Key).SendNotification(notification.personId, avatarDto);
                         await _notificationHub.Clients.Client(item.Key).ReceiveNotification(notification.ReceiverId, avatarDto);
                     }
                 }
+                return Ok("Success");
             }
-            return Ok("Success");
+            return NoContent();
         }
 
-        [HttpPut("add")] //if user accepts the request
+        [HttpPut("add")] //if user accepts or rejects the request
         public async Task<IActionResult> Put(Friend_notificationId friendship)
         {
-            var friendshipExist = _context.Friendship
-                .FirstOrDefault(friend => 
-                friend.FriendId == friendship.FriendId && friend.UserId == friendship.UserId ||
-                friend.FriendId == friendship.UserId && friend.UserId == friendship.FriendId);
+            var friendshipExist = _friendRepository.FriendshipExists(friendship);
 
-            if (friendshipExist == null || friendship.FriendId == friendship.UserId) {
+            if (friendshipExist == null || friendship.FriendId != friendship.UserId) { //Utóbbi feltétel azt vizsgálja, hogy ne tudja ismerősnek jelölni saját magát...
                 try
                 {
-
-                    friendship.FriendshipSince = DateTime.Now;
-                    _context.Friendship.Add(friendship);
-
-                    Notification? notificationModified = await _context.Notification.FindAsync(friendship.NotificationId);
+                    Notification? notificationModified = _notificationRepository.GetNotification(friendship).Result;
                     if (notificationModified != null)
                     {
                         notificationModified.isNew = false;
-                        notificationModified.notificationContent = "Mostantól ismerősök vagytok.";
-                        notificationModified.notificationType = NotificationType.FriendRequestAccepted;
-                        _context.Notification.Update(notificationModified);
                     }
 
-                    await _context.SaveChangesAsync();
-                    return Ok(notificationModified);
+                    if (friendship.StatusId == 1) //Baráti kérelem érkezett
+                    {
+                        await _friendRepository.Put(friendship);
+                        
+                        if (notificationModified != null)
+                        {
+                            notificationModified.notificationContent = "Mostantól ismerősök vagytok.";
+                            notificationModified.notificationType = NotificationType.FriendRequestAccepted;
+                            await _notificationRepository.Update(notificationModified);
+                        }
+                        await _friendRepository.SaveAsync();
+                        return Ok(notificationModified);
+                    }
+                    else if (friendship.StatusId == 4) //Baráti kérelem elutasítva
+                    {
+                        await _friendRepository.Delete(friendship);
+                        if (notificationModified != null)
+                        {
+                            notificationModified.notificationContent = "Ismerős kérelem elutasítva.";
+                            notificationModified.notificationType = NotificationType.FriendRequestReject;
+                            _notificationRepository.Update(notificationModified);
+                        }
+
+                        await _friendRepository.SaveAsync();
+                        return Ok(notificationModified);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -156,29 +164,21 @@ namespace KozoskodoAPI.Controllers
         [HttpDelete]
         public async Task<IActionResult> Delete(Friend request)
         {
-            var friendship = _context.Friendship.FirstOrDefault(
-                f => f.FriendId == request.FriendId && f.UserId == request.UserId ||
-                f.UserId == request.FriendId && f.FriendId == request.UserId);
-            _context.Friendship.Remove(friendship);
-            await _context.SaveChangesAsync();
-            return Ok("removed");
+            var friendship = _friendRepository.FriendshipExists(request);
+            if (friendship != null)
+            {
+                await _friendRepository.Delete(friendship.Result!);
+                await _friendRepository.SaveAsync();
+                return Ok("removed");
+            }
+            return NoContent();
         }
 
         [HttpGet("relation")]
-        public async Task<string> GetFamiliarityStatus(int userId, int viewerId)
+        public string GetFamiliarityStatus(int userId, int viewerId)
         {
-            if (userId == viewerId)
-            {
-                return "self";
-            }
-            var friendship = await _context.Friendship.FirstOrDefaultAsync(
-                f => f.FriendId == userId && f.UserId == viewerId ||
-                f.FriendId == viewerId && f.UserId == userId);
-            if (friendship != null)
-            {
-                return "friend";
-            }
-            return "nonfriend";
+            string friendship = _friendRepository.CheckIfUsersInRelation(userId, viewerId).Result;
+            return friendship;
         }
 
     }

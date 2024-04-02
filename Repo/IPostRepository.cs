@@ -2,8 +2,9 @@
 
 namespace KozoskodoAPI.Repo
 {
-    public interface IPostRepository
+    public interface IPostRepository<T1> : IHelperRepository<T1>
     {
-        Task<ContentDto<PostDto>> GetAllPost(int profileId, int userId, int currentPage = 1, int itemPerRequest = 10);
+        Task<List<PostDto>> GetAllPost(int profileId, int userId, int currentPage = 1, int itemPerRequest = 10);
+        Task<List<int>> GetCloserFriendIds(int userId);
     }
 }

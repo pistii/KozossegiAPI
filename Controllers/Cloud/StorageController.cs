@@ -123,6 +123,12 @@ namespace KozoskodoAPI.Controllers.Cloud
 
         public class FileUpload
     {
+        public FileUpload(string name, string type, IFormFile file)
+        {
+            this.Name = name;
+            this.Type = type;
+            this.File = file;
+        }
         public string? Name { get; set; }
         public string? Type { get; set; }
         public IFormFile? File { get; set; }
@@ -130,6 +136,10 @@ namespace KozoskodoAPI.Controllers.Cloud
 
     public class ImageUpload : FileUpload
     {
+        public ImageUpload(string name, string type, IFormFile file) : base(name, type, file)
+        {
+        }
+
         public int UserId { get; set; }
         public string Description { get; set; }
         public string ImageType { get; set; } // profile, social
@@ -143,16 +153,16 @@ namespace KozoskodoAPI.Controllers.Cloud
     {
         public int UserId { get; set; }
 
-        public AvatarUpload(int UserId, string Name, IFormFile File)
+        //public AvatarUpload(int UserId, string Name, IFormFile File)
+        //{
+        //    this.UserId = UserId;
+        //    this.Name = Name;
+        //    this.File = File;
+        //}
+
+        public AvatarUpload(int UserId, string name, string type, IFormFile file) : base(name, type, file)
         {
             this.UserId = UserId;
-            this.Name = Name;
-            this.File = File;
-        }
-
-        public AvatarUpload()
-        {
-            
         }
     }
 

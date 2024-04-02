@@ -7,6 +7,7 @@ using KozoskodoAPI.Realtime;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using KozoskodoAPI.Repo;
 
 namespace KozoskodoAPI.Controllers
 {
@@ -17,52 +18,45 @@ namespace KozoskodoAPI.Controllers
         public readonly DBContext _context;
         private readonly IHubContext<ChatHub, IChatClient> _chatHub;
         private readonly IMapConnections _connections;
+        private readonly IChatRepository<ChatRoom, Personal> _chatRepository;
+        private readonly IUserRepository<user> _userRepository;
 
         public ChatController(DBContext context,
           IHubContext<ChatHub, IChatClient> hub,
-          IMapConnections mapConnections) 
+          IMapConnections mapConnections,
+          IChatRepository<ChatRoom, Personal> chatRepository,
+          IUserRepository<user> userRepository) 
         {
             _context = context;
             _chatHub = hub;
             _connections = mapConnections;
+            _chatRepository = chatRepository;
+            _userRepository = userRepository;
         }
 
         [HttpGet("room/{id}")]
         public async Task<IActionResult> GetChatRoom(int id)
         {
-            var room = _context.ChatRoom.Find(id);
+            var room = _chatRepository.GetChatRoomById(id);
             if (room != null) { return Ok(room); }
             return BadRequest();
         }
 
         [HttpGet("chatRooms/{userId}")]
         [HttpGet("chatRooms/{userId}/{searchKey}")]
-        public async Task<List<KeyValuePair<ChatRoom, ChatRoomPersonAddedDto>>> GetAllChatRoom(
+        public async Task<IEnumerable<KeyValuePair<ChatRoom, ChatRoomPersonAddedDto>>> GetAllChatRoom(
             int userId, string? searchKey = null)
         {
-            var query = _context.ChatRoom
-                .Include(content => content.ChatContents
-                .OrderByDescending(c => c.sentDate)
-                .Take(20))
-                .Where(user => user.senderId == userId || user.receiverId == userId)
-                .OrderByDescending(_ => _.endedDateTime).AsQueryable();
+            var query = _chatRepository.GetAllChatRoomAsQuery(userId).Result;
             
             
             if (searchKey != null)
             {
                 query = query.Where(_ => _.ChatContents.Any(_ => _.message.ToLower().Contains(searchKey)));
             }
-            var all = await query.ToListAsync();
+            var all = query;
 
-            var partnerIds = all
-                .SelectMany(room => new[] { room.senderId, room.receiverId })
-                .Where(id => id != userId)
-                .Distinct()
-                .ToList();
-
-            var messagePartners = await _context.Personal
-                .Where(person => partnerIds.Contains(person.id))
-                .ToListAsync();
+            var messagePartners = _chatRepository.GetMessagePartnersById(all.ToList(), userId);
 
             var chatRooms = new List<KeyValuePair<ChatRoom, ChatRoomPersonAddedDto>>();
 
@@ -71,7 +65,7 @@ namespace KozoskodoAPI.Controllers
             {
                 var authorId = room.senderId == userId ? room.receiverId : room.senderId;
 
-                var messagePartner = messagePartners.FirstOrDefault(person => person.id == authorId);
+                var messagePartner = messagePartners.Result.FirstOrDefault(person => person.id == authorId);
 
                 if (messagePartner != null)
                 {
@@ -99,25 +93,20 @@ namespace KozoskodoAPI.Controllers
         int messagesPerPage = 20,
         int currentPage = 1)
         {
-            var room = _context.ChatRoom
-                .Where(r => r.chatRoomId == roomid);
+            var room = await _chatRepository.GetChatRoomById(roomid);
 
             if (room == null)
             {
                 return null;
             }
-            var sortedChatContents = await _context.ChatContent
-            .AsNoTracking()
-            .Where(content => content.chatContentId == roomid)
-            .OrderByDescending(content => content.sentDate)
-            .ToListAsync();
+            var sortedChatContents = _chatRepository.GetSortedEntities<ChatContent, DateTime?>(
+                content => content.sentDate,
+                content => content.chatContentId == roomid);
 
-            var totalMessages = sortedChatContents.Count;
+            var totalMessages = sortedChatContents.Count();
             var totalPages = (int)Math.Ceiling((double)totalMessages / messagesPerPage);
-
-            var returnValue = sortedChatContents
-            .Skip((currentPage - 1) * messagesPerPage)
-            .Take(messagesPerPage).ToList();
+            
+            var returnValue = _chatRepository.Paginator<ChatContent>(sortedChatContents.ToList(), currentPage, messagesPerPage).ToList();
 
             return new ContentDto<ChatContent>(returnValue, totalPages);
         }
@@ -133,7 +122,7 @@ namespace KozoskodoAPI.Controllers
                     message = chatDto.message,
                     status = chatDto.status,
                 };
-                ChatRoom room = ChatRoomExists(chatDto).Result;
+                ChatRoom room = _chatRepository.ChatRoomExists(chatDto).Result;
                 //Ha még nem létezik beszélgetés, készítsünk egyet....
                 if (room == null)
                 {
@@ -144,7 +133,7 @@ namespace KozoskodoAPI.Controllers
                 chatContent.AuthorId = chatDto.senderId;
                 chatContent.chatContentId = room.chatRoomId;
                 room.ChatContents.Add(chatContent);
-                await _context.SaveChangesAsync();
+                await _chatRepository.SaveAsync();
 
                 var senderId = chatDto.senderId;
                 var toUserId = chatDto.receiverId;
@@ -167,8 +156,9 @@ namespace KozoskodoAPI.Controllers
                 startedDateTime = DateTime.UtcNow,
                 endedDateTime = DateTime.UtcNow
             };
-            _context.ChatRoom.Add(room);
-            await _context.SaveChangesAsync();
+            //_context.ChatRoom.Add(room);
+            await _chatRepository.InsertAsync(room);
+            await _chatRepository.SaveAsync();
 
             //Create a junction table
             var personalChatRoom = new PersonalChatRoom
@@ -176,8 +166,9 @@ namespace KozoskodoAPI.Controllers
                 FK_PersonalId = chatDto.senderId,
                 FK_ChatRoomId = room.chatRoomId
             };
-            _context.PersonalChatRoom.Add(personalChatRoom);
-            await _context.SaveChangesAsync();
+            //_context.PersonalChatRoom.Add(personalChatRoom);
+            await _chatRepository.InsertAsync(personalChatRoom);
+            await _chatRepository.SaveAsync();
 
             return room;
         }
@@ -186,8 +177,9 @@ namespace KozoskodoAPI.Controllers
         [HttpPut("/update")]
         public async Task<IActionResult> UpdateMessage(int messageId, int updateToUser, Status status)
         {
-            var user = _context.user.FirstOrDefault(_ => _.userID == updateToUser);
-            var message = _context.ChatContent.Find(messageId);
+
+            var user = _userRepository.GetByIdAsync<user>(updateToUser);
+            var message = _chatRepository.GetByIdAsync<ChatContent>(messageId).Result;//_context.ChatContent.Find(messageId);
 
             if (message == null || user == null) { 
                 return BadRequest("Unable to find message or user, maybe it's deleted?"); 
@@ -195,38 +187,22 @@ namespace KozoskodoAPI.Controllers
             if (status == Status.Delivered)
             {
                 message.status = Status.Read;
-                _context.Entry(message).State = EntityState.Modified;
-                await _context.SaveChangesAsync();
-                await MarkAsSeen(message.MessageId, user.userID);
+                //_context.Entry(message).State = EntityState.Modified;
+                await _chatRepository.UpdateAsync(message);
+                await _chatRepository.SaveAsync();
                 return Ok("Látta");
             }
             return NoContent();
         }
 
-        public async Task MarkAsSeen(int messageId, int userId)
-        {
-            var connectionId = _connections.GetConnectionById(userId);
-            await _chatHub.Clients.Client(connectionId).SendStatusInfo(messageId, userId);
-        }
-
         public async Task RealtimeChatMessage(int fromUserId, int toUserId, string message)
         {
 
-            var userId = _context.user.FirstOrDefault(_ => _.userID == toUserId).userID; //Modified from personalID
-            var senderId = _context.user.FirstOrDefault(_ => _.userID == fromUserId).userID;//Modified from personalID
-            var connectionId = _connections.GetConnectionById(userId);
+            //var userId = _context.user.Any(_ => _.userID == toUserId); //Modified from personalID
+            //var senderId = _context.user.FirstOrDefault(_ => _.userID == fromUserId).userID;//Modified from personalID
+            var connectionId = _connections.GetConnectionById(toUserId);
 
             await _chatHub.Clients.Client(connectionId).ReceiveMessage(fromUserId, toUserId, message);
-        }
-
-
-        private async Task<ChatRoom> ChatRoomExists(ChatDto chatRoom)
-        {
-            var existingChatRoom = await _context.ChatRoom.Include(_ => _.ChatContents)
-                            .FirstOrDefaultAsync(room =>
-                        (room.senderId == chatRoom.senderId && room.receiverId == chatRoom.receiverId) ||
-                        (room.senderId == chatRoom.receiverId && room.receiverId == chatRoom.senderId));
-            return existingChatRoom;
         }
     }
 }

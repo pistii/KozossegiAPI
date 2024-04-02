@@ -1,5 +1,7 @@
 ﻿using KozoskodoAPI.Data;
+using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
+using KozoskodoAPI.Repo;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,13 +12,16 @@ namespace KozoskodoAPI.Controllers
     public class NavigationController : ControllerBase
     {
         private readonly DBContext _context;
-        public NavigationController(DBContext context)
+        private readonly IFriendRepository _friendRepository;
+
+        public NavigationController(DBContext context, IFriendRepository friendRepository)
         {
             _context = context;
+            _friendRepository = friendRepository;
         }
 
         [HttpGet("search/{userId}/{search}")]
-        public async Task<ActionResult<IEnumerable<Personal>>> Search(
+        public async Task<List<ProfilePageDto>> Search(
             int userId,
             int page = 1,
             int itemPerRequest = 25,
@@ -34,8 +39,17 @@ namespace KozoskodoAPI.Controllers
                 .AsQueryable();
 
             result = result.Skip((page - 1) * itemPerRequest).Take(itemPerRequest);
-            
-            return await result.ToListAsync();
+            var toSend = await result.ToListAsync();
+
+            var allFriend = await _friendRepository.GetAllFriendAsync(userId);
+
+            var relation = await result.Select(person => new ProfilePageDto()
+            {
+                PersonalInfo = person,
+                PublicityStatus = allFriend.Contains(person) ? "friend" : "non-friend"
+            }).ToListAsync();
+
+            return relation;
 
             //TODO: post tartalmak kigyűjtése amennyiben tartalmazza a keresési kulcsszót. a szűrés Vegye figyelembe hogy csak az ismerősök és a saját tartalmak között keressen, továbbá keverje a keresési eredményeket attól függően hogy mennyi eredményt talált a post és a személyek szűrésekor.
             /*
