@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KozoskodoAPI.Repo
 {
-    public class CommentRepository : HelperRepository<Comment>, ICommentRepository<Comment>
+    public class CommentRepository : GenericRepository<Comment>, ICommentRepository<Comment>
     {
         private readonly DBContext _context;
         public CommentRepository(DBContext context) : base(context)

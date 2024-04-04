@@ -1,12 +1,9 @@
 ﻿using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
-using KozosKodoAPI.Repo;
-using Microsoft.AspNetCore.Mvc;
-using System.Linq.Expressions;
 
 namespace KozoskodoAPI.Repo
 {
-    public interface IChatRepository<TChatRoom, TPersonal> : IHelperRepository<TChatRoom>
+    public interface IChatRepository<TChatRoom, TPersonal> : IGenericRepository<TChatRoom>
     {
         Task<TChatRoom> GetChatRoomById(int id);
         Task<IEnumerable<TChatRoom>> GetAllChatRoomAsQuery(int userId);

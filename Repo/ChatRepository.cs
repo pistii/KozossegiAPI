@@ -1,14 +1,11 @@
 ﻿using KozoskodoAPI.Data;
 using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
-using KozosKodoAPI.Repo;
-using Microsoft.AspNetCore.JsonPatch.Internal;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace KozoskodoAPI.Repo
 {
-    public class ChatRepository : HelperRepository<ChatContent>, IChatRepository<ChatRoom, Personal>
+    public class ChatRepository : GenericRepository<ChatContent>, IChatRepository<ChatRoom, Personal>
     {
         private readonly DBContext _context;
         public ChatRepository(DBContext context) : base(context)

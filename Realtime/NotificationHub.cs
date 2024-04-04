@@ -12,11 +12,13 @@ namespace KozoskodoAPI.Realtime
     public class NotificationHub : ConnectionHandler<INotificationClient>
     {
         private readonly ConnectionHandler<INotificationClient> _connectionHandler;
+        private readonly IMapConnections _connections;
 
         public NotificationHub(IJwtUtils utils, IMapConnections mapConnections, DBContext context)
         : base(utils, mapConnections, context) // Öröklés a szülőosztályból, meg kell hívni a konstruktorát
         {
             _connectionHandler = this; 
+            _connections = mapConnections;
         }
         #region Note if rebuilding the hub
         /*Note to me: The ChatHub cannot work with HttpContext, and because I've used custom jwt authentication and not the AspNetCore.Authorization the Authorize attribute only contained the user in the attribute part of the program and not in the HubCallerContext which is used by SignalR. So the solution for this was use two NuGet packages, this gave me the inspiration:
@@ -36,8 +38,22 @@ namespace KozoskodoAPI.Realtime
 
         public async Task ReceiveNotification(int userId, NotificationWithAvatarDto dto)
         {
-            await _connectionHandler.Clients.All.ReceiveNotification(userId, dto);
-            //await Clients.Client(_connections.GetConnectionById(userId)).ReceiveNotification(userId, dto);
+            foreach (var conn  in _connections.keyValuePairs)
+            {
+                if (conn.Value == userId)
+                {
+                    await Clients.Client(userId.ToString()).ReceiveNotification(userId, dto);
+                    await Clients.Client(_connections.GetConnectionById(userId)).ReceiveNotification(userId, dto);
+                }
+            }
+            //await _connectionHandler.Clients.Client(userId.ToString()).ReceiveNotification(userId, dto);
+
+        }
+
+
+        public async Task SendNotification(int toId, NotificationWithAvatarDto dto)
+        {
+            await Clients.Client(_connections.GetConnectionById(toId)).ReceiveNotification(toId, dto);
         }
     }
 }

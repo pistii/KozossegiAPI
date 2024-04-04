@@ -13,16 +13,20 @@ namespace KozoskodoAPI.Models
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column(TypeName = "int(11)")]
-        
-        public int FriendshipID { get; set; }
+        public int? FriendshipID { get; set; }
         [Column(TypeName = "int(11)")]
         public int UserId { get; set; }
         [Column(TypeName = "int(11)")]
         public int FriendId { get; set; }
         [Column(TypeName = "int(11)")]
-        public int StatusId { get; set; }
+        public int? StatusId { get; set; } //1= friends, 2 = nonFriend, 3 = Sent, 4 = Rejected
+        
+        public DateTime? FriendshipSince { get; set; }
+        public FriendshipStatus? friendship_status { get; set; }
+        [JsonIgnore]
         public virtual ICollection<Personal>? GetPersonals { get; set; } = new HashSet<Personal>();
-        public FriendshipStatus friendship_status { get; set; }
+
+        
     }
 
     /// <summary>

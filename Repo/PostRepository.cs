@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KozoskodoAPI.Repo
 {
-    public class PostRepository : HelperRepository<PostDto>, IPostRepository<PostDto>
+    public class PostRepository : GenericRepository<PostDto>, IPostRepository<PostDto>
     {
         private readonly DBContext _context;
         public PostRepository(DBContext context) : base(context)

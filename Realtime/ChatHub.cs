@@ -1,8 +1,11 @@
-﻿using KozoskodoAPI.Auth;
+﻿using Google.Protobuf.WellKnownTypes;
+using KozoskodoAPI.Auth;
 using KozoskodoAPI.Data;
 using KozoskodoAPI.Models;
 using KozoskodoAPI.Realtime.Connection;
 using KozoskodoAPI.Repo;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace KozoskodoAPI.Realtime
 {
@@ -39,15 +42,21 @@ namespace KozoskodoAPI.Realtime
         }
 
 
-        public async Task ReceiveOnlineFriends(int userId, List<Personal_IsOnlineDto> friends)
+        public async Task ReceiveOnlineFriends(int userId)
         {
             List<Personal_IsOnlineDto> onlineFriends = new List<Personal_IsOnlineDto>();
+            var friends = _friendRepo.GetAllFriendAsync(userId).Result;
+
             foreach (var friend in friends)
             {
-                if(_connections.ContainsUser(friend.id))
+                if (_connections.ContainsUser(friend.id))
                 {
-                    friend.isOnline = true;
-                    onlineFriends.Add(friend);
+                    //Ha engedélyezte az online státuszt                    
+                    if (friend.users.isOnlineEnabled)
+                    {
+                        Personal_IsOnlineDto dto = new Personal_IsOnlineDto(friend);
+                        onlineFriends.Add(dto);
+                    }
                 }
             }
 

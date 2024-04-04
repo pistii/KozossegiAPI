@@ -48,6 +48,10 @@ namespace KozoskodoAPI.DTOs
 
     public class CreatePostDto : FileUpload
     {
+        public CreatePostDto(string name, string type, IFormFile file) : base(name, type, file)
+        {
+        }
+
         public int SourceId { get; set; }
         public int userId { get; set; }
         public string postContent { get; set; }

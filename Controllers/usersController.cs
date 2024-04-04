@@ -15,6 +15,8 @@ using KozoskodoAPI.Controllers.Cloud;
 using Google.Api;
 using Newtonsoft.Json;
 using Bcry = BCrypt.Net.BCrypt;
+using System.Text.RegularExpressions;
+
 namespace KozoskodoAPI.Controllers
 {
     [ApiController]
@@ -74,12 +76,11 @@ namespace KozoskodoAPI.Controllers
                 return NotFound("Username or password is incorrect");
             }
 
-            var userData = _context.user.Include(x => x.personal).First(x => x.email == login.Email);
+            var userData = await _userRepository.GetUserByEmailAsync(login.Email);
             if (!BCrypt.Net.BCrypt.Verify(login.Password, userData.password))
             {
                 return BadRequest();
             }
-            //var personalInfo = await _context.Personal.FindAsync(userData.userID); //Modified from personalID
 
             var userId = userData.personal.id;
             var identity = new ClaimsIdentity(new[] {
@@ -96,7 +97,6 @@ namespace KozoskodoAPI.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
-            //var user = await _context.Personal.FindAsync(id);
             var user = await _userRepository.GetuserByIdAsync(id);
             if (user != null)
             {
@@ -108,8 +108,6 @@ namespace KozoskodoAPI.Controllers
         [HttpGet("profilePage/{profileToViewId}/{viewerUserId}")]
         public async Task<IActionResult> GetProfilePage(int profileToViewId, int viewerUserId)
         {
-
-            //var user = await _context.Personal.Include(p => p.Settings).Include(u => u.users).FirstOrDefaultAsync(p => p.id == profileToViewId);
             var user = _userRepository.GetPersonalWithSettingsAndUserAsync(profileToViewId).Result;
             const int REMINDER_OF_UNFULFILLED_PERSONAL_INFOS_IN_DAYS = 7;
             if (user != null)
@@ -170,7 +168,6 @@ namespace KozoskodoAPI.Controllers
         public async Task<IActionResult> TurnOffReminder(UserSettingsDTO dto)
         {
             var user = (user?)HttpContext.Items["User"];
-            //var personal = await _context.Personal.Include(s => s.Settings).FirstOrDefaultAsync(p => p.id == user.userID);
             var personal = await _userRepository.GetPersonalWithSettingsAndUserAsync(user.userID);
 
             var userSettings = personal.Settings;
@@ -180,13 +177,9 @@ namespace KozoskodoAPI.Controllers
                 userSettings.FK_UserId = user.userID;
                 userSettings.NextReminder = DateTime.Now.AddDays(1);
             }
-            
             userSettings.NextReminder.AddDays(dto.Days);
 
-            //_context.Settings.Update(userSettings);
-            //await _context.SaveChangesAsync();
             await _userRepository.InsertSaveAsync<Settings>(userSettings);
-
             return Ok("Next reminder: " + userSettings.NextReminder);
         }
 
@@ -197,7 +190,6 @@ namespace KozoskodoAPI.Controllers
 
             if (user != null && user.email != null)
             {
-                //user? userExistsByEmail = await _context.user.FirstOrDefaultAsync(u => u.email == user.email);
                 user? userExistsByEmail = await _userRepository.GetUserByEmailOrPassword(user.email);
                 if (userExistsByEmail != null)
                 {
@@ -209,8 +201,7 @@ namespace KozoskodoAPI.Controllers
                 //Guid: https://stackoverflow.com/a/4458925/16689442
                 Guid guid = Guid.NewGuid();
                 user.Guid = guid.ToString("N");
-                //_context.user.Add(newUser);
-                //await _context.SaveChangesAsync();
+
                 await _userRepository.InsertSaveAsync<user>(newUser);
 
                 var token = _jwtUtils.GenerateJwtToken(newUser); //TODO: generate 15min access tokens
@@ -238,10 +229,9 @@ namespace KozoskodoAPI.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ModifyUserInfo([FromForm] ModifyUserInfoDTO userInfoDTO)
         {
-
-            //user? user = await _context.user.Include(p => p.personal).Include(s => s.Studies).FirstOrDefaultAsync(p => p.userID == userInfoDTO.UserId);
             Personal? user = await _userRepository.GetPersonalWithSettingsAndUserAsync(userInfoDTO.UserId);
             bool emailOrPasswordChanged = false;
+            string emailValidationPattern = @"!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/";
 
             if (user != null)
             {//will be checked the values individually because the user can update one, or more info and don't want to change the non null values to null.
@@ -275,7 +265,8 @@ namespace KozoskodoAPI.Controllers
                 {
                     user.PlaceOfBirth = userInfoDTO.PlaceOfBirth;
                 }
-                if (!string.IsNullOrEmpty(userInfoDTO.EmailAddress))
+                if (!string.IsNullOrEmpty(userInfoDTO.EmailAddress) &&
+                        Regex.IsMatch(userInfoDTO.SecondaryEmailAddress, emailValidationPattern))
                 {
                     emailOrPasswordChanged = true;
                     user.users.email = userInfoDTO.EmailAddress;
@@ -283,7 +274,8 @@ namespace KozoskodoAPI.Controllers
                 if (!string.IsNullOrEmpty(userInfoDTO.SecondaryEmailAddress))
                 {
                     emailOrPasswordChanged = true;
-                    if (userInfoDTO.SecondaryEmailAddress != user.users.email) //Egyéb hibakezelésre nincs szükség, mivel a frontend elvégzi
+                    if (userInfoDTO.SecondaryEmailAddress != user.users.email && 
+                        Regex.IsMatch(userInfoDTO.SecondaryEmailAddress, emailValidationPattern))
                     {
                         user.users.SecondaryEmailAddress = userInfoDTO.SecondaryEmailAddress;
                     }
@@ -296,7 +288,7 @@ namespace KozoskodoAPI.Controllers
                 {
                     user.Workplace = userInfoDTO.Workplace;
                 }
-                if (!string.IsNullOrEmpty(userInfoDTO.Pass1) && !string.IsNullOrEmpty(userInfoDTO.Pass2) && userInfoDTO.Pass1 == userInfoDTO.Pass2)
+                if (!string.IsNullOrEmpty(userInfoDTO.Pass1) && !string.IsNullOrEmpty(userInfoDTO.Pass2) && userInfoDTO.Pass1 == userInfoDTO.Pass2 && userInfoDTO.Pass1.Length > 8) 
                 {
                     emailOrPasswordChanged = true;
                     user.users.password = Bcry.HashPassword(userInfoDTO.Pass1);
@@ -351,9 +343,7 @@ namespace KozoskodoAPI.Controllers
                     }
                 }
 
-                //_context.user.Update(user.users);
-                //await _context.SaveChangesAsync();
-                _userRepository.UpdateThenSaveAsync(user);
+                await _userRepository.UpdateThenSaveAsync(user);
 
                 return Ok(user.users);
             }
@@ -374,16 +364,12 @@ namespace KozoskodoAPI.Controllers
 
             if (user != null)
             {
-                //user? userExists = await _context.user.FirstOrDefaultAsync(u => u.email == user.email && u.password == user.password);
                 user? userExists = await _userRepository.GetUserByEmailOrPassword(user.email, user.password);
                 if (userExists != null && !userExists.isActivated)
                 {
                     userExists.isActivated = true;
-
-                    //await _context.SaveChangesAsync();
                     await _userRepository.SaveAsync();
                     return Ok(userExists); //Sikeres aktiválás
-
                 }
                 return NotFound(); // Már aktivált felhasználó
             }
@@ -402,7 +388,6 @@ namespace KozoskodoAPI.Controllers
             var ip = HttpContext.Connection.RemoteIpAddress.ToString();
             var decryptedEmail = _encodeDecode.Decrypt(dto.Data, "I love chocolate");
             int verificationCode = 123456;
-            //user? user = await _context.user.Include(p => p.personal).FirstOrDefaultAsync(user => user.email == decryptedEmail);
             user? user = await _userRepository.GetUserByEmailAsync(decryptedEmail);
             if (user != null)
             {
@@ -438,13 +423,10 @@ namespace KozoskodoAPI.Controllers
             var matchVercode = _verCodeCache.GetValue(verCode);
             if (!string.IsNullOrEmpty(matchVercode))
             {
-                //var user = await _context.user.FirstOrDefaultAsync(u => u.Guid == matchVercode);
                 var user = await _userRepository.GetByGuid(matchVercode);
                 if (user != null)
                 {
                     user.password = Bcry.HashPassword(verCode);
-                    //_context.user.Update(user);
-                    //await _context.SaveChangesAsync();
                     await _userRepository.InsertSaveAsync(user);
                     return Ok(dto);
                 }
@@ -464,8 +446,6 @@ namespace KozoskodoAPI.Controllers
                 if (user != null)
                 {
                     user.password = Bcry.HashPassword(form.Password1);
-                    //_context.user.Update(user);
-                    //await _context.SaveChangesAsync();
 
                     _verCodeCache.Remove(form.otpKey);
                     await _userRepository.UpdateThenSaveAsync(user);
@@ -480,7 +460,6 @@ namespace KozoskodoAPI.Controllers
         [AllowAnonymous] //TODO: IT'S IMPORTANT
         public async Task<IActionResult> RestrictUser(RestrictionDto data)
         {
-            //user? user = await _context.user.FindAsync(data.userId);
             user? user = await _userRepository.GetuserByIdAsync(data.userId);
             if (user != null)
             {
@@ -491,8 +470,6 @@ namespace KozoskodoAPI.Controllers
                     FK_StatusId = data.FK_StatusId
                 };
 
-                //_context.Restriction.Add(restriction);
-                //await _context.SaveChangesAsync();
                 await _userRepository.InsertSaveAsync<Restriction>(restriction);
                 
                 UserRestriction userRestriction = new UserRestriction()
@@ -501,8 +478,6 @@ namespace KozoskodoAPI.Controllers
                     UserId = user.userID
                 };
 
-                //_context.UserRestriction.Add(userRestriction);
-                //await _context.SaveChangesAsync();
                 await _userRepository.InsertSaveAsync<UserRestriction>(userRestriction);
                 return Ok();
             }
@@ -516,7 +491,6 @@ namespace KozoskodoAPI.Controllers
             {
                 return BadRequest();
             }
-            //_context.Entry(user).State = EntityState.Modified;
             try
             {
                 await _userRepository.UpdateThenSaveAsync(user);
@@ -534,7 +508,6 @@ namespace KozoskodoAPI.Controllers
         public async Task LogoutUser()
         {
             var user = (user?)HttpContext.Items["User"];
-            //var user = _context.user.FindAsync(userId.userID).Result;
             var userById = await _userRepository.GetByIdAsync<user>(user.userID);
             userById.LastOnline = DateTime.Now;
             return;
@@ -557,17 +530,13 @@ namespace KozoskodoAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            //var result = await _context.user.FindAsync(id);
             var result = await _userRepository.GetByIdAsync<user>(id);
             if (result == null)
             {
                 return NotFound();
             }
-            //_context.user.Remove(result);
-            //_context.SaveChangesAsync().Wait();
             await _userRepository.RemoveThenSaveAsync<user>(result);
             return Ok();
         }
-
     }
 }

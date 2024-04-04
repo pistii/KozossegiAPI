@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KozoskodoAPI.Repo
 {
-    public interface IFriendRepository : IHelperRepository<Friend>
+    public interface IFriendRepository : IGenericRepository<Friend>
     {
         Task<IEnumerable<Personal>> GetAll(int id);
         Task<IEnumerable<Personal>> GetAllFriendAsync(int id);

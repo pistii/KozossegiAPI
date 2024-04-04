@@ -8,7 +8,7 @@ using System.Collections;
 
 namespace KozoskodoAPI.Repo
 {
-    public class FriendRepository : HelperRepository<Friend>, IFriendRepository
+    public class FriendRepository : GenericRepository<Friend>, IFriendRepository
     {
         private readonly DBContext _context;
 

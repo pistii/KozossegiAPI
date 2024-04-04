@@ -15,18 +15,21 @@ namespace KozoskodoAPI.Auth
             _context = context;
         }
 
-        public AuthenticateResponse Authenticate(LoginDto login)
+        public async Task<AuthenticateResponse> Authenticate(LoginDto login)
         {
             //user? user = _context.user.Include(p => p.personal).FirstOrDefault(x => x.email == login.Email && x.password == login.Password);
-            var user = _context.user.Include(x => x.personal).First(x => x.email == login.Email);
-            bool pwIsCorrect = BCrypt.Net.BCrypt.Verify(login.Password, user.password);
-
-            if (user != null && pwIsCorrect)
+            var user = await _context.user.Include(x => x.personal).FirstOrDefaultAsync(x => x.email == login.Email);
+            if (user != null)
             {
-
-                var token = _jwtUtils.GenerateJwtToken(user);
-                return new AuthenticateResponse(user.personal!, token);
+                bool pwIsCorrect = BCrypt.Net.BCrypt.Verify(login.Password, user.password);
+                if (pwIsCorrect)
+                {
+                    var token = _jwtUtils.GenerateJwtToken(user);
+                    return new AuthenticateResponse(user.personal!, token);
+                }
+                return null;
             }
+            
             return null;
         }
     }

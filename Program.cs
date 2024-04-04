@@ -16,8 +16,8 @@ using KozoskodoAPI.SMTP;
 using KozoskodoAPI.SMTP.Storage;
 using KozoskodoAPI.Security;
 using KozoskodoAPI.Services;
-using Org.BouncyCastle.Tls;
-using System.ServiceProcess;
+using KozoskodoAPI.Models;
+using KozoskodoAPI.DTOs;
 
 namespace KozoskodoAPI
 {
@@ -31,9 +31,7 @@ namespace KozoskodoAPI
             services.AddDbContext<DBContext>(options =>
                 options.UseMySql(
                     builder.Configuration.GetConnectionString("MediaDB"),
-                    ServerVersion.Parse("10.4.6-mariadb"))
-                ); 
-
+                    ServerVersion.Parse("10.4.6-mariadb")));
 
             services.AddAuthentication(options =>
                 {
@@ -65,9 +63,12 @@ namespace KozoskodoAPI
             services.AddSingleton<IMapConnections,  ConnectionMapping>();
             services.AddScoped<StorageController>();
             services.AddScoped<IStorageController, StorageController>();
-            services.AddScoped<IFriendRepository, FriendController>();
-            services.AddScoped<IPostRepository, PostController>();
-            services.AddScoped<INotificationRepository, NotificationController>();
+            services.AddScoped<IFriendRepository, FriendRepository>();
+            services.AddScoped<IUserRepository<user>, UserRepository>();
+            services.AddScoped<IChatRepository<ChatRoom, Personal>, ChatRepository>();
+            services.AddScoped<IPostRepository<PostDto>, PostRepository>();
+            services.AddScoped<IPersonalRepository<Personal>, PersonalRepository>();
+            services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<IImageRepository, ImageController>();
             services.AddScoped<IMailSender, SendMail>();
             services.AddSingleton<IVerificationCodeCache, VerificationCodeCache>();

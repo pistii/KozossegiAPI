@@ -2,7 +2,7 @@
 
 namespace KozoskodoAPI.Repo
 {
-    public interface ICommentRepository<T> : IHelperRepository<T>
+    public interface ICommentRepository<T> : IGenericRepository<T>
     {
         Task<Post?> GetPostWithComments(int postId);
     }

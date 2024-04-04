@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KozoskodoAPI.Repo
 {
-    public class UserRepository : HelperRepository<user>, IUserRepository<user>
+    public class UserRepository : GenericRepository<user>, IUserRepository<user>
     {
         private readonly DBContext _dbContext;
         public UserRepository(DBContext context) : base(context)
@@ -57,7 +57,7 @@ namespace KozoskodoAPI.Repo
         }
 
         /// <summary>
-        /// Finds the user with the email
+        /// Finds the user with the email. Personal table included.
         /// </summary>
         /// <param name="email"></param>
         /// <param name="withPersonal"></param>

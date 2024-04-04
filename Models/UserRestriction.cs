@@ -1,5 +1,4 @@
-﻿using Azure;
-
+﻿
 namespace KozoskodoAPI.Models
 {
     public class UserRestriction

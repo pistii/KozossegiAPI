@@ -5,6 +5,6 @@ namespace KozoskodoAPI.Auth
 {
     public interface IJwtTokenManager
     {
-        AuthenticateResponse Authenticate(LoginDto login);
+        Task<AuthenticateResponse> Authenticate(LoginDto login);
     }
 }

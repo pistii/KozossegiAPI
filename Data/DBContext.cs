@@ -106,19 +106,20 @@ namespace KozoskodoAPI.Data
 
                 entity.HasMany(c => c.Notifications)
                     .WithOne(x => x.notification)
-                    .HasForeignKey(c => c.personId);
+                    .HasForeignKey(c => c.ReceiverId);
 
                 entity.HasMany(_ => _.PersonalChatRooms)
                     .WithOne(_ => _.PersonalRoom)
                     .HasForeignKey(_ => _.FK_PersonalId);
 
+
+                entity.HasOne(p => p.Settings)
+                    .WithOne(p => p.personal);
+
                 entity.HasOne(p => p.friends)
                     .WithMany(p => p.GetPersonals)
                     .HasForeignKey(p => p.id);
 
-                entity.HasOne(p => p.Settings)
-                    .WithOne(p => p.personal);
-                    
             });
 
             //1-1 kapcsolat a friend-friendshipStatus táblák között.

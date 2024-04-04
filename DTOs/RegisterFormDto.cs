@@ -9,10 +9,14 @@ namespace KozoskodoAPI.DTOs
     }
 
     /// <summary>
-    /// Dto to complete the registration. This could be used also with the settings
+    /// Dto to complete the registration. This could be used also with the settings modification
     /// </summary>
     public class ModifyUserInfoDTO : AvatarUpload
     {
+        public ModifyUserInfoDTO(int UserId, string name, string type, IFormFile file) : base(UserId, name, type, file)
+        {
+        }
+
         public string? firstName { get; set; }
         public string? middleName { get; set; }
         public string? lastName { get; set; }

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KozoskodoAPI.Repo
 {
-    public interface IUserRepository<T> : IHelperRepository<T>
+    public interface IUserRepository<T> : IGenericRepository<T>
     {
         Task<user?> GetuserByIdAsync(int id);
         Task<user> GetByGuid(string id);

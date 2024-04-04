@@ -44,11 +44,11 @@ namespace KozoskodoAPI.Models
         public string? PlaceOfBirth { get; set; }
 
         [StringLength(60)]
-        public string? Profession { get; set; }
+        public string? Profession { get; set; } = string.Empty;
 
         [StringLength(120)]
-        public string? Workplace { get; set; }
-        
+        public string? Workplace { get; set; } = string.Empty;
+
         [JsonIgnore]
         public virtual Friend? friends { get; set; }
         
@@ -71,10 +71,31 @@ namespace KozoskodoAPI.Models
         [JsonIgnore]
         public virtual Settings? Settings { get; set; }
 
+        //[JsonIgnore]
+        //[InverseProperty("GetPersonals")]
+        //public virtual ICollection<Friend>? Friends { get; set; } = new HashSet<Friend>();
     }
 
+    /// <summary>
+    /// Erre a táblára azért van szükség mert a user táblában kezelem az online státuszt, és az egyébként is kevésbé szükséges adatok elérését, de nincs szükség mindig az user táblát átadni. 
+    /// </summary>
     public partial class Personal_IsOnlineDto : Personal
     {
+        public Personal_IsOnlineDto(Personal user)
+        {
+            this.id = user.id;
+            this.firstName = user.firstName;
+            this.middleName = user.middleName;
+            this.lastName = user.lastName;
+            this.isMale = user.isMale;
+            this.PlaceOfResidence = user.PlaceOfResidence;
+            this.avatar = user.avatar;
+            this.phoneNumber = user.phoneNumber;
+            this.DateOfBirth = user.DateOfBirth;
+            this.PlaceOfBirth = user.PlaceOfBirth;
+            this.Profession = user.Profession;
+            this.Workplace = user.Workplace;
+        }
         public bool isOnline { get; set; } = false;
     }
 }

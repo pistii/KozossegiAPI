@@ -44,10 +44,13 @@ namespace KozoskodoAPI.Realtime.Connection
         {
             var userId = _connections.GetUserById(Context.ConnectionId); //(user?)HttpContext.Items["User"];
             var user = await _context.user.FirstOrDefaultAsync(p => p.userID == userId);
-            user.LastOnline = DateTime.Now;
-            await _context.SaveChangesAsync();
-
-            _connections.Remove(Context.ConnectionId);
+            if (user != null)
+            {
+                user.LastOnline = DateTime.Now;
+                await _context.SaveChangesAsync();
+                
+                _connections.Remove(Context.ConnectionId);
+            }
 
             await base.OnDisconnectedAsync(exception);
         }
