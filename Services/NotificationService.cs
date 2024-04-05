@@ -1,60 +1,69 @@
 ﻿
+using KozoskodoAPI.Controllers;
 using KozoskodoAPI.Data;
 using KozoskodoAPI.Models;
+using KozoskodoAPI.Repo;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Timers;
-using Timer = System.Timers.Timer;
+using System;
+using System;
+using System.Threading;
 
 namespace KozoskodoAPI.Services
 {
-    public class NotificationService
+    public class NotificationService : IHostedService, IDisposable
     {
-        private readonly DBContext _dbContext;
-        private readonly ITimerService _timerService;
-        public NotificationService(DBContext context, ITimerService timerService) {
-            _dbContext = context;
-            _timerService = timerService;
+        private readonly Timer _timer;
+        private readonly IServiceScopeFactory scopeFactory;
 
-            //DateTime now = DateTime.Now;
-            //DateTime nextMidnight = now.Date.AddDays(1);
-
-            _timerService.Elapsed += OnTimedEvent;
-
-            // Indítsd el a timert
-            _timerService.Start(TimeSpan.FromDays(1));
-
-            // Számoljuk ki a Timer indulási késleltetését az éjfélhez képest
-            //double delayMilliseconds = (nextMidnight - now).TotalMilliseconds;
-
-            //Timer timer = new Timer(delayMilliseconds);
-            //timer.Elapsed += OnTimedEvent;
-            //timer.AutoReset = true;
-            //timer.Enabled = true;
-        }
-
-
-        public async void OnTimedEvent(object sender, EventArgs e)
+        public NotificationService(IServiceScopeFactory scopeFactory)
         {
+            DateTime now = DateTime.Now;
+            DateTime scheduledTime = new DateTime(now.Year, now.Month, now.Day, 3, 0, 0, 0);
+            if (scheduledTime.Hour < now.Hour)
+            {
+                scheduledTime = scheduledTime.AddDays(1);
+            }
 
+            TimeSpan remaining = scheduledTime - now;
+            if (remaining <= TimeSpan.Zero)
+            {
+                scheduledTime.AddDays(1);
+                remaining = scheduledTime - now;
+            }
+
+            int dueTime = (int)remaining.TotalMilliseconds;
+            int period = 24 * 60 * 60 * 1000;
+
+            _timer = new Timer(DoWork, null, dueTime, period);
+            this.scopeFactory = scopeFactory;
         }
 
-        //public async void OnTimedEvent(object source, ElapsedEventArgs e)
-        //{
-        //    DateTime today = DateTime.Today;
-        //    var users =  await _dbContext.Personal.Where(u => u.DateOfBirth == DateOnly.FromDateTime(today)).ToListAsync();
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
 
-        //    foreach (var person in users)
-        //    {
-        //        if (person.DateOfBirth.Value.Month == today.Month && person.DateOfBirth.Value.Day == today.Day)
-        //        {
-        //            //TODO: értesítés elküldése az ismerősök számára
-        //        }
-        //    }
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            _timer?.Change(Timeout.Infinite, 0);
+            return Task.CompletedTask;
+        }
 
+        private async void DoWork(object state)
+        {
+            using (var scope = scopeFactory.CreateScope())
+            {
+                var repo = scope.ServiceProvider.GetRequiredService<INotificationRepository>();
 
-        //    // Állítsa be a következő indulási időpontot (24 óra múlva)
-        //    ((Timer)source).Interval = 24 * 60 * 60 * 1000;
-        //}
+                await repo.BirthdayNotification();
+                await repo.SelectNotification();
+            }
+        }
+
+        public void Dispose()
+        {
+            _timer?.Dispose();
+        }
     }
 }
