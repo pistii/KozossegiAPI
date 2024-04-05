@@ -1,6 +1,5 @@
 ﻿using KozoskodoAPI.Data;
 using KozoskodoAPI.Models;
-using KozosKodoAPI.Repo;
 using Microsoft.AspNetCore.JsonPatch.Internal;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

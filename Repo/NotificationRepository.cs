@@ -1,15 +1,15 @@
 ﻿using KozoskodoAPI.Data;
 using KozoskodoAPI.Models;
-using KozosKodoAPI.Repo;
+using KozoskodoAPI.Repo;
 using Microsoft.EntityFrameworkCore;
 
 namespace KozoskodoAPI.Repo
 {
-    public class NotificationRepository : INotificationRepository
+    public class NotificationRepository : GenericRepository<Notification>, INotificationRepository
     {
         private readonly DBContext _context;
 
-        public NotificationRepository(DBContext context)
+        public NotificationRepository(DBContext context) : base(context)
         {
             _context = context;
         }

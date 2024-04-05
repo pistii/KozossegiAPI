@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Private files
+./appsettings.json
+
 # User-specific files
 *.rsuser
 *.suo
@@ -361,5 +364,4 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/SMTP/SendMail.cs
 /firebase_key.json

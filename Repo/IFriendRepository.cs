@@ -1,6 +1,5 @@
 ﻿using KozoskodoAPI.Controllers;
 using KozoskodoAPI.Models;
-using KozosKodoAPI.Repo;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KozoskodoAPI.Repo

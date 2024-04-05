@@ -16,6 +16,7 @@ using Google.Api;
 using Newtonsoft.Json;
 using Bcry = BCrypt.Net.BCrypt;
 using System.Text.RegularExpressions;
+using KozossegiAPI.SMTP;
 
 namespace KozoskodoAPI.Controllers
 {
