@@ -9,6 +9,6 @@ namespace KozoskodoAPI.Repo
         Task<IEnumerable<TChatRoom>> GetAllChatRoomAsQuery(int userId);
         Task<IEnumerable<TPersonal>> GetMessagePartnersById(List<ChatRoom> partnerIds, int userId);
         Task<TChatRoom> ChatRoomExists(ChatDto chatRoom);
-
+        List<int> GetChatPartenterIds(int userId);
     }
 }

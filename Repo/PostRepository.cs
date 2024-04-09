@@ -22,7 +22,7 @@ namespace KozoskodoAPI.Repo
         /// <param name="currentPage"></param>
         /// <param name="itemPerRequest"></param>
         /// <returns>PostDto as post with the comments and the media content.</returns>
-        public async Task<List<PostDto>> GetAllPost(int profileId, int userId, int currentPage = 1, int itemPerRequest = 10)
+        public async Task<List<PostDto>> GetAllPost(int profileId, int userId)
         {
             var sortedItems = await _context.PersonalPost
                 .Include(p => p.Posts.MediaContents)
@@ -60,20 +60,6 @@ namespace KozoskodoAPI.Repo
             return sortedItems;
         }
 
-        /// <summary>
-        /// Send a notification to the closer friends.
-        // Collect all the ids the user talked with.
-        /// </summary>
-        /// <param name="userId"></param>
-        /// <returns></returns>
-        public async Task<List<int>> GetCloserFriendIds(int userId)
-        {
-            //Defined the closer status by checking the chat if the users used to chat with each other.
-            var closerFriends = _context.ChatRoom.Where(
-                u => u.senderId == userId || u.receiverId == userId)
-                        .Select(f => f.senderId == userId ? f.receiverId : f.senderId).ToList();
-            return closerFriends;
-        }
 
         public async Task<Post?> GetPostWithCommentsById(int postId)
         {

@@ -53,9 +53,12 @@ namespace KozoskodoAPI.Repo
             return existingChatRoom;
         }
 
-        public Task<int> GetTotalPages(List<ChatRoom> items, int itemPerRequest)
+        public List<int> GetChatPartenterIds(int userId)
         {
-            throw new NotImplementedException();
+            var chatPartners = _context.ChatRoom.Where(
+                u => u.senderId == userId || u.receiverId == userId)
+                        .Select(f => f.senderId == userId ? f.receiverId : f.senderId).ToList();
+            return chatPartners;
         }
     }
 }
