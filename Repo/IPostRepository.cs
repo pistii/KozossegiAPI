@@ -1,4 +1,5 @@
 ﻿using KozoskodoAPI.DTOs;
+using KozoskodoAPI.Models;
 
 namespace KozoskodoAPI.Repo
 {
@@ -6,5 +7,6 @@ namespace KozoskodoAPI.Repo
     {
         Task<List<PostDto>> GetAllPost(int profileId, int userId, int currentPage = 1, int itemPerRequest = 10);
         Task<List<int>> GetCloserFriendIds(int userId);
+        Task<Post?> GetPostWithCommentsById(int postId);
     }
 }

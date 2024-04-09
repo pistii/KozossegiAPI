@@ -74,5 +74,13 @@ namespace KozoskodoAPI.Repo
                         .Select(f => f.senderId == userId ? f.receiverId : f.senderId).ToList();
             return closerFriends;
         }
+
+        public async Task<Post?> GetPostWithCommentsById(int postId)
+        {
+            var post = await _context.Post
+                    .Include(p => p.PostComments)
+                    .FirstOrDefaultAsync(p => p.Id == postId);
+            return post;
+        }
     }
 }

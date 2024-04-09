@@ -11,8 +11,8 @@ namespace KozoskodoAPI.Controllers
     [Route("api/[controller]")]
     public class CommentController : ControllerBase
     {
-        private readonly ICommentRepository<Comment> _commentRepository;
-        public CommentController(ICommentRepository<Comment> commentRepository)
+        private readonly IPostRepository<Comment> _commentRepository;
+        public CommentController(IPostRepository<Comment> commentRepository)
         {
             _commentRepository = commentRepository;
         }
@@ -83,7 +83,7 @@ namespace KozoskodoAPI.Controllers
                     .Include(p => p.PostComments)
                     .FirstOrDefaultAsync(p => p.Id == comment.postId);
                 */
-                var post = _commentRepository.GetPostWithComments(comment.postId).Result;
+                var post = _commentRepository.GetPostWithCommentsById(comment.postId).Result;
 
                 var targetComment = post?.PostComments?.FirstOrDefault(item => item.commentId == id);
                 
