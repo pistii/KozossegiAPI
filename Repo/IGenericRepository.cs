@@ -22,7 +22,6 @@ namespace KozoskodoAPI.Repo
         Task RemoveAsync<T>(T entity) where T : class;
         Task RemoveThenSaveAsync<T>(T entity) where T : class;
         Task UpdateThenSaveAsync<T>(T entity) where T : class;
-        Task<int> GetTotalPages<T>(List<T> items, int itemPerRequest) where T : class;
-        string GetFullname(string first, string mid, string last);
+        Task<int> GetTotalPages(List<T> items, int itemPerRequest);
     }
 }
