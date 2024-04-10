@@ -1,6 +1,9 @@
 ﻿using KozoskodoAPI.Data;
 using KozoskodoAPI.Models;
+using KozoskodoAPI.Realtime;
+using KozoskodoAPI.Realtime.Connection;
 using KozoskodoAPI.Repo;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace KozoskodoAPI.Repo
@@ -8,40 +11,76 @@ namespace KozoskodoAPI.Repo
     public class NotificationRepository : GenericRepository<Notification>, INotificationRepository
     {
         private readonly DBContext _context;
+        private readonly IFriendRepository _friendRepository;
+        private readonly IHubContext<NotificationHub, INotificationClient> _notificationHub;
+        private readonly IMapConnections _connections;
 
-        public NotificationRepository(DBContext context) : base(context)
+        public NotificationRepository(DBContext context, 
+            IFriendRepository friendRepository, 
+            IHubContext<NotificationHub, INotificationClient> hub,
+            IMapConnections mapConnections) : base(context)
         {
+            _notificationHub = hub;
+            _connections = mapConnections;
             _context = context;
+            _friendRepository = friendRepository;
         }
 
-        public async Task<Notification> Get(int notificationId)
+
+        /// <summary>
+        /// Searches the users who celebrates the birthday and sends a notification to the user's friends.
+        /// </summary>
+        /// <returns></returns>
+        public async Task BirthdayNotification()
         {
-            return await _context.Notification
-                    .FirstOrDefaultAsync(x => x.notificationId == notificationId);
-        }
-        public Task BirthdayNotification()
-        {
-            throw new NotImplementedException();
+            var birthdayUsers = await _friendRepository.GetAllUserWhoHasBirthdayToday();
+
+            foreach (var person in birthdayUsers)
+            {
+                //Friend Id-k kigyűjtése. StatusId = 1: ha barátok
+                //var friendIds = await _context.Friendship
+                //    .Where(f => f.UserId == person.id && f.StatusId == 1 || f.FriendId == person.id && f.StatusId == 1)
+                //    .Select(f => f.UserId == person.id && f.StatusId == 1 ? f.FriendId : f.UserId)
+                //    .ToListAsync();
+                var friendIds = await _friendRepository.GetAll(person.id); //TODO: tesztelésre vár
+
+                //Formázás
+                string personName = _friendRepository.GetFullname(person.firstName, person.middleName, person.lastName);
+                string birthdayContent = personName + " ma ünnepli a születésnapját.";
+
+                foreach (var friend in friendIds)
+                {
+                    NotificationWithAvatarDto notification = new NotificationWithAvatarDto(friend.id, person.id, person.avatar, birthdayContent, NotificationType.Birthday);
+                    Notification insert = notification;
+                    await InsertSaveAsync(insert);
+                    //Ha online a felhasználó akkor hubon keresztül értesítjük.
+                    try
+                    {
+                        await RealtimeNotification(friend.id, notification);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine(ex);
+                    }
+                }
+            }
         }
 
-        public Task RealtimeNotification(int toUserId, NotificationWithAvatarDto dto)
+        public async Task RealtimeNotification(int toUserId, NotificationWithAvatarDto dto)
         {
-            throw new NotImplementedException();
+            if (_connections.ContainsUser(toUserId))
+                await _notificationHub.Clients.Client(_connections.GetConnectionById(toUserId)).ReceiveNotification(toUserId, dto);
         }
 
-        public Task SelectNotification()
+        public async Task SelectNotification()
         {
-            throw new NotImplementedException();
-        }
+            var totalNotification = await GetDeletableNotifications();
 
-        public async Task<Notification> GetNotification(Friend_notificationId friendship)
-        {
-            return await _context.Notification.FindAsync(friendship.NotificationId);
-        }
-
-        public async Task Update(Notification notification)
-        {
-            _context.Notification.Update(notification);
+            if (totalNotification.Count() > 1)
+            {
+                await RemoveNotifications(totalNotification);
+                await SaveAsync();
+            }
         }
 
         /// <summary>
@@ -60,43 +99,6 @@ namespace KozoskodoAPI.Repo
                 }).ToListAsync();
         }
 
-
-
-        public Task<List<Notification>> GetAllAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Notification> GetByIdAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> ExistsByIdAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task InsertAsync(Notification entity)
-        {
-            await _context.Notification.AddAsync(entity);
-        }
-
-        public Task UpdateAsync(int id, Notification entity)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task DeleteAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task SaveAsync()
-        {
-            await _context.SaveChangesAsync();
-        }
-
         public async Task RemoveNotifications(IEnumerable<Notification> entities)
         {
             _context.Notification.RemoveRange(entities);
@@ -106,7 +108,7 @@ namespace KozoskodoAPI.Repo
         /// deletes the notifications if older than 30 days. Runs in hosted services
         /// </summary>
         /// <returns></returns>
-        public async Task<List<Notification>> DeletableNotifications()
+        public async Task<IEnumerable<Notification>> GetDeletableNotifications()
         {
             DateTime now = DateTime.Now;
             var totalNotification = await _context.Notification.
@@ -117,9 +119,5 @@ namespace KozoskodoAPI.Repo
             return totalNotification;
         }
 
-        Task<IEnumerable<Notification>> INotificationRepository.DeletableNotifications()
-        {
-            throw new NotImplementedException();
-        }
     }
 }
