@@ -11,6 +11,8 @@ using System.Threading;
 
 namespace KozoskodoAPI.Services
 {
+    //Implementation based on:
+    //https://learn.microsoft.com/en-us/aspnet/core/fundamentals/host/hosted-services?view=aspnetcore-8.0&tabs=netcore-cli
     public class NotificationService : IHostedService, IDisposable
     {
         private readonly Timer _timer;
@@ -55,7 +57,7 @@ namespace KozoskodoAPI.Services
             using (var scope = scopeFactory.CreateScope())
             {
                 var repo = scope.ServiceProvider.GetRequiredService<INotificationRepository>();
-
+                
                 await repo.BirthdayNotification();
                 await repo.SelectNotification();
             }
