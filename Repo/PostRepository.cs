@@ -3,6 +3,7 @@ using KozoskodoAPI.Data;
 using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace KozoskodoAPI.Repo
 {
@@ -32,7 +33,7 @@ namespace KozoskodoAPI.Repo
                 .Select(p => new PostDto
                 {
                     PersonalPostId = p.personalPostId,
-                    FullName = $"{p.Personal_posts.firstName} {p.Personal_posts.middleName} {p.Personal_posts.lastName}",
+                    FullName = GetFullname(p.Personal_posts.firstName!, p.Personal_posts.middleName, p.Personal_posts.lastName!),
                     PostId = p.Posts.Id,
                     AuthorAvatar = p.Personal_posts.avatar!,
                     AuthorId = p.Personal_posts.id,
