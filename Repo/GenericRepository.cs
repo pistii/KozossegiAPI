@@ -36,14 +36,12 @@ namespace KozoskodoAPI.Repo
             return sortedEntities;
         }
 
-        public Task<int> GetTotalPages(List<T> items, int itemPerRequest)
+        public Task<int> GetTotalPages<T1>(List<T1> items, int itemPerRequest) where T1 : class
         {
             var totalItems = items.Count;
             var totalPages = (int)Math.Ceiling((double)totalItems / itemPerRequest);
             return Task.FromResult(totalPages);
         }
-
-
 
         public async Task SaveAsync()
         {
@@ -61,9 +59,9 @@ namespace KozoskodoAPI.Repo
             await SaveAsync();
         }
 
-        public async Task<T1> GetByIdAsync<T1>(int id) where T1 : class
+        public async Task<T?> GetByIdAsync<T>(int id) where T : class
         {
-            return await _context.Set<T1>().FindAsync(id);
+            return await _context.Set<T>().FindAsync(id);
         }
 
         public async Task UpdateAsync<T>(T entity) where T : class
@@ -92,6 +90,14 @@ namespace KozoskodoAPI.Repo
         {
             var exists = await _context.Set<T1>().FindAsync(entity);
             return exists != null ? true : false;
+        }
+
+
+        public string GetFullname(string first, string mid, string last)
+        {
+            if (string.IsNullOrEmpty(mid))
+                return $"{first} {last}";
+            return $"{first} {mid} {last}";
         }
     }
 }
