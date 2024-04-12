@@ -112,8 +112,9 @@ namespace KozoskodoAPI.Repo
         {
             DateTime now = DateTime.Now;
             var totalNotification = await _context.Notification.
-                Where(n => EF.Functions.DateDiffDay(n.createdAt, now) >= 30 ||
-                EF.Functions.DateDiffDay(n.createdAt, now) >= 1 && //Also delete the notification if it was sent yesterday to greet the user
+                Where(n => n.createdAt <= now.AddDays(-30) && n.notificationType != NotificationType.FriendRequest ||
+                //Also delete the notification if it was sent yesterday to greet the user
+                n.createdAt <= now.AddDays(-1) && 
                 n.notificationType == NotificationType.Birthday
                 ).ToListAsync();
             return totalNotification;
