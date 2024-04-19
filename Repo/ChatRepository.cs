@@ -24,6 +24,12 @@ namespace KozoskodoAPI.Repo
             return query;
         }
 
+        //For test only
+        public async Task<IQueryable<PersonalChatRoom?>> GetPersonalChatRoom()
+        {
+            var rooms = _context.PersonalChatRoom.Where(x => x.Id > 0);
+            return rooms;
+        }
         public async Task<IEnumerable<Personal>> GetMessagePartnersById(List<ChatRoom> all, int userId)
         {
             var partnerIds = all
@@ -40,7 +46,7 @@ namespace KozoskodoAPI.Repo
 
         public async Task<ChatRoom> GetChatRoomById(int id)
         {
-            var chatRoom = await _context.ChatRoom.FindAsync(id);
+            var chatRoom = await _context.ChatRoom.FirstOrDefaultAsync(r => r.chatRoomId == id);
             return chatRoom;
         }
 
@@ -59,6 +65,29 @@ namespace KozoskodoAPI.Repo
                 u => u.senderId == userId || u.receiverId == userId)
                         .Select(f => f.senderId == userId ? f.receiverId : f.senderId).ToList();
             return chatPartners;
+        }
+
+        public async Task<ChatRoom> CreateChatRoom(ChatDto chatDto)
+        {
+            ChatRoom room = new ChatRoom
+            {
+                senderId = chatDto.senderId,
+                receiverId = chatDto.receiverId,
+                startedDateTime = DateTime.UtcNow,
+                endedDateTime = DateTime.UtcNow
+            };
+            await InsertSaveAsync(room);
+
+            //Create a junction table
+            var personalChatRoom = new PersonalChatRoom
+            {
+                FK_PersonalId = chatDto.senderId,
+                FK_ChatRoomId = room.chatRoomId
+            };
+            //_context.PersonalChatRoom.Add(personalChatRoom);
+            await InsertSaveAsync(personalChatRoom);
+            
+            return room;
         }
     }
 }
