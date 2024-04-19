@@ -14,7 +14,7 @@ namespace KozoskodoAPI.Repo
         /// <typeparam name="T"></typeparam>
         /// <param name="id"></param>
         /// <returns></returns>
-        Task<T> GetByIdAsync<T>(int id) where T : class;
+        Task<T?> GetByIdAsync<T>(int id) where T : class;
         Task UpdateAsync<T>(T entity) where T : class;
         Task SaveAsync();
         Task<bool> ExistsAsync<T>(T entity) where T : class;
@@ -23,7 +23,5 @@ namespace KozoskodoAPI.Repo
         Task RemoveThenSaveAsync<T>(T entity) where T : class;
         Task UpdateThenSaveAsync<T>(T entity) where T : class;
         Task<int> GetTotalPages<T>(List<T> items, int itemPerRequest) where T : class;
-        string GetFullname(string first, string mid, string last);
-
     }
 }

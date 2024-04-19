@@ -91,13 +91,5 @@ namespace KozoskodoAPI.Repo
             var exists = await _context.Set<T1>().FindAsync(entity);
             return exists != null ? true : false;
         }
-
-
-        public string GetFullname(string first, string mid, string last)
-        {
-            if (string.IsNullOrEmpty(mid))
-                return $"{first} {last}";
-            return $"{first} {mid} {last}";
-        }
     }
 }
