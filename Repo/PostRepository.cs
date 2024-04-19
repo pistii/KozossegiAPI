@@ -2,6 +2,7 @@
 using KozoskodoAPI.Data;
 using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
+using KozossegiAPI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -10,9 +11,11 @@ namespace KozoskodoAPI.Repo
     public class PostRepository : GenericRepository<PostDto>, IPostRepository<PostDto>
     {
         private readonly DBContext _context;
+        private HelperService helperService;
         public PostRepository(DBContext context) : base(context)
         {
             _context = context;
+            helperService = new();
         }
 
         /// <summary>
@@ -33,7 +36,7 @@ namespace KozoskodoAPI.Repo
                 .Select(p => new PostDto
                 {
                     PersonalPostId = p.personalPostId,
-                    FullName = GetFullname(p.Personal_posts.firstName!, p.Personal_posts.middleName, p.Personal_posts.lastName!),
+                    FullName = helperService.GetFullname(p.Personal_posts.firstName!, p.Personal_posts.middleName, p.Personal_posts.lastName!), //p.Personal_posts.firstName! + " " + p.Personal_posts.middleName + " " + p.Personal_posts.lastName!, //TODO
                     PostId = p.Posts.Id,
                     AuthorAvatar = p.Personal_posts.avatar!,
                     AuthorId = p.Personal_posts.id,
@@ -55,7 +58,7 @@ namespace KozoskodoAPI.Repo
                         })
                         .ToList(),
                     MediaContents = p.Posts.MediaContents.ToList(),
-                    userReaction = _context.PostReaction.SingleOrDefault(u => p.Posts.Id == u.PostId && u.UserId == userId).ReactionType
+                    userReaction = _context.PostReaction.FirstOrDefault(u => p.Posts.Id == u.PostId && u.UserId == userId).ReactionType
                 })
                 .ToListAsync();
             return sortedItems;
