@@ -16,9 +16,10 @@ namespace KozoskodoAPI.Repo
             _context = context;
         }
 
-        public async Task<Friend?> GetByIdAsync(int id)
+        public async Task<Personal?> GetUserWithNotification(int userId)
         {
-            return await _context.Friendship.FirstOrDefaultAsync(f => f.UserId == id);
+            var user = await _context.Personal.Include(p => p.Notifications).FirstOrDefaultAsync(p => p.id == userId);
+            return user;
         }
 
         public async Task<IEnumerable<Personal>> GetAll(int id)
