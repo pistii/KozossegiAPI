@@ -11,9 +11,9 @@ namespace KozoskodoAPI.Models
             
         }
 
-        public Notification(int personId, int notificationFromId, NotificationType type)
+        public Notification(int receiverId, int notificationFromId, NotificationType type)
         {
-            this.ReceiverId = personId;
+            this.ReceiverId = receiverId;
             this.SenderId = notificationFromId;
             this.notificationType = type;
         }
