@@ -27,12 +27,5 @@ namespace KozoskodoAPI.Repo
                 .Where(_ => _.id != userId);
             return query;
         }
-
-        public async Task<Personal> Get(int id)
-        {
-            Personal? personal = await _context.Personal.FirstOrDefaultAsync(_ => _.id == id);
-            return personal;
-        }
-
     }
 }
