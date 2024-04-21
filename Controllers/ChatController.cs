@@ -147,32 +147,6 @@ namespace KozoskodoAPI.Controllers
             }
         }
 
-        public async Task<ChatRoom> CreateChatRoom(ChatDto chatDto)
-        {
-            ChatRoom room = new ChatRoom
-            {
-                senderId = chatDto.senderId,
-                receiverId = chatDto.receiverId,
-                startedDateTime = DateTime.UtcNow,
-                endedDateTime = DateTime.UtcNow
-            };
-            //_context.ChatRoom.Add(room);
-            await _chatRepository.InsertAsync(room);
-            await _chatRepository.SaveAsync();
-
-            //Create a junction table
-            var personalChatRoom = new PersonalChatRoom
-            {
-                FK_PersonalId = chatDto.senderId,
-                FK_ChatRoomId = room.chatRoomId
-            };
-            //_context.PersonalChatRoom.Add(personalChatRoom);
-            await _chatRepository.InsertAsync(personalChatRoom);
-            await _chatRepository.SaveAsync();
-
-            return room;
-        }
-
 
         [HttpPut("/update")]
         public async Task<IActionResult> UpdateMessage(int messageId, int updateToUser, Status status)
