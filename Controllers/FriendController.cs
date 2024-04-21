@@ -3,6 +3,7 @@ using KozoskodoAPI.Models;
 using KozoskodoAPI.Realtime;
 using KozoskodoAPI.Realtime.Connection;
 using KozoskodoAPI.Repo;
+using KozossegiAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,7 @@ namespace KozoskodoAPI.Controllers
         private readonly INotificationRepository _notificationRepository;
         private readonly IHubContext<NotificationHub, INotificationClient> _notificationHub;
         private readonly IMapConnections _connections;
+        private HelperService helperService;
 
         public FriendController(
             IFriendRepository friendRepository,
@@ -31,6 +33,8 @@ namespace KozoskodoAPI.Controllers
             _notificationRepository = notificationRepository;
             _notificationHub = hub;
             _connections = connections;
+
+            helperService = new();
         }
 
         /// <summary>
@@ -88,10 +92,10 @@ namespace KozoskodoAPI.Controllers
                 //Ha nem létezik, létrehozunk egyet.
                 else
                 {
-                notification.notificationContent = avatarDto.notificationContent;
-                requestedUser?.Notifications?.Add(notification);
-                await _friendRepository.SaveAsync();
-                avatarDto.notificationId = notification.notificationId;
+                    notification.notificationContent = avatarDto.notificationContent;
+                    requestedUser?.Notifications?.Add(notification);
+                    await _friendRepository.SaveAsync();
+                    avatarDto.notificationId = notification.notificationId;
                 }
 
 
