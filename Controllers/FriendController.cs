@@ -118,7 +118,8 @@ namespace KozoskodoAPI.Controllers
             if (friendshipExist == null || friendship.FriendId != friendship.UserId) { //Utóbbi feltétel azt vizsgálja, hogy ne tudja ismerősnek jelölni saját magát...
                 try
                 {
-                    Notification? notificationModified = _notificationRepository.GetNotification(friendship).Result;
+                    //Notification? notificationModified = _notificationRepository.GetNotification(friendship).Result;
+                    Notification? notificationModified = await _notificationRepository.GetByIdAsync<Notification>(friendship.NotificationId);
                     if (notificationModified != null)
                     {
                         notificationModified.isNew = false;
@@ -132,28 +133,28 @@ namespace KozoskodoAPI.Controllers
                         {
                             notificationModified.notificationContent = "Mostantól ismerősök vagytok.";
                             notificationModified.notificationType = NotificationType.FriendRequestAccepted;
-                            await _notificationRepository.Update(notificationModified);
+                            await _notificationRepository.UpdateAsync(notificationModified);
                         }
                         await _friendRepository.SaveAsync();
                         return Ok(notificationModified);
                     }
                     else if (friendship.StatusId == 4) //Baráti kérelem elutasítva
                     {
-                        await _friendRepository.Delete(friendship);
                         if (notificationModified != null)
                         {
                             notificationModified.notificationContent = "Ismerős kérelem elutasítva.";
                             notificationModified.notificationType = NotificationType.FriendRequestReject;
-                            _notificationRepository.Update(notificationModified);
+                            await _notificationRepository.UpdateAsync(notificationModified);
                         }
 
+                        await _friendRepository.Delete(friendship);
                         await _friendRepository.SaveAsync();
                         return Ok(notificationModified);
                     }
                 }
                 catch (Exception ex)
                 {
-                    return BadRequest(ex.Message);
+                    return BadRequest();
                 }
             }
             return NoContent();
