@@ -63,8 +63,8 @@ namespace KozoskodoAPI.Controllers
         [HttpPost("postFriendRequest")]
         public async Task<IActionResult> postFriendRequest(Notification notification)
         {
-            var requestedFromUser = await _personalRepository.Get(notification.SenderId);
-            var requestedUser = await _personalRepository.Get(notification.ReceiverId);
+            var requestedFromUser = await _personalRepository.GetByIdAsync<Personal>(notification.SenderId);
+            var requestedUser = await _friendRepository.GetUserWithNotification(notification.ReceiverId);
 
             if (requestedUser != null)
             {
@@ -75,26 +75,24 @@ namespace KozoskodoAPI.Controllers
                     notification.ReceiverId,
                     notification.SenderId,
                     requestedFromUser?.avatar,
-                    requestedFromUser!.firstName + " " + requestedFromUser.lastName + " ismerősnek jelölt.",
+                    helperService.GetFullname(requestedFromUser!.firstName, requestedFromUser.middleName, requestedFromUser!.lastName) + " ismerősnek jelölt.",
                     notification.notificationType);
 
-                //if (requestedUsersNotification != null)
-                //{
-                //    //Felülírja a korábbi értesítés dátumát és újként jelöljük meg, ha volt már az adott személytől
-                //    requestedUsersNotification.isNew = true;
-                //    requestedUsersNotification.createdAt = DateTime.Now;
-
-                //    _context.Notification.Update(requestedUsersNotification);
-                //    await _context.SaveChangesAsync();
-                //}
-                ////Ha nem létezik, létrehozunk egyet.
-                //else
-                //{
+                if (requestedUsersNotification != null)
+                {
+                    //Felülírja a korábbi értesítés dátumát és újként jelöljük meg, ha volt már az adott személytől
+                    requestedUsersNotification.isNew = true;
+                    requestedUsersNotification.createdAt = DateTime.Now;
+                    await _notificationRepository.UpdateThenSaveAsync<Notification>(requestedUsersNotification);
+                }
+                //Ha nem létezik, létrehozunk egyet.
+                else
+                {
                 notification.notificationContent = avatarDto.notificationContent;
                 requestedUser?.Notifications?.Add(notification);
                 await _friendRepository.SaveAsync();
                 avatarDto.notificationId = notification.notificationId;
-                //}
+                }
 
 
                 if (_connections.ContainsUser(notification.ReceiverId))
