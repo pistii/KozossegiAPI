@@ -163,10 +163,10 @@ namespace KozoskodoAPI.Controllers
         [HttpDelete]
         public async Task<IActionResult> Delete(Friend request)
         {
-            var friendship = _friendRepository.FriendshipExists(request);
+            var friendship = await _friendRepository.FriendshipExists(request);
             if (friendship != null)
             {
-                await _friendRepository.Delete(friendship.Result!);
+                await _friendRepository.Delete(friendship);
                 await _friendRepository.SaveAsync();
                 return Ok("removed");
             }
