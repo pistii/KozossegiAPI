@@ -10,10 +10,7 @@ using KozoskodoAPI.DTOs;
 
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using Microsoft.EntityFrameworkCore;
 using KozoskodoAPI.Controllers.Cloud;
-using Google.Api;
-using Newtonsoft.Json;
 using Bcry = BCrypt.Net.BCrypt;
 using System.Text.RegularExpressions;
 using KozossegiAPI.SMTP;
@@ -27,7 +24,6 @@ namespace KozoskodoAPI.Controllers
     {
         private readonly IJwtTokenManager _jwtTokenManager;
         private readonly IJwtUtils _jwtUtils;
-        private readonly DBContext _context;
 
         private readonly IFriendRepository _friendRepository;
 
@@ -50,13 +46,11 @@ namespace KozoskodoAPI.Controllers
 
             IMailSender mailSender,
             IVerificationCodeCache verCodeCache,
-            IEncodeDecode encodeDecode,
-            DBContext context
+            IEncodeDecode encodeDecode
             )
         {
             _jwtTokenManager = jwtTokenManager;
             _jwtUtils = jwtUtils;
-            _context = context;
             _friendRepository = friendRepository;
             _postRepository = postRepository;
             _imageRepository = imageRepository;
