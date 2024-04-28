@@ -29,8 +29,8 @@ namespace KozoskodoAPI.DTOs
         public string? Workplace { get; set; }
         public string? SchoolName { get; set; }
         public string? Class { get; set; }
-        public string? StartYear { get; set; }
-        public string? EndYear { get; set; }
+        public int? StartYear { get; set; }
+        public int? EndYear { get; set; }
         public bool isOnline { get; set; }
         public string? Pass1 { get; set; }
         public string? Pass2 { get; set; }

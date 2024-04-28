@@ -255,7 +255,7 @@ namespace KozoskodoAPI.Controllers
                     user.PlaceOfBirth = userInfoDTO.PlaceOfBirth;
                 }
                 if (!string.IsNullOrEmpty(userInfoDTO.EmailAddress) &&
-                        Regex.IsMatch(userInfoDTO.SecondaryEmailAddress, emailValidationPattern))
+                        Regex.IsMatch(userInfoDTO.EmailAddress, emailValidationPattern))
                 {
                     emailOrPasswordChanged = true;
                     user.users.email = userInfoDTO.EmailAddress;
@@ -308,11 +308,11 @@ namespace KozoskodoAPI.Controllers
                     
                     if (user.users.Studies == null)
                     {
-                        Studies newStudy = new Studies(user.id, userInfoDTO.SchoolName, userInfoDTO.Class, DateOnly.Parse(userInfoDTO.StartYear ?? null), DateOnly.Parse(userInfoDTO.EndYear ?? null));
-                        await _context.Studies.AddAsync(newStudy);
+                        Studies newStudy = new Studies(user.id, userInfoDTO.SchoolName, userInfoDTO.Class, userInfoDTO.StartYear, userInfoDTO.EndYear);
+                        await _userRepository.InsertAsync(newStudy);
                     } else
                     {
-                        var userStudy = await _context.Studies.FirstOrDefaultAsync(s => s.FK_UserId == user.id);
+                        var userStudy = await _userRepository.GetByIdAsync<Studies>(user.id); //await _context.Studies.FirstOrDefaultAsync(s => s.FK_UserId == user.id);
                         if (!string.IsNullOrEmpty(userInfoDTO.SchoolName))
                         {
                             userStudy.SchoolName = userInfoDTO.SchoolName;
@@ -321,14 +321,23 @@ namespace KozoskodoAPI.Controllers
                         {
                             userStudy.Class = userInfoDTO.Class;
                         }
+                        if (userInfoDTO.StartYear != null || userInfoDTO.EndYear != null)
+                        {
+                            if (userInfoDTO.StartYear < DateTime.Now.Year - 100 ||
+                                userInfoDTO.EndYear < DateTime.Now.Year - 100) 
+                                return BadRequest("Invalid school year");
+                            else
+                            {
                         if (userInfoDTO.StartYear != null)
                         {
-                            userStudy.StartYear = DateOnly.Parse(userInfoDTO.StartYear ?? null);
+                                    userStudy.StartYear = userInfoDTO.StartYear;
                         }
                         if (userInfoDTO.EndYear != null)
                         {
-                            userStudy.EndYear = DateOnly.Parse(userInfoDTO.EndYear ?? null);
+                                    userStudy.EndYear = userInfoDTO.EndYear;
                         }
+                    }
+                }
                     }
                 }
 

@@ -13,17 +13,22 @@ namespace KozoskodoAPI.Models
         public string? SchoolName { get; set; }
         [StringLength(120)]
         public string? Class { get; set; }
-        public DateOnly? StartYear { get; set; }
-        public DateOnly? EndYear { get; set; }
+        public int? StartYear { get; set; }
+        public int? EndYear { get; set; }
         public virtual user user { get; }
 
-        public Studies(int FK_UserId, string? SchoolName, string? Class, DateOnly? StartYear, DateOnly? EndYear)
+        public Studies(int FK_UserId, string? SchoolName, string? Class, int? StartYear, int? EndYear)
         {
             this.FK_UserId = FK_UserId;
             this.SchoolName = SchoolName;
             this.Class = Class;
             this.StartYear = StartYear;
             this.EndYear = EndYear;
+        }
+
+        public Studies()
+        {
+            
         }
     }
 }
