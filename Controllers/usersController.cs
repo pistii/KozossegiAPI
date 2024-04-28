@@ -71,13 +71,7 @@ namespace KozoskodoAPI.Controllers
                 return NotFound("Username or password is incorrect");
             }
 
-            var userData = await _userRepository.GetUserByEmailAsync(login.Email);
-            if (!BCrypt.Net.BCrypt.Verify(login.Password, userData.password))
-            {
-                return BadRequest();
-            }
-
-            var userId = userData.personal.id;
+            var userId = response.personal.id;
             var identity = new ClaimsIdentity(new[] {
                 new Claim(ClaimTypes.Name, login.Email),
                 new Claim(ClaimTypes.GivenName, "A user"),
