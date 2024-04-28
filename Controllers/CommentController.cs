@@ -20,7 +20,6 @@ namespace KozoskodoAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Comment>> Get(int id)
         {
-            //var res = await _context.Comment.FindAsync(id);
             var res = _commentRepository.GetByIdAsync<Comment>(id).Result;
             if (res != null)
             {
@@ -36,8 +35,6 @@ namespace KozoskodoAPI.Controllers
         {
             try
             {
-                //var user = await _context.Personal.FindAsync(comment.commenterId);
-                //var post = await _context.Post.FirstOrDefaultAsync(c => c.Id == comment.postId);
                 var user = _commentRepository.GetByIdAsync<Personal>(comment.commenterId).Result;
                 var post = _commentRepository.GetByIdAsync<Post>(comment.postId).Result;
 
@@ -47,8 +44,6 @@ namespace KozoskodoAPI.Controllers
                 newComment.CommentDate = DateTime.UtcNow;
                 newComment.CommentText = comment.commentTxt;
 
-                //_context.Comment.Add(newComment);
-                //await _context.SaveChangesAsync();
                 await _commentRepository.InsertSaveAsync(newComment);
                 return Ok(newComment);
             }
@@ -62,12 +57,9 @@ namespace KozoskodoAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            //Comment? comment = await _context.Comment.FindAsync(id);
             Comment? comment = await _commentRepository.GetByIdAsync<Comment>(id);
             if (comment == null) return NotFound();
             
-            //_context.Comment.Remove(comment);
-            //await _context.SaveChangesAsync();
             await _commentRepository.RemoveThenSaveAsync(comment);
             return Ok();
         }
@@ -78,11 +70,6 @@ namespace KozoskodoAPI.Controllers
         {
             try
             {
-                /*
-                 * var post = await _context.Post
-                    .Include(p => p.PostComments)
-                    .FirstOrDefaultAsync(p => p.Id == comment.postId);
-                */
                 var post = _commentRepository.GetPostWithCommentsById(comment.postId).Result;
 
                 var targetComment = post?.PostComments?.FirstOrDefault(item => item.commentId == id);
@@ -92,8 +79,6 @@ namespace KozoskodoAPI.Controllers
                 targetComment.CommentDate = DateTime.UtcNow;
                 targetComment.CommentText = comment.commentTxt;
 
-                //_context.Entry(targetComment).State = EntityState.Modified;
-                //await _context.SaveChangesAsync();
                 await _commentRepository.UpdateThenSaveAsync(targetComment);
 
                 return Ok();
