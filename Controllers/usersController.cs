@@ -345,11 +345,9 @@ namespace KozoskodoAPI.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("Validate")]
-        public async Task<IActionResult> ValidateToken()
+        public async Task<IActionResult> ActivateUser()
         {
-
             var user = (user?)HttpContext.Items["User"]; //Get the user from headers
-
 
             if (user != null)
             {
@@ -357,7 +355,7 @@ namespace KozoskodoAPI.Controllers
                 if (userExists != null && !userExists.isActivated)
                 {
                     userExists.isActivated = true;
-                    await _userRepository.SaveAsync();
+                    await _userRepository.UpdateThenSaveAsync(userExists);
                     return Ok(userExists); //Sikeres aktiválás
                 }
                 return NotFound(); // Már aktivált felhasználó
