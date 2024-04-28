@@ -97,17 +97,17 @@ namespace KozoskodoAPI.Controllers
         [HttpGet("profilePage/{profileToViewId}/{viewerUserId}")]
         public async Task<IActionResult> GetProfilePage(int profileToViewId, int viewerUserId)
         {
-            var user = _userRepository.GetPersonalWithSettingsAndUserAsync(profileToViewId).Result;
+            var user = await _userRepository.GetPersonalWithSettingsAndUserAsync(profileToViewId);
             const int REMINDER_OF_UNFULFILLED_PERSONAL_INFOS_IN_DAYS = 7;
             if (user != null)
             {
                 try
                 {
                     PostController postController = new(_postRepository);
-                    var posts = postController.GetAllPost(profileToViewId, viewerUserId, 1).Result;
+                    var posts = await postController.GetAllPost(profileToViewId, viewerUserId, 1);
 
-                    var friends = _friendRepository.GetAll(profileToViewId).Result;
-                    var familiarityStatus = _friendRepository.CheckIfUsersInRelation(profileToViewId, viewerUserId).Result;
+                    var friends = await _friendRepository.GetAll(profileToViewId);
+                    var familiarityStatus = await _friendRepository.CheckIfUsersInRelation(profileToViewId, viewerUserId);
                     bool reminduser = false;
 
                     if (familiarityStatus == "self" && user.users.LastOnline.Year == 1 || //If first login
