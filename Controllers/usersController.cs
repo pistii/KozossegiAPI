@@ -174,15 +174,15 @@ namespace KozoskodoAPI.Controllers
 
         [HttpPost("Signup")]
         [AllowAnonymous]
-        public async Task<ActionResult<user>> SignUp(RegisterForm user)
+        public async Task<IActionResult> SignUp(RegisterForm user)
         {
 
             if (user != null && user.email != null)
             {
-                user? userExistsByEmail = await _userRepository.GetUserByEmailOrPassword(user.email);
-                if (userExistsByEmail != null)
+                user? userExistsByEmail = await _userRepository.GetUserByEmailAsync(user.email);
+                if (userExistsByEmail == null)
                 {
-                    return Ok("used email");
+                    return BadRequest("used email");
                 }
 
                 user newUser = user;
