@@ -18,6 +18,10 @@ using KozoskodoAPI.Security;
 using KozoskodoAPI.Services;
 using KozoskodoAPI.Models;
 using KozoskodoAPI.DTOs;
+using KozossegiAPI.SMTP;
+using System.Configuration;
+using KozossegiAPI.Services;
+using KozossegiAPI.Controllers.Cloud;
 
 namespace KozoskodoAPI
 {
@@ -67,7 +71,8 @@ namespace KozoskodoAPI
             services.AddScoped<IUserRepository<user>, UserRepository>();
             services.AddScoped<IChatRepository<ChatRoom, Personal>, ChatRepository>();
             services.AddScoped<IPostRepository<PostDto>, PostRepository>();
-            services.AddScoped<IPersonalRepository<Personal>, PersonalRepository>();
+            services.AddScoped<IPostRepository<Comment>, PostRepository>();
+            services.AddScoped<IPersonalRepository, PersonalRepository>();
             services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<IImageRepository, ImageController>();
             services.AddScoped<IMailSender, SendMail>();
@@ -79,6 +84,8 @@ namespace KozoskodoAPI
             services.AddMemoryCache();
 
             services.AddHttpContextAccessor();
+
+            services.AddMvc();
 
             services.AddSignalR(options =>
             {
