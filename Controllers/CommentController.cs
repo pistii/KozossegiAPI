@@ -62,25 +62,20 @@ namespace KozoskodoAPI.Controllers
         [HttpPut("modify/{id}")]
         public async Task<IActionResult> Put(int id, NewCommentDto comment)
         {
-            try
-            {
-                var post = _commentRepository.GetPostWithCommentsById(comment.postId).Result;
+            //var post = await _commentRepository.GetPostWithCommentsById(comment.postId);
 
-                var targetComment = post?.PostComments?.FirstOrDefault(item => item.commentId == id);
+            //var targetComment = post?.PostComments?.FirstOrDefault(item => item.commentId == id);
                 
+            var targetComment = await _commentRepository.GetByIdAsync<Comment>(comment.CommentId);
                 if (targetComment == null) return NotFound();
                 
-                targetComment.CommentDate = DateTime.UtcNow;
+            targetComment.CommentDate = DateTime.Now;
                 targetComment.CommentText = comment.commentTxt;
 
                 await _commentRepository.UpdateThenSaveAsync(targetComment);
 
                 return Ok();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            
         }
 
         //TODO: Do the post like/dislike function
