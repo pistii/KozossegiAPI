@@ -36,23 +36,23 @@ namespace KozoskodoAPI.Controllers
         }
 
         [HttpGet("notificationRead/{notificationId}")]
-        public async Task<IActionResult> NotificationReaded(int notificationId)
+        public async Task<IActionResult> NotificationRead(int notificationId)
         {
+            //The method is called when the user clicks on a notification, and marks it as not a new one.
             try
             {
                 var result = await _notificationRepository.GetByIdAsync<Notification>(notificationId);
                 if (result.isNew)
                 {
                     result.isNew = false;
-                    await _notificationRepository.UpdateAsync(result);
-                    await _notificationRepository.SaveAsync();
-                    return Ok(result);
+                    await _notificationRepository.UpdateThenSaveAsync(result);
+                    return Ok();
                 }
                 return NoContent();
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest();
             }
         }
     }
