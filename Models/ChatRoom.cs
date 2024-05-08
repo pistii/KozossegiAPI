@@ -15,7 +15,7 @@ namespace KozoskodoAPI.Models
         public int senderId { get; set; }
         public int receiverId { get; set; }
         public DateTime? startedDateTime { get; set; } 
-        public DateTime? endedDateTime { get; set; } = DateTime.UtcNow;
+        public DateTime? endedDateTime { get; set; } = DateTime.Now;
 
         public virtual ICollection<ChatContent> ChatContents { get; set; } = new HashSet<ChatContent>();
 

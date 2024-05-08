@@ -32,7 +32,7 @@ namespace KozoskodoAPI.Auth
             {
                 Subject = new ClaimsIdentity(new[] { new Claim("userId", user.userID.ToString())
                 }),
-                Expires = DateTime.UtcNow.AddDays(15),
+                Expires = DateTime.Now.AddDays(15),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 

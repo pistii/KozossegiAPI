@@ -73,8 +73,8 @@ namespace KozoskodoAPI.Repo
             {
                 senderId = chatDto.senderId,
                 receiverId = chatDto.receiverId,
-                startedDateTime = DateTime.UtcNow,
-                endedDateTime = DateTime.UtcNow
+                startedDateTime = DateTime.Now,
+                endedDateTime = DateTime.Now
             };
             await InsertSaveAsync(room);
 
