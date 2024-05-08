@@ -24,13 +24,13 @@ namespace KozoskodoAPI.Controllers
         {
             var notifications = await _notificationRepository.GetAll_PersonNotifications(userId);
 
-            if (notifications == null) return null;
+            if (notifications == null) 
+                return null;
 
-            var few = notifications.OrderByDescending(item => item.createdAt)
-                .Skip((currentPage - 1) * itemPerRequest)
-                .Take(itemPerRequest);
+            var few = _notificationRepository.Paginator<NotificationWithAvatarDto>(notifications, currentPage, itemPerRequest);
             
-            if (notifications.Count > 0) return Ok(few);
+            if (notifications.Count > 0) 
+                return Ok(few);
             
             return NotFound();
         }
