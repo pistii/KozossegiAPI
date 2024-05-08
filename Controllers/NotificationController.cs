@@ -1,15 +1,8 @@
-﻿using Humanizer;
-using KozoskodoAPI.Data;
-using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
 using KozoskodoAPI.Realtime;
 using KozoskodoAPI.Realtime.Connection;
 using KozoskodoAPI.Repo;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
-using System;
 
 namespace KozoskodoAPI.Controllers
 {
@@ -18,14 +11,11 @@ namespace KozoskodoAPI.Controllers
     public class NotificationController : ControllerBase
     {
         private readonly INotificationRepository _notificationRepository;
-        private readonly IFriendRepository _friendRepository;
 
         public NotificationController(
-          INotificationRepository notificationRepository,
-          IFriendRepository friendRepository)
+          INotificationRepository notificationRepository)
         {
             _notificationRepository = notificationRepository;
-            _friendRepository = friendRepository;
         }
 
         [HttpGet("{userId}/{currentPage}")]
