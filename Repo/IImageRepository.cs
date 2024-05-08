@@ -1,6 +1,7 @@
 ﻿using KozoskodoAPI.Controllers;
 using KozoskodoAPI.Controllers.Cloud;
 using KozoskodoAPI.DTOs;
+using KozossegiAPI.Models.Cloud;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KozoskodoAPI.Repo

@@ -1,6 +1,9 @@
 ﻿using Google.Cloud.Storage.V1;
 using KozoskodoAPI.Data;
 using KozoskodoAPI.Models;
+using KozossegiAPI.Controllers.Cloud;
+using KozossegiAPI.Controllers.Cloud.Helpers;
+using KozossegiAPI.Models.Cloud;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Owin.Security.Provider;
