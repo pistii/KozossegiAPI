@@ -31,27 +31,21 @@ namespace KozoskodoAPI.Controllers
         //Searches the post by Id and adds a comment for it
         [HttpPost]
         [Route("newComment")]
-        public async Task<ActionResult> PostMethod(NewCommentDto comment)
+        public async Task<IActionResult> Post(NewCommentDto comment)
         {
-            try
-            {
-                var user = _commentRepository.GetByIdAsync<Personal>(comment.commenterId).Result;
-                var post = _commentRepository.GetByIdAsync<Post>(comment.postId).Result;
+            var user = await _commentRepository.GetByIdAsync<Personal>(comment.commenterId);
+            var post = await _commentRepository.GetByIdAsync<Post>(comment.postId);
+            if (user == null || post == null) return NotFound();
 
                 Comment newComment = new Comment();
                 newComment.PostId = post.Id;
                 newComment.FK_AuthorId = user.id;
-                newComment.CommentDate = DateTime.UtcNow;
+            newComment.CommentDate = DateTime.Now;
                 newComment.CommentText = comment.commentTxt;
 
-                await _commentRepository.InsertSaveAsync(newComment);
+            await _commentRepository.InsertSaveAsync<Comment>(newComment);
                 return Ok(newComment);
             }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
 
         //Delete a comment
         [HttpDelete("{id}")]
