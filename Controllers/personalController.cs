@@ -14,9 +14,9 @@ namespace KozoskodoAPI.Controllers
     [Route("api/[controller]")]
     public class personalController : ControllerBase
     {
-        private readonly IPersonalRepository<Personal> _personalRepository;
+        private readonly IPersonalRepository _personalRepository;
 
-        public personalController(IPersonalRepository<Personal> personalRepository)
+        public personalController(IPersonalRepository personalRepository)
         {
             _personalRepository = personalRepository;
         }

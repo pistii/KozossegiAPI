@@ -15,7 +15,7 @@ namespace KozoskodoAPI.Controllers
     public class FriendController : ControllerBase
     {
         private readonly IFriendRepository _friendRepository;
-        private readonly IPersonalRepository<Personal> _personalRepository;
+        private readonly IPersonalRepository _personalRepository;
         private readonly INotificationRepository _notificationRepository;
         private readonly IHubContext<NotificationHub, INotificationClient> _notificationHub;
         private readonly IMapConnections _connections;
@@ -23,7 +23,7 @@ namespace KozoskodoAPI.Controllers
 
         public FriendController(
             IFriendRepository friendRepository,
-            IPersonalRepository<Personal> personalRepository,
+            IPersonalRepository personalRepository,
             INotificationRepository notificationRepository,
             IHubContext<NotificationHub, INotificationClient> hub,
             IMapConnections connections)

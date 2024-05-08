@@ -2,7 +2,7 @@
 
 namespace KozoskodoAPI.Repo
 {
-    public interface IPersonalRepository<T> : IGenericRepository<T>
+    public interface IPersonalRepository : IGenericRepository<Personal>
     {
         IQueryable<Personal> FilterPersons(int userId);
     }
