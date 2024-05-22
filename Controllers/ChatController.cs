@@ -91,7 +91,7 @@ namespace KozoskodoAPI.Controllers
 
         [HttpGet("{roomid}/{currentPage}")]
         [HttpGet("{roomid}")]
-        public async Task<ContentDto<ChatContent>> GetChatContent(
+        public async Task<ContentDto<ChatContentDto>> GetChatContent(
         int roomid,
         int messagesPerPage = 20,
         int currentPage = 1)
@@ -102,52 +102,115 @@ namespace KozoskodoAPI.Controllers
             {
                 return null;
             }
-            var sortedChatContents = _chatRepository.GetSortedEntities<ChatContent, DateTime?>(
-                content => content.sentDate,
-                content => content.chatContentId == roomid);
+            var sortedChatContents = _chatRepository.GetSortedChatContent(roomid);
 
-            var totalMessages = sortedChatContents.Count();
+            //Return objects
+            List<ChatContentDto> content;
+            content = sortedChatContents.Select(c => new ChatContentDto()
+            {
+                AuthorId = c.AuthorId,
+                MessageId = c.MessageId,
+                chatContentId = c.chatContentId,
+                message = c.message,
+                sentDate = c.sentDate,
+                status = c.status,
+                ChatFile = c.ChatFile,
+                ChatRooms = c.ChatRooms,
+                fileData = null
+            }).ToList();
+
+            //Check if any of the chatContent has a file
+            bool hasFile = sortedChatContents.Any(x => x.ChatFile != null);
+            if (hasFile)
+            {
+                //Collect all the tokens
+                IEnumerable<string> fileTokens = sortedChatContents.Where(c => c.ChatFile != null).Select(c => c.ChatFile.FileToken);
+
+                try
+                {
+                    foreach (var token in fileTokens)
+                    {
+                        //Get all files from cloud and insert it into the dto
+                        var audio = await _storageController.GetFileAsByte(token, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.CHAT_BUCKET_NAME);
+                        content.FirstOrDefault(x => x.ChatFile.FileToken == token).fileData = audio;
+                        
+                    }
+                } catch (Exception ex)
+                {
+                    Console.Error.WriteLine("Error while downloading file from cloud: " + ex);
+                }
+            }
+            
+            var totalMessages = content.Count();
             var totalPages = (int)Math.Ceiling((double)totalMessages / messagesPerPage);
             
-            var returnValue = _chatRepository.Paginator<ChatContent>(sortedChatContents.ToList(), currentPage, messagesPerPage).ToList();
+            var returnValue = _chatRepository.Paginator<ChatContentDto>(content.ToList(), currentPage, messagesPerPage).ToList();
 
-            return new ContentDto<ChatContent>(returnValue, totalPages);
+            return new ContentDto<ChatContentDto>(returnValue, totalPages);
         }
 
         [Route("newChat")]
         [HttpPost]
-        public async Task<IActionResult> SendMessage(ChatDto chatDto)
+        public async Task<IActionResult> SendMessage([FromBody] ChatDto chatDto)
         {
-            try
+            return await Send(chatDto);
+        }
+
+        [Route("file")]
+        [HttpPost]
+        public async Task<IActionResult> SendMessageWithFile([FromForm] ChatDto chatDto)
             {
-                var chatContent = new ChatContent()
+            return await Send(chatDto);
+        }
+
+        public async Task<IActionResult> Send(ChatDto chatDto)
                 {
-                    message = chatDto.message,
-                    status = chatDto.status,
-                };
+
                 ChatRoom room = await _chatRepository.ChatRoomExists(chatDto);
-                //Ha még nem létezik beszélgetés, készítsünk egyet....
                 if (room == null)
                 {
                    room = await _chatRepository.CreateChatRoom(chatDto);
                 }
 
+            var chatContent = new ChatContent()
+            {
+                message = chatDto.message,
+                status = chatDto.status,
+                AuthorId = chatDto.senderId,
+                chatContentId = room.chatRoomId,
+            };
+
                 room.endedDateTime = DateTime.Now;
-                chatContent.AuthorId = chatDto.senderId;
-                chatContent.chatContentId = room.chatRoomId;
                 room.ChatContents.Add(chatContent);
                 await _chatRepository.SaveAsync();
 
                 var senderId = chatDto.senderId;
                 var toUserId = chatDto.receiverId;
-                await RealtimeChatMessage(senderId, toUserId, chatDto.message);
 
-                return Ok("Message sent");
+            if (chatDto.chatFile != null) {
+                if (chatDto.chatFile.Type == "audio/mp3")
+                {
+                    var chatFile = new ChatFile()
+                    {
+                        FileToken = chatDto.chatFile.Name,
+                        ChatContentId = chatContent.MessageId,
+                        FileType = "audio/mp3"
+                    };
+
+                    var fileSendTask = _storageController.AddFile(chatDto.chatFile, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.CHAT_BUCKET_NAME);
+                    var sendMessageTask = RealtimeChatMessage(senderId, toUserId, chatDto.message);
+
+                    await Task.WhenAll(fileSendTask, sendMessageTask);
+                    await fileSendTask;
+                    await sendMessageTask;
+
+                    chatFile.FileToken = fileSendTask.Result;
+                    await _chatRepository.AddChatFile(chatFile);
+
+                    return Ok();
             }
-            catch (Exception ex)
-            {
-                return BadRequest("Something went wrong..." + ex.Message);
             }
+            return BadRequest();
         }
 
         [HttpPut("/update")]
