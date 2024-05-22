@@ -8,6 +8,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using KozoskodoAPI.Repo;
+using KozossegiAPI.Models.Cloud;
+using KozossegiAPI.Controllers.Cloud;
+using KozossegiAPI.Models;
+using KozossegiAPI.DTOs;
 
 namespace KozoskodoAPI.Controllers
 {
@@ -18,15 +22,18 @@ namespace KozoskodoAPI.Controllers
         private readonly IHubContext<ChatHub, IChatClient> _chatHub;
         private readonly IMapConnections _connections;
         private readonly IChatRepository<ChatRoom, Personal> _chatRepository;
+        private readonly IStorageController _storageController;
 
         public ChatController(
           IHubContext<ChatHub, IChatClient> hub,
           IMapConnections mapConnections,
-          IChatRepository<ChatRoom, Personal> chatRepository) 
+          IChatRepository<ChatRoom, Personal> chatRepository,
+          IStorageController storageController) 
         {
             _chatHub = hub;
             _connections = mapConnections;
             _chatRepository = chatRepository;
+            _storageController = storageController;
         }
 
         [HttpGet("room/{id}")]
