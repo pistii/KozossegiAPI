@@ -8,5 +8,6 @@ namespace KozossegiAPI.Controllers.Cloud
     {
         public Task<IActionResult> GetFile(string fileName, BucketSelector selectedBucket);
         public Task<string> AddFile([FromForm] FileUpload fileUpload, BucketSelector selectedBucket);
+        Task<byte[]> GetFileAsByte(string fileName, BucketSelector selectedBucket);
     }
 }

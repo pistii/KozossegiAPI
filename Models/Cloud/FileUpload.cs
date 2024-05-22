@@ -2,6 +2,10 @@
 {
     public class FileUpload
     {
+        public FileUpload()
+        {
+            
+        }
         public FileUpload(string name, string type, IFormFile file)
         {
             this.Name = name;
