@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KozoskodoAPI.Repo
 {
-    public class PersonalRepository : GenericRepository<Personal>, IPersonalRepository<Personal>
+    public class PersonalRepository : GenericRepository<Personal>, IPersonalRepository
     {
         private readonly DBContext _context;
 

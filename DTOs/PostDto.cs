@@ -1,5 +1,6 @@
 ﻿using KozoskodoAPI.Controllers.Cloud;
 using KozoskodoAPI.Models;
+using KozossegiAPI.Models.Cloud;
 
 namespace KozoskodoAPI.DTOs
 {
@@ -33,6 +34,7 @@ namespace KozoskodoAPI.DTOs
     }
     public class NewCommentDto
     {
+        public int CommentId { get; set; }
         public int postId { get; set; }
         public int commenterId { get; set; }
         public string commentTxt { get; set; }

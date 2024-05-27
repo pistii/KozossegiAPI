@@ -6,10 +6,6 @@ using KozoskodoAPI.Realtime;
 using KozoskodoAPI.Realtime.Connection;
 using KozoskodoAPI.Repo;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
-using System;
 
 namespace KozoskodoAPI.Controllers
 {
@@ -18,14 +14,11 @@ namespace KozoskodoAPI.Controllers
     public class NotificationController : ControllerBase
     {
         private readonly INotificationRepository _notificationRepository;
-        private readonly IFriendRepository _friendRepository;
 
         public NotificationController(
-          INotificationRepository notificationRepository,
-          IFriendRepository friendRepository)
+          INotificationRepository notificationRepository)
         {
             _notificationRepository = notificationRepository;
-            _friendRepository = friendRepository;
         }
 
         [HttpGet("{userId}/{currentPage}")]
@@ -34,13 +27,13 @@ namespace KozoskodoAPI.Controllers
         {
             var notifications = await _notificationRepository.GetAll_PersonNotifications(userId);
 
-            if (notifications == null) return null;
+            if (notifications == null) 
+                return null;
 
-            var few = notifications.OrderByDescending(item => item.createdAt)
-                .Skip((currentPage - 1) * itemPerRequest)
-                .Take(itemPerRequest);
-            
-            if (notifications.Count > 0) return Ok(few);
+            var few = _notificationRepository.Paginator<NotificationWithAvatarDto>(notifications, currentPage, itemPerRequest);
+                        
+            if (notifications.Count > 0) 
+                return Ok(few);
             
             return NotFound();
         }
@@ -48,21 +41,21 @@ namespace KozoskodoAPI.Controllers
         [HttpGet("notificationRead/{notificationId}")]
         public async Task<IActionResult> NotificationReaded(int notificationId)
         {
+            //The method is called when the user clicks on a notification, and marks it as not a new one.
             try
             {
                 var result = await _notificationRepository.GetByIdAsync<Notification>(notificationId);
                 if (result.isNew)
                 {
                     result.isNew = false;
-                    await _notificationRepository.UpdateAsync(result);
-                    await _notificationRepository.SaveAsync();
-                    return Ok(result);
+                    await _notificationRepository.UpdateThenSaveAsync(result);
+                    return Ok();
                 }
                 return NoContent();
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest();
             }
         }
     }

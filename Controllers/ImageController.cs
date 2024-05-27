@@ -5,6 +5,8 @@ using KozoskodoAPI.Data;
 using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
 using KozoskodoAPI.Repo;
+using KozossegiAPI.Controllers.Cloud.Helpers;
+using KozossegiAPI.Models.Cloud;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,7 +31,7 @@ namespace KozoskodoAPI.Controllers
             var content = await _ctx.MediaContent.FirstOrDefaultAsync(c => c.MediaContentId == postId);
             var imgName = content.FileName;
 
-            var image = _storageController.GetFile(content.FileName!, StorageController.BucketSelector.IMAGES_BUCKET_NAME).Result;
+            var image = _storageController.GetFile(content.FileName!, BucketSelector.IMAGES_BUCKET_NAME).Result;
 
             return image;
         }
@@ -77,7 +79,7 @@ namespace KozoskodoAPI.Controllers
         [HttpPost("upload/avatar")]
         public async Task<IActionResult> Upload([FromForm] AvatarUpload fileUpload)
         {
-            var res = await _storageController.AddFile(fileUpload, StorageController.BucketSelector.AVATAR_BUCKET_NAME);
+            var res = await _storageController.AddFile(fileUpload, BucketSelector.AVATAR_BUCKET_NAME);
             if (res != null)
             {
                 await UpdateDatabaseImageUrl(fileUpload.UserId, res);

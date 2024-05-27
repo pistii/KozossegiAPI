@@ -14,9 +14,9 @@ namespace KozoskodoAPI.Controllers
     [Route("api/[controller]")]
     public class personalController : ControllerBase
     {
-        private readonly IPersonalRepository<Personal> _personalRepository;
+        private readonly IPersonalRepository _personalRepository;
 
-        public personalController(IPersonalRepository<Personal> personalRepository)
+        public personalController(IPersonalRepository personalRepository)
         {
             _personalRepository = personalRepository;
         }
@@ -25,14 +25,13 @@ namespace KozoskodoAPI.Controllers
         public async Task<ContentDto<Personal>> GetAll(int userId, int page = 1, int itemPerRequest = 24)
         {
             var query = _personalRepository.FilterPersons(userId).ToList();
-
-            if (page + itemPerRequest > 0)
-            {
-                //query = query.Skip((page - 1) * itemPerRequest).Take(itemPerRequest);
-                query = _personalRepository.Paginator<Personal>(query.ToList(), page, itemPerRequest).ToList();
-            }
-            //var items = await query.ToListAsync();
             int totalItems = query.Count() / itemPerRequest;
+
+            if (query.Count >= itemPerRequest)
+            {
+                var items = _personalRepository.Paginator<Personal>(query, page, itemPerRequest);
+                return new ContentDto<Personal>(items, totalItems);
+            }
 
             return new ContentDto<Personal>(query, totalItems);
         }
@@ -41,21 +40,11 @@ namespace KozoskodoAPI.Controllers
         [Authorize]
         public async Task<ActionResult<Personal>> Get(int id)
         {
-            //var res = await _context.Personal.FindAsync(id);
-            var res = _personalRepository.GetByIdAsync<Personal>(id).Result;
+            var res = await _personalRepository.GetByIdAsync<Personal>(id);
             if (res != null)
-                return res;
+                return Ok(res);
 
             return NotFound();
-        }
-
-        [HttpPost]
-        public async Task<ActionResult<Personal>> AddNewPerson(Personal personal)
-        {
-            //_context.Personal.Add(personal);
-            //await _context.SaveChangesAsync();
-            await _personalRepository.InsertSaveAsync<Personal>(personal);
-            return CreatedAtAction("Get", new { id = personal.id }, personal);
         }
     }
 }
