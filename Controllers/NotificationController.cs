@@ -28,11 +28,7 @@ namespace KozoskodoAPI.Controllers
                 return null;
 
             var few = _notificationRepository.Paginator<NotificationWithAvatarDto>(notifications, currentPage, itemPerRequest);
-<<<<<<< HEAD
-                        
-=======
             
->>>>>>> dadf0531cb4743811d424142f1336b430996bf5f
             if (notifications.Count > 0) 
                 return Ok(few);
             

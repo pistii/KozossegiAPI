@@ -31,7 +31,7 @@ namespace KozoskodoAPI
         {
             var builder = WebApplication.CreateBuilder(args);
             var services = builder.Services;
-            // Az appsettings.json fájlból olvasson be adatot
+            // Az appsettings.json fï¿½jlbï¿½l olvasson be adatot
             services.AddDbContext<DBContext>(options =>
                 options.UseMySql(
                     builder.Configuration.GetConnectionString("MediaDB"),
@@ -71,10 +71,6 @@ namespace KozoskodoAPI
             services.AddScoped<IUserRepository<user>, UserRepository>();
             services.AddScoped<IChatRepository<ChatRoom, Personal>, ChatRepository>();
             services.AddScoped<IPostRepository<PostDto>, PostRepository>();
-<<<<<<< HEAD
-=======
-            services.AddScoped<IPostRepository<Comment>, PostRepository>();
->>>>>>> dadf0531cb4743811d424142f1336b430996bf5f
             services.AddScoped<IPersonalRepository, PersonalRepository>();
             services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<IImageRepository, ImageController>();

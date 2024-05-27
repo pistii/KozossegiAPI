@@ -37,7 +37,6 @@ namespace KozoskodoAPI.Controllers
             var post = await _commentRepository.GetByIdAsync<Post>(comment.postId);
             if (user == null || post == null) return NotFound();
 
-<<<<<<< HEAD
             Comment newComment = new Comment();
             newComment.PostId = post.Id;
             newComment.FK_AuthorId = user.id;
@@ -47,17 +46,6 @@ namespace KozoskodoAPI.Controllers
             await _commentRepository.InsertSaveAsync(newComment);
             return Ok(newComment);
         }
-=======
-                Comment newComment = new Comment();
-                newComment.PostId = post.Id;
-                newComment.FK_AuthorId = user.id;
-            newComment.CommentDate = DateTime.Now;
-                newComment.CommentText = comment.commentTxt;
-
-            await _commentRepository.InsertSaveAsync<Comment>(newComment);
-                return Ok(newComment);
-            }
->>>>>>> dadf0531cb4743811d424142f1336b430996bf5f
 
         //Delete a comment
         [HttpDelete("{id}")]
@@ -77,29 +65,16 @@ namespace KozoskodoAPI.Controllers
             //var post = await _commentRepository.GetPostWithCommentsById(comment.postId);
 
             //var targetComment = post?.PostComments?.FirstOrDefault(item => item.commentId == id);
-<<<<<<< HEAD
-
-            var targetComment = await _commentRepository.GetByIdAsync<Comment>(comment.CommentId);
-            if (targetComment == null) return NotFound();
-                
-            targetComment.CommentDate = DateTime.UtcNow;
-            targetComment.CommentText = comment.commentTxt;
-=======
                 
             var targetComment = await _commentRepository.GetByIdAsync<Comment>(comment.CommentId);
                 if (targetComment == null) return NotFound();
                 
             targetComment.CommentDate = DateTime.Now;
                 targetComment.CommentText = comment.commentTxt;
->>>>>>> dadf0531cb4743811d424142f1336b430996bf5f
 
             await _commentRepository.UpdateThenSaveAsync(targetComment);
 
-<<<<<<< HEAD
-            return Ok();
-=======
                 return Ok();
->>>>>>> dadf0531cb4743811d424142f1336b430996bf5f
             
         }
 
