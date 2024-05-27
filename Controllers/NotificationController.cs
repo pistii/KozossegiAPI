@@ -1,6 +1,3 @@
-﻿using Humanizer;
-using KozoskodoAPI.Data;
-using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
 using KozoskodoAPI.Realtime;
 using KozoskodoAPI.Realtime.Connection;
@@ -31,7 +28,11 @@ namespace KozoskodoAPI.Controllers
                 return null;
 
             var few = _notificationRepository.Paginator<NotificationWithAvatarDto>(notifications, currentPage, itemPerRequest);
+<<<<<<< HEAD
                         
+=======
+            
+>>>>>>> dadf0531cb4743811d424142f1336b430996bf5f
             if (notifications.Count > 0) 
                 return Ok(few);
             
@@ -39,7 +40,7 @@ namespace KozoskodoAPI.Controllers
         }
 
         [HttpGet("notificationRead/{notificationId}")]
-        public async Task<IActionResult> NotificationReaded(int notificationId)
+        public async Task<IActionResult> NotificationRead(int notificationId)
         {
             //The method is called when the user clicks on a notification, and marks it as not a new one.
             try

@@ -31,7 +31,11 @@ namespace KozoskodoAPI.Controllers
             var content = await _ctx.MediaContent.FirstOrDefaultAsync(c => c.MediaContentId == postId);
             var imgName = content.FileName;
 
+<<<<<<< HEAD
             var image = _storageController.GetFile(content.FileName!, BucketSelector.IMAGES_BUCKET_NAME).Result;
+=======
+            var image = await _storageController.GetFile(content.FileName!, BucketSelector.IMAGES_BUCKET_NAME);
+>>>>>>> dadf0531cb4743811d424142f1336b430996bf5f
 
             return image;
         }

@@ -8,7 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace KozoskodoAPI.Repo
 {
-    public class PostRepository : GenericRepository<PostDto>, IPostRepository<PostDto>
+    public class PostRepository : GenericRepository<PostDto>, IPostRepository<PostDto>, IPostRepository<Comment>
     {
         private readonly DBContext _context;
         private HelperService helperService;

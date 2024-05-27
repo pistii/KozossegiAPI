@@ -13,7 +13,7 @@ namespace KozoskodoAPI.DTOs
         public int PostId { get; set; }
         public int? Likes { get; set; }
         public int? Dislikes { get; set; }
-        public DateTime DateOfPost { get; set; } = DateTime.UtcNow;
+        public DateTime DateOfPost { get; set; } = DateTime.Now;
         public string PostContent { get; set; }
         public List<CommentDto> PostComments { get; set; }
         public List<MediaContent> MediaContents { get; set; }
@@ -29,7 +29,7 @@ namespace KozoskodoAPI.DTOs
         public string CommenterMiddleName { get; set; } = string.Empty;
         public string CommenterLastName { get; set; }
         public string CommenterAvatar { get; set; }
-        public DateTime CommentDate { get; set; } = DateTime.UtcNow;
+        public DateTime CommentDate { get; set; } = DateTime.Now;
         public string CommentText { get; set; }
     }
     public class NewCommentDto
