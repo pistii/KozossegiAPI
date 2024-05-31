@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using KozossegiAPI.Models;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,6 +10,11 @@ namespace KozoskodoAPI.Models
     [Table("chatContent")]
     public class ChatContent
     {
+        public ChatContent()
+        {
+            
+        }
+
         [Key]
         public int MessageId { get; set; }
         public int AuthorId { get; set; }
@@ -20,6 +26,8 @@ namespace KozoskodoAPI.Models
         public Status status { get; set; }
         [JsonIgnore]
         public virtual ChatRoom? ChatRooms { get; set; }
+        [JsonIgnore]
+        public virtual ChatFile? ChatFile { get; set; }
     }
 
     public enum Status

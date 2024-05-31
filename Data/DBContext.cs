@@ -5,6 +5,7 @@ using static Grpc.Core.Metadata;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using KozoskodoAPI.Controllers;
 using System.Diagnostics;
+using KozossegiAPI.Models;
 
 namespace KozoskodoAPI.Data
 {
@@ -36,6 +37,7 @@ namespace KozoskodoAPI.Data
         public virtual DbSet<PersonalChatRoom> PersonalChatRoom { get; set; }
         public virtual DbSet<ChatRoom> ChatRoom { get; set; }
         public virtual DbSet<ChatContent> ChatContent { get; set; }
+        public virtual DbSet<ChatFile> ChatFile { get; set; }
         public virtual DbSet<MediaContent> MediaContent { get; set; }
         public virtual DbSet<PostReaction> PostReaction { get; set; }
         public virtual DbSet<Studies> Studies { get; set; }
@@ -144,6 +146,11 @@ namespace KozoskodoAPI.Data
                     v => (Status)Enum.Parse(typeof(Status), v));
 
                 entity.HasIndex(e => e.chatContentId).IsUnique();
+
+
+                entity.HasOne(e => e.ChatFile)
+                    .WithOne(e => e.ChatContent)
+                    .HasForeignKey<ChatFile>(e => e.ChatContentId);
             });
 
             modelBuilder.Entity<Post>(entity =>

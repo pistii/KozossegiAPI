@@ -15,5 +15,10 @@
         {
             this.UserId = UserId;
         }
+
+        public AvatarUpload()
+        {
+            
+        }
     }
 }
