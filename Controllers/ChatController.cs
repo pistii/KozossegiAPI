@@ -154,24 +154,29 @@ namespace KozoskodoAPI.Controllers
             //Map the original chatContent object to ChatContentDto. This way the ChatFile will contain the audio object.
             var content = _chatRepository.GetSortedChatContent(roomid).Select(c => c.ToDto()).ToList();
 
+            var totalMessages = sortedChatContents.Count();
+            var totalPages = (int)Math.Ceiling((double)totalMessages / messagesPerPage);
+
+            var returnValue = _chatRepository.Paginator<ChatContentDto>(content, currentPage, messagesPerPage).ToList();
+
             //Check if any of the chatContent has a file
             bool hasFile = content.Any(x => x.ChatFile != null);
             if (hasFile)
             {
                 //Collect all the tokens
-                IEnumerable<string> fileTokens = content.Where(c => c.ChatFile != null && c.ChatFile.FileToken != null).Select(c => c.ChatFile.FileToken);
+                IEnumerable<string> fileTokens = returnValue.Where(c => c.ChatFile != null && c.ChatFile.FileToken != null).Select(c => c.ChatFile.FileToken);
 
                 try
                 {
                     foreach (var token in fileTokens)
                     {
                         //Get all files from cloud and insert it into the dto
-                        var audio = await _storageController.GetFileAsByte(token, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.CHAT_BUCKET_NAME);
+                        var file = await _storageController.GetFileAsByte(token, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.CHAT_BUCKET_NAME);
 
-                        var contentWithFile = content.Find(x => x.ChatFile != null && x.ChatFile.FileToken == token);
+                        var contentWithFile = returnValue.Find(x => x.ChatFile != null && x.ChatFile.FileToken == token);
                         if (contentWithFile != null)
                         {
-                            var item = content.FirstOrDefault(x => x.chatContentId == contentWithFile.chatContentId && x.ChatFile != null).ChatFile.FileData = audio;
+                            var item = returnValue.FirstOrDefault(x => x.chatContentId == contentWithFile.chatContentId && x.ChatFile != null).ChatFile.FileData = file;
                         }
 
                     }
@@ -181,11 +186,6 @@ namespace KozoskodoAPI.Controllers
                 }
             }
             
-            var totalMessages = sortedChatContents.Count();
-            var totalPages = (int)Math.Ceiling((double)totalMessages / messagesPerPage);
-            
-            var returnValue = _chatRepository.Paginator<ChatContentDto>(content, currentPage, messagesPerPage).ToList();
-
             return new ChatContentForPaginationDto<ChatContentDto>(returnValue, totalPages, currentPage, roomid);
         }
 
