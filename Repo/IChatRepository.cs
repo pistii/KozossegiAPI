@@ -1,5 +1,7 @@
 ﻿using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
+using KozossegiAPI.Models;
+using System.Linq.Expressions;
 
 namespace KozoskodoAPI.Repo
 {
@@ -12,5 +14,8 @@ namespace KozoskodoAPI.Repo
         List<int> GetChatPartenterIds(int userId);
         Task<TChatRoom> CreateChatRoom(ChatDto chatDto);
         Task<IQueryable<PersonalChatRoom?>> GetPersonalChatRoom();
+        Task<object> AddChatFile(ChatFile chatFile);
+        List<ChatContent> GetSortedChatContent(int roomId);
+        Task<ChatRoom>? GetChatRoomByUser(int senderId1, int senderId2);
     }
 }
