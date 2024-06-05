@@ -6,7 +6,7 @@ namespace KozoskodoAPI.Repo
 {
     public interface IFriendRepository : IGenericRepository<Friend>
     {
-        Task<IEnumerable<Personal>> GetAll(int id);
+        Task<IEnumerable<Personal_IsOnlineDto>> GetAll(int id);
         Task<IEnumerable<Personal>> GetAllFriendAsync(int id);
         public Task<string> CheckIfUsersInRelation(int userId, int viewerId);
         public Task Delete(Friend request);

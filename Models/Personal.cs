@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using KozoskodoAPI.DTOs;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Asn1.Mozilla;
 
 namespace KozoskodoAPI.Models
 {
@@ -79,23 +80,21 @@ namespace KozoskodoAPI.Models
     /// <summary>
     /// Erre a táblára azért van szükség mert a user táblában kezelem az online státuszt, és az egyébként is kevésbé szükséges adatok elérését, de nincs szükség mindig az user táblát átadni. 
     /// </summary>
-    public partial class Personal_IsOnlineDto : Personal
+    public partial class Personal_IsOnlineDto
     {
         public Personal_IsOnlineDto(Personal user)
         {
-            this.id = user.id;
-            this.firstName = user.firstName;
-            this.middleName = user.middleName;
-            this.lastName = user.lastName;
-            this.isMale = user.isMale;
-            this.PlaceOfResidence = user.PlaceOfResidence;
-            this.avatar = user.avatar;
-            this.phoneNumber = user.phoneNumber;
-            this.DateOfBirth = user.DateOfBirth;
-            this.PlaceOfBirth = user.PlaceOfBirth;
-            this.Profession = user.Profession;
-            this.Workplace = user.Workplace;
+            id = user.id;
+            firstName = user.firstName;
+            middleName = user.middleName;
+            lastName = user.lastName;
+            avatar = user.avatar;
         }
+        public int id { get; set; }
+        public string firstName { get; set; }
+        public string middleName { get; set; }
+        public string lastName { get; set; }
+        public string avatar { get; set; }
         public bool isOnline { get; set; } = false;
     }
 }

@@ -22,14 +22,14 @@ namespace KozoskodoAPI.Repo
             return user;
         }
 
-        public async Task<IEnumerable<Personal>> GetAll(int id)
+        public async Task<IEnumerable<Personal_IsOnlineDto>> GetAll(int id)
         {
             var users = await _context.Personal
             .Where(p => _context.Friendship
                 .Where(f => (f.FriendId == id || f.UserId == id) && f.StatusId == 1)
                 .Select(f => f.UserId == id ? f.FriendId : f.UserId)
                 .Contains(p.id)
-            )
+            ).Select(f => new Personal_IsOnlineDto(f))
             .ToListAsync();
 
             return users;

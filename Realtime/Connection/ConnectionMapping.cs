@@ -43,7 +43,14 @@ namespace KozoskodoAPI.Realtime.Connection
 
         public void AddConnection(string connectionId, int userId)
         {
-            Connections.TryAdd(connectionId, userId);
+            try
+            {
+                Connections.TryAdd(connectionId, userId);
+            }
+            catch (InvalidOperationException ex)
+            {
+
+            }
         }
 
 

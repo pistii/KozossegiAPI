@@ -44,8 +44,9 @@ namespace KozoskodoAPI.Realtime
 
         public async Task ReceiveOnlineFriends(int userId)
         {
+            //TODO: át kell írni, nem kell ennyi adat!
             List<Personal_IsOnlineDto> onlineFriends = new List<Personal_IsOnlineDto>();
-            var friends = _friendRepo.GetAllFriendAsync(userId).Result;
+            var friends = await _friendRepo.GetAllFriendAsync(userId);
 
             foreach (var friend in friends)
             {
