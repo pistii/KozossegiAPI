@@ -53,46 +53,43 @@ namespace KozoskodoAPI.Controllers
             if (room == null) return null;
             var roomid = room.chatRoomId;
 
-            var sortedChatContents = _chatRepository.GetSortedChatContent(roomid);
             //Map the original chatContent object to ChatContentDto. This way the ChatFile will contain the audio object.
-            var content = _chatRepository.GetSortedChatContent(roomid).Select(c => c.ToDto()).ToList();
+            var sortedChatContents = _chatRepository.GetSortedChatContent(roomid).Select(c => c.ToDto()).ToList();
+
+            var totalMessages = sortedChatContents.Count();
+            var totalPages = (int)Math.Ceiling((double)totalMessages / 20);
+
+            var returnValue = _chatRepository.Paginator<ChatContentDto>(sortedChatContents).ToList();
 
             //Check if any of the chatContent has a file
-            bool hasFile = content.Any(x => x.ChatFile != null);
+            bool hasFile = sortedChatContents.Any(x => x.ChatFile != null);
             if (hasFile)
             {
                 //Collect all the tokens
-                IEnumerable<string> fileTokens = content.Where(c => c.ChatFile != null).Select(c => c.ChatFile.FileToken);
+                IEnumerable<string> fileTokens = returnValue.Where(c => c.ChatFile != null).Select(c => c.ChatFile.FileToken);
 
                 try
                 {
                     foreach (var token in fileTokens)
                     {
                         //Get all files from cloud and insert it into the dto
-                        var audio = await _storageController.GetFileAsByte(token, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.CHAT_BUCKET_NAME);
+                        var file = await _storageController.GetFileAsByte(token, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.CHAT_BUCKET_NAME);
 
-                        var contentsWithFile = content.Where(x => x.ChatFile != null);
+                        var contentsWithFile = returnValue.Where(x => x.ChatFile != null);
                         var contentWithFile = contentsWithFile.FirstOrDefault(x => x.ChatFile.FileToken == token);
                         if (contentWithFile != null)
                         {
-                            contentWithFile.ChatFile.FileData = audio;
+                            contentWithFile.ChatFile.FileData = file;
                         }
 
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.Error.WriteLine("Error while downloading file from cloud: " + ex);
+                    Console.Error.WriteLine("Error while downloading file: " + ex);
                 }
             }
-
-            var totalMessages = sortedChatContents.Count();
-            var totalPages = (int)Math.Ceiling((double)totalMessages / 20);
-
-            var returnValue = _chatRepository.Paginator<ChatContentDto>(content).ToList(); //First request, without pagination.
-
             return new ChatContentForPaginationDto<ChatContentDto>(returnValue, totalPages, 1, roomid);
-
         }
 
         [HttpGet("chatRooms/{userId}")]
