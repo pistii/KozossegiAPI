@@ -185,7 +185,7 @@ namespace KozoskodoAPI.Controllers
                     Console.Error.WriteLine("Error while downloading file from cloud: " + ex);
                 }
             }
-            
+
             return new ChatContentForPaginationDto<ChatContentDto>(returnValue, totalPages, currentPage, roomid);
         }
 
@@ -206,7 +206,6 @@ namespace KozoskodoAPI.Controllers
         [Route("chat")] //Not a used endpoint, used for fix ambigious reference to RealtimeChatMessage method
         public async Task<IActionResult> Send(ChatDto chatDto)
         {
-
             ChatRoom room = await _chatRepository.ChatRoomExists(chatDto);
             if (room == null)
             {
@@ -228,30 +227,32 @@ namespace KozoskodoAPI.Controllers
             var senderId = chatDto.senderId;
             var toUserId = chatDto.receiverId;
 
+            List<string> imageTypes = new List<string>()
+            {
+                "image/png", "image/jpeg", "image/gif", "image/bmp"
+            };
+
             if (chatDto.chatFile != null && chatDto.chatFile.File != null)
             {
-                if (chatDto.chatFile.Type == "audio/wav")
+                ChatFile chatFile = new()
                 {
-                    var chatFile = new ChatFile()
-                    {
-                        FileToken = chatDto.chatFile.Name,
-                        ChatContentId = chatContent.MessageId,
-                        FileType = "audio/wav"
-                    };
+                    FileToken = chatDto.chatFile.Name,
+                    ChatContentId = chatContent.MessageId,
+                };
+                if (chatDto.chatFile.Type == "audio/wav")
+                    chatFile.FileType = "audio/wav";
+                else if (imageTypes.Contains(chatDto.chatFile.Type))
+                    chatFile.FileType = chatDto.chatFile.Type;
 
-                    var fileSendTask = _storageController.AddFile(chatDto.chatFile, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.CHAT_BUCKET_NAME);
-                    var sendMessageTask = RealtimeChatMessage(senderId, toUserId, chatDto.message);
+                var fileSendTask = await _storageController.AddFile(chatDto.chatFile, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.CHAT_BUCKET_NAME);
 
-                    await Task.WhenAll(fileSendTask, sendMessageTask);
-                    await fileSendTask;
-                    await sendMessageTask;
+                chatFile.FileToken = fileSendTask;
+                await _chatRepository.AddChatFile(chatFile);
 
-                    chatFile.FileToken = fileSendTask.Result;
-                    await _chatRepository.AddChatFile(chatFile);
-
-                    return Ok(chatContent);
-                }
+                return Ok(chatContent);
             }
+            await RealtimeChatMessage(senderId, toUserId, chatDto.message);
+
             return Ok(chatContent);
         }
 
