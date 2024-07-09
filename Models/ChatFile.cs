@@ -14,6 +14,7 @@ namespace KozossegiAPI.Models
         public string FileType { get; set; }
         [StringLength(100)]
         public string FileToken { get; set; }
+        public int FileSize { get; set; }
         [JsonIgnore]
         public virtual ChatContent ChatContent { get; set; }
     }

@@ -21,6 +21,7 @@ namespace KozossegiAPI.Services
                     ChatContentId = chatContent.ChatFile.ChatContentId,
                     FileType = chatContent.ChatFile.FileType,
                     FileToken = chatContent.ChatFile.FileToken,
+                    FileSize = chatContent.ChatFile.FileSize,
                     FileData = null
                 } : null
             };

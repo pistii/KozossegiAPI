@@ -20,7 +20,7 @@ namespace KozoskodoAPI.Models
         public int AuthorId { get; set; }
         public int chatContentId { get; set; }
         [StringLength(800)]
-        public string message { get; set; } = null!;
+        public string? message { get; set; } = null;
         public DateTime? sentDate { get; set; } = DateTime.Now;
         [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
         public Status status { get; set; }

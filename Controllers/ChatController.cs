@@ -1,18 +1,17 @@
-﻿using Google.Api;
-using KozoskodoAPI.Data;
-using KozoskodoAPI.DTOs;
+﻿using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
 using KozoskodoAPI.Realtime.Connection;
 using KozoskodoAPI.Realtime;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
 using KozoskodoAPI.Repo;
 using KozossegiAPI.Models.Cloud;
 using KozossegiAPI.Controllers.Cloud;
 using KozossegiAPI.Models;
 using KozossegiAPI.DTOs;
 using KozossegiAPI.Services;
+using KozossegiAPI.Controllers.Cloud.Helpers;
+using KozossegiAPI.Storage;
 
 namespace KozoskodoAPI.Controllers  
 {
@@ -24,17 +23,25 @@ namespace KozoskodoAPI.Controllers
         private readonly IMapConnections _connections;
         private readonly IChatRepository<ChatRoom, Personal> _chatRepository;
         private readonly IStorageController _storageController;
+        private readonly IFileHandlerService _fileHandlerService;
+        private readonly IChatStorage _chatStorage;
+        private HelperService helperService;
 
         public ChatController(
           IHubContext<ChatHub, IChatClient> hub,
           IMapConnections mapConnections,
           IChatRepository<ChatRoom, Personal> chatRepository,
-          IStorageController storageController) 
+          IStorageController storageController,
+          IFileHandlerService fileHandlerService,
+          IChatStorage chatStorage) 
         {
             _chatHub = hub;
             _connections = mapConnections;
             _chatRepository = chatRepository;
             _storageController = storageController;
+            _fileHandlerService = fileHandlerService;
+            _chatStorage = chatStorage;
+            helperService = new();
         }
 
         [HttpGet("room/{id}")]
@@ -48,46 +55,105 @@ namespace KozoskodoAPI.Controllers
         [HttpGet("roomByUserId/{senderId}/{receiverId}")]
         public async Task<ChatContentForPaginationDto<ChatContentDto>> GetChatRoomByUserId(int senderId, int receiverId)
         {
+            //If file sizes lower than 5 MB it can be returned in bytes, but if sizes greater than 5 MB should split file contents into chunks
             var room = await _chatRepository.GetChatRoomByUser(senderId, receiverId);
              
             if (room == null) return null;
             var roomid = room.chatRoomId;
 
             //Map the original chatContent object to ChatContentDto. This way the ChatFile will contain the audio object.
-            var sortedChatContents = _chatRepository.GetSortedChatContent(roomid).Select(c => c.ToDto()).ToList();
+            var sortedChatContents = _chatRepository
+                .GetSortedChatContent(roomid)
+                .Select(c => c.ToDto())
+                .ToList();
 
             var totalMessages = sortedChatContents.Count();
             var totalPages = (int)Math.Ceiling((double)totalMessages / 20);
 
-            var returnValue = _chatRepository.Paginator<ChatContentDto>(sortedChatContents).ToList();
+            var returnValue = _chatRepository.Paginator<ChatContentDto>(sortedChatContents);
+            returnValue.Reverse();
 
             //Check if any of the chatContent has a file
             bool hasFile = sortedChatContents.Any(x => x.ChatFile != null);
             if (hasFile)
             {
-                //Collect all the tokens
-                IEnumerable<string> fileTokens = returnValue.Where(c => c.ChatFile != null).Select(c => c.ChatFile.FileToken);
+                //Collect all the files
+                //IEnumerable<string> fileTokens = returnValue.Where(c => c.ChatFile != null).Select(c => c.ChatFile.FileToken);
+                IEnumerable<ChatFile> files = returnValue.Where(c => c.ChatFile != null).Select(c => new ChatFile() 
+                {
+                    ChatContentId = c.ChatFile.ChatContentId,
+                    FileToken = c.ChatFile.FileToken,
+                    FileSize = c.ChatFile.FileSize,
+                    FileType = c.ChatFile.FileType,
+                });
+
+                int size = 0;
 
                 try
                 {
-                    foreach (var token in fileTokens)
+                    foreach (var file in files)
                     {
-                        //Get all files from cloud and insert it into the dto
-                        var file = await _storageController.GetFileAsByte(token, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.CHAT_BUCKET_NAME);
-
-                        var contentsWithFile = returnValue.Where(x => x.ChatFile != null);
-                        var contentWithFile = contentsWithFile.FirstOrDefault(x => x.ChatFile.FileToken == token);
+                        var contentWithFile = returnValue.Where(x => x.ChatFile != null).FirstOrDefault(x => x.ChatFile.FileToken == file.FileToken);
                         if (contentWithFile != null)
                         {
-                            contentWithFile.ChatFile.FileData = file;
+                            var fileExistInCache = _chatStorage.GetValue(file.FileToken);
+                            if (fileExistInCache != null)
+                            {
+                                contentWithFile.ChatFile.FileData = fileExistInCache;
+                            }
+                            else
+                            {
+                                var downloadFile = await _storageController.GetFileAsByte(file.FileToken, BucketSelector.CHAT_BUCKET_NAME);
+                                _chatStorage.Create(file.FileToken, downloadFile);
+                                contentWithFile.ChatFile.FileData = downloadFile;
+                            }
+                            size += file.FileSize;
                         }
-
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine("Error while downloading file: " + ex);
                 }
+
+                //if (size > 2_000_000)
+                //{
+                    //Max uploadable file size is 512 for video, 30MB for audio
+                    int MAX_SIZE_PER_FILE = 100_000; 
+                    foreach (var file in files)
+                    {
+                        if (_fileHandlerService.FormatIsVideo(file.FileType) || _fileHandlerService.FormatIsAudio(file.FileType))
+                        {
+                            if (file.FileSize > MAX_SIZE_PER_FILE) //If file size exceeds the MAX_SIZE_PER_FILE
+                            {
+                                //Return 30% percent of the file
+                                //var endSize = (long)(file.FileSize * 0.30);
+                                //var chunk = await _storageController.GetVideoChunkBytes(file.FileToken, 0, endSize);
+                                var chunk = await _storageController.GetFileAsByte(file.FileToken, BucketSelector.CHAT_BUCKET_NAME);
+                                if (chunk != null)
+                                {
+                                    var contentsWithFile = returnValue.Where(x => x.ChatFile != null);
+                                    var contentWithFile = contentsWithFile.FirstOrDefault(x => x.ChatFile.FileToken == file.FileToken);
+                                    if (contentWithFile != null)
+                                    {
+                                        contentWithFile.ChatFile.FileData = chunk;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                var fileBytes = await GetFile<byte[]>(file.FileToken);
+
+                                var contentsWithFile = returnValue.Where(x => x.ChatFile != null);
+                                var contentWithFile = contentsWithFile.FirstOrDefault(x => x.ChatFile.FileToken == file.FileToken);
+                                if (contentWithFile != null)
+                                {
+                                    contentWithFile.ChatFile.FileData = fileBytes;
+                                }
+                            }
+                        }
+                    }
+                //}
             }
             return new ChatContentForPaginationDto<ChatContentDto>(returnValue, totalPages, 1, roomid);
         }
@@ -152,7 +218,7 @@ namespace KozoskodoAPI.Controllers
             }
             var sortedChatContents = _chatRepository.GetSortedChatContent(roomid);
             //Map the original chatContent object to ChatContentDto. This way the ChatFile will contain the audio object.
-            var content = _chatRepository.GetSortedChatContent(roomid).Select(c => c.ToDto()).ToList();
+            var content = _chatRepository.GetSortedChatContent(roomid).Select(c => c.ToDto()).Reverse().ToList();
 
             var totalMessages = sortedChatContents.Count();
             var totalPages = (int)Math.Ceiling((double)totalMessages / messagesPerPage);
@@ -171,12 +237,12 @@ namespace KozoskodoAPI.Controllers
                     foreach (var token in fileTokens)
                     {
                         //Get all files from cloud and insert it into the dto
-                        var file = await _storageController.GetFileAsByte(token, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.CHAT_BUCKET_NAME);
+                        var file = await _storageController.GetFileAsByte(token, BucketSelector.CHAT_BUCKET_NAME);
 
                         var contentWithFile = returnValue.Find(x => x.ChatFile != null && x.ChatFile.FileToken == token);
                         if (contentWithFile != null)
                         {
-                            var item = returnValue.FirstOrDefault(x => x.chatContentId == contentWithFile.chatContentId && x.ChatFile != null).ChatFile.FileData = file;
+                            returnValue.FirstOrDefault(x => x.chatContentId == contentWithFile.chatContentId && x.ChatFile != null).ChatFile.FileData = file;
                         }
 
                     }
@@ -188,6 +254,80 @@ namespace KozoskodoAPI.Controllers
 
             return new ChatContentForPaginationDto<ChatContentDto>(returnValue, totalPages, currentPage, roomid);
         }
+
+        [HttpGet("file/token/{fileToken}")]
+        public async Task<dynamic> GetFile<T>(string fileToken)
+        {
+            var file = _chatStorage.GetValue(fileToken);
+
+            if (typeof(T) == typeof(IActionResult)) {
+                if (file != null)
+                {
+                    return File(file, "video/mp4");
+                }
+                try
+                {
+                    //If the header has a range it probably a video, so the file type checking is not necessary.
+                    string fileType = await _chatRepository.GetChatFileTypeAsync(fileToken);
+                    if (fileType == null)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        if (_fileHandlerService.FormatIsVideo(fileType) || _fileHandlerService.FormatIsAudio(fileType))
+                        {
+                            //var rangeFile = (long)(rangeStart + rangeTo - 1);
+
+                            file = await _storageController.GetVideoChunkBytes(fileToken, 0, 13000);//_storageController.GetFileAsByte(fileToken, BucketSelector.CHAT_BUCKET_NAME);
+                            Response.StatusCode = 206; // Partial Content
+                            Response.Headers["Content-Range"] = $"bytes={0}-{13000}/{file.Length}";
+
+                        }
+                        else if (_fileHandlerService.FormatIsImage(fileType))
+                        {
+                            file = await _storageController.GetFileAsByte(fileToken, BucketSelector.CHAT_BUCKET_NAME);
+                        }
+                        else return null;
+                        _chatStorage.Create(fileToken, file); //Save in cache
+                    }
+                    //}
+                    file = await _storageController.GetFileAsByte(fileToken, BucketSelector.CHAT_BUCKET_NAME);
+
+                    return File(file, "video/mp4", enableRangeProcessing: true);
+                    //var fileChunk = _storageController.GetVideo(fileToken);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine("File not found: " + ex);
+                }
+            }
+            else if (typeof(T) == typeof(byte[]))
+            {
+                if (file != null)
+                {
+                    return file;
+                }
+                try
+                {
+                    file = await _storageController.GetFileAsByte(fileToken, BucketSelector.CHAT_BUCKET_NAME);
+                    var fileChunk = _storageController.GetVideo(fileToken);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine("File not found: " + ex);
+                }
+
+                if (file != null)
+                {
+                    _chatStorage.Create(fileToken, file);
+                    return file;
+                }
+                return null;
+            }
+            return null;
+        }
+
 
         [Route("newChat")]
         [HttpPost]
@@ -227,29 +367,38 @@ namespace KozoskodoAPI.Controllers
             var senderId = chatDto.senderId;
             var toUserId = chatDto.receiverId;
 
-            List<string> imageTypes = new List<string>()
-            {
-                "image/png", "image/jpeg", "image/gif", "image/bmp"
-            };
 
             if (chatDto.chatFile != null && chatDto.chatFile.File != null)
             {
-                ChatFile chatFile = new()
+                var fileObj = chatDto.chatFile;
+                string fileToken = await _fileHandlerService.UploadFile(fileObj.File, fileObj.Name, fileObj.Type, BucketSelector.CHAT_BUCKET_NAME);
+                if (fileToken != null) //Upload file only if corresponds to the requirements.
                 {
-                    FileToken = chatDto.chatFile.Name,
-                    ChatContentId = chatContent.MessageId,
-                };
-                if (chatDto.chatFile.Type == "audio/wav")
-                    chatFile.FileType = "audio/wav";
-                else if (imageTypes.Contains(chatDto.chatFile.Type))
-                    chatFile.FileType = chatDto.chatFile.Type;
+                    ChatFile chatFile = new()
+                    {
+                        FileToken = fileToken,
+                        ChatContentId = chatContent.MessageId,
+                        FileType = chatDto.chatFile.Type,
+                        FileSize = (int)chatDto.chatFile.File.Length,
+                    };
 
-                var fileSendTask = await _storageController.AddFile(chatDto.chatFile, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.CHAT_BUCKET_NAME);
+                    await _chatRepository.InsertSaveAsync<ChatFile>(chatFile);
 
-                chatFile.FileToken = fileSendTask;
-                await _chatRepository.AddChatFile(chatFile);
+                    if (_connections.ContainsUser(toUserId) && _chatStorage.GetValue(fileToken) != null) //If the receiver user is online
+                    {
+                        var bytes = helperService.ConvertToByteArray(fileObj.File);
+                        _chatStorage.Create(fileToken, bytes);
+                    }
+                    FileUpload fileUpload = new FileUpload()
+                    {
+                        Name = fileToken,
+                        Type = fileObj.Type,
+                    };
 
-                return Ok(chatContent);
+                    await RealtimeChatMessage(senderId, toUserId, chatDto.message, fileUpload);
+                    return Ok(chatContent);
+                }
+                return BadRequest("File size exceeded or format not accepted.");
             }
             await RealtimeChatMessage(senderId, toUserId, chatDto.message);
 
@@ -273,11 +422,16 @@ namespace KozoskodoAPI.Controllers
             return NoContent();
         }
 
-        public async Task RealtimeChatMessage(int fromUserId, int toUserId, string message)
+        public async Task RealtimeChatMessage(int fromUserId, int toUserId, string message, FileUpload upload = null)
         {
-            var connectionId = _connections.GetConnectionById(toUserId);
+            var connectionId = _connections.GetConnectionsById(toUserId);
             if (connectionId != null)
-                await _chatHub.Clients.Client(connectionId).ReceiveMessage(fromUserId, toUserId, message);
+            {
+                foreach (var user in connectionId)
+                {
+                    await _chatHub.Clients.Client(user).ReceiveMessage(fromUserId, toUserId, message, upload);
+                }
+            }
         }
     }
 }

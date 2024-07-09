@@ -1,16 +1,17 @@
 ﻿using KozoskodoAPI.Models;
+using System.Collections.Concurrent;
 
 namespace KozoskodoAPI.Realtime.Connection
 {
     public class ConnectionMapping : IMapConnections
     {
-        public Dictionary<string, int> Connections;
+        public ConcurrentDictionary<string, int> Connections;
         public ConnectionMapping()
         {
-            Connections = new Dictionary<string, int>();
+            Connections = new ConcurrentDictionary<string, int>();
         }
 
-        public Dictionary<string, int> keyValuePairs {
+        public ConcurrentDictionary<string, int> keyValuePairs {
             get { return Connections; }
         }
 
@@ -24,40 +25,41 @@ namespace KozoskodoAPI.Realtime.Connection
         {
             if (connectionId != null)
             {
-                if (Connections.ContainsKey(connectionId) && Connections.ContainsValue(userId))
-                {
-                    return true;
-                }
+                return Connections.Any(p => p.Key == connectionId && p.Value == userId);
             }
-            if (Connections.ContainsValue(userId))
-            {
-                return true;
-            }
-            return false;
+            return Connections.Any(e => e.Value == userId);
         }
 
         public void Remove(string connectionId)
         {
-            Connections.Remove(connectionId);
+            var connectionToRemove = Connections.FirstOrDefault(p => p.Key == connectionId);
+            Connections.TryRemove(connectionToRemove);
         }
 
         public void AddConnection(string connectionId, int userId)
         {
-            try
+            if (!string.IsNullOrEmpty(connectionId) || userId != 0)
             {
-                Connections.TryAdd(connectionId, userId);
-            }
-            catch (InvalidOperationException ex)
-            {
-
+                try
+                {
+                    Connections.TryAdd(connectionId, userId);
+                }
+                catch (ArgumentOutOfRangeException ex)
+                {
+                    Console.Error.WriteLine("Failed to add user to connections: " + ex.Message);
+                }
+                catch (InvalidOperationException ioex)
+                {
+                    Console.Error.WriteLine("Failed to add user to connections: " + ioex.Message);
+                }
             }
         }
 
 
-        public string GetConnectionById(int userId)
+        public string[] GetConnectionsById(int userId)
         { //TODO: send the request all the opened connections
-            var connection = Connections.FirstOrDefault(_ => _.Value == userId);
-            return connection.Key ?? "Not found";
+            var connection = Connections.Where(u => u.Value == userId).Select(i => i.Key).ToArray();
+            return connection ?? null;
         }
 
         public int GetUserById(string connectionId)
@@ -71,10 +73,10 @@ namespace KozoskodoAPI.Realtime.Connection
     public interface IMapConnections
     {
         public void Remove(string connectionId);
-        public Dictionary<string, int> keyValuePairs { get; }
+        public ConcurrentDictionary<string, int> keyValuePairs { get; }
         public bool ContainsUser(int userId, string connectionId = null);
         public void AddConnection(string connectionId, int userId);
         int GetUserById(string connectionId);
-        string GetConnectionById(int userId);
+        string[] GetConnectionsById(int userId);
     }
 }

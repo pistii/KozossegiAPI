@@ -43,14 +43,14 @@ namespace KozoskodoAPI.Repo
                 .ToListAsync();
 
 
-            foreach (var item in chatContents)
-            {
-                if (item.ChatFile != null)
-                {
-                    var audio = await _storageController.GetFileAsByte(item.ChatFile.FileToken, BucketSelector.CHAT_BUCKET_NAME);
-                    item.ChatFile.FileData = audio;
-                }
-            }
+            //foreach (var item in chatContents)
+            //{
+            //    if (item.ChatFile != null)
+            //    {
+            //        var audio = await _storageController.GetFileAsByte(item.ChatFile.FileToken, BucketSelector.CHAT_BUCKET_NAME);
+            //        item.ChatFile.FileData = audio;
+            //    }
+            //}
             
             var room = query.Select(cr => new ChatRoomDto
             {
@@ -163,5 +163,13 @@ namespace KozoskodoAPI.Repo
             await _context.SaveChangesAsync();
             return response;
         }
+
+        public async Task<string> GetChatFileTypeAsync(string token)
+        {
+            var file = await _context.ChatFile.FirstOrDefaultAsync(t => t.FileToken == token);
+            return file.FileType;
+        }
+
+         
     }
 }

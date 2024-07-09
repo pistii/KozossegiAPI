@@ -10,7 +10,7 @@ namespace KozoskodoAPI.DTOs
         public int AuthorId { get; set; }
         public int receiverId { get; set; }
         [StringLength(800)]
-        public string message { get; set; }
+        public string? message { get; set; }
         public Status status { get; set; }
         public FileUpload? chatFile { get; set; }
     }
