@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using KozoskodoAPI.Repo;
 using KozossegiAPI.Models.Cloud;
 using KozossegiAPI.Services;
+using KozossegiAPI.Controllers.Cloud.Helpers;
 
 namespace KozoskodoAPI.Controllers
 {
@@ -16,15 +17,18 @@ namespace KozoskodoAPI.Controllers
         public IStorageController? _storageController;
         public INotificationRepository _InotificationRepository;
         public IPostRepository<PostDto> _PostRepository;
+        public IFileHandlerService _fileHandlerService;
         public PostController(
 
             IPostRepository<PostDto> postRepository,
+            IFileHandlerService fileHandlerService,
             IStorageController? storageController = null,
             INotificationRepository notificationRepository = null)
         {
             _storageController = storageController;
             _InotificationRepository = notificationRepository;
             _PostRepository = postRepository;
+            _fileHandlerService = fileHandlerService;
         }
 
         [HttpGet("{id}")]
@@ -94,13 +98,10 @@ namespace KozoskodoAPI.Controllers
                     //await _context.SaveChangesAsync();
                     await _PostRepository.InsertSaveAsync<Post>(newPost);
 
-                    ContentType type = 
-                        dto.Type == "image/jpg" || 
-                        dto.Type == "image/jpeg" || 
-                        dto.Type == "image/png" ? 
-                        ContentType.Image : ContentType.Video;
-
-                    
+                    bool isVideo = _fileHandlerService.FormatIsVideo(dto.Type);
+                    if (isVideo || _fileHandlerService.FormatIsImage(dto.Type))
+                    {
+                        ContentType type = isVideo ? ContentType.Video : ContentType.Image;
                     if (dto.File != null)
                     {
                         MediaContent media = new(newPost.Id, dto.Name, type); //mentés az adatbázisba
@@ -118,21 +119,16 @@ namespace KozoskodoAPI.Controllers
                         personId = dto.userId,
                         postId = newPost.Id
                     };
-
-                    //_context.PersonalPost.Add(personalPost);
-                    //await _context.SaveChangesAsync();
                     await _PostRepository.InsertSaveAsync<PersonalPost>(personalPost);
+                    }
 
-
-                    //var closerFriends = _context.ChatRoom.Where(
-                    //    u => u.senderId == dto.userId || u.receiverId == dto.userId)
-                    //    .Select(f => f.senderId == dto.userId ? f.receiverId : f.senderId).ToList();
-
-                    var closerFriends = _PostRepository.GetCloserFriendIds(dto.userId).Result;
+                    var closerFriends = _PostRepository.GetCloserFriendIds(dto.userId);
                     var stringLength = dto.postContent.Length > 60 ? dto.postContent.Take(50) + "..." : dto.postContent;
 
                     foreach (var friendId in closerFriends)
                     {
+                        if (friendId != 0)
+                        {
                         NotificationWithAvatarDto notificationWithAvatarDto = 
                             new NotificationWithAvatarDto(
                                 friendId, 
@@ -141,12 +137,25 @@ namespace KozoskodoAPI.Controllers
                                 dto.postContent, 
                                 NotificationType.NewPost);
                         await _InotificationRepository.RealtimeNotification(friendId, notificationWithAvatarDto);
-                        //_context.Notification.Add(notificationWithAvatarDto);
-                        await _PostRepository.InsertAsync(notificationWithAvatarDto);
+                            await _PostRepository.InsertAsync<Notification>(notificationWithAvatarDto);
+                    }
                     }
                     await _PostRepository.SaveAsync();
 
-                    return Ok(newPost);
+                    HelperService service = new();
+                    var postToReturn = new PostDto()
+                    {
+                        PostContent = newPost.PostContent,
+                        PostId = newPost.Id,
+                        AuthorId = dto.userId,
+                        AuthorAvatar = user.avatar,
+                        Dislikes = 0,
+                        Likes = 0,
+                        FullName = service.GetFullname(user.firstName, user.middleName, user.lastName),
+                        DateOfPost = DateTime.Now,
+                        PostComments = new()
+                    };
+                    return Ok(postToReturn);
                 }
                 return BadRequest("Wrong userId");
             }
