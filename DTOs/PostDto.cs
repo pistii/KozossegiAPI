@@ -54,6 +54,11 @@ namespace KozoskodoAPI.DTOs
         {
         }
 
+        public CreatePostDto()
+        {
+            
+        }
+
         public int SourceId { get; set; }
         public int userId { get; set; }
         public string postContent { get; set; }

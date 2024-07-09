@@ -14,7 +14,11 @@ namespace KozoskodoAPI.DTOs
     /// </summary>
     public class ModifyUserInfoDTO : AvatarUpload
     {
-        public ModifyUserInfoDTO(int UserId, string name, string type, IFormFile file) : base(UserId, name, type, file)
+        public ModifyUserInfoDTO()
+        {
+            
+        }
+        public ModifyUserInfoDTO(int UserId, string? name, string? type, IFormFile? file) : base(UserId, name, type, file)
         {
         }
 
