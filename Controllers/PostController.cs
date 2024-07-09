@@ -31,7 +31,7 @@ namespace KozoskodoAPI.Controllers
         public async Task<ActionResult<Post>> Get(int id)
         {
             //var res = await _context.Post.FindAsync(id);
-            var res = _PostRepository.GetByIdAsync<Post>(id).Result;
+            var res = await _PostRepository.GetByIdAsync<Post>(id);
             if (res != null)
             {
                 return Ok(res);
@@ -105,10 +105,9 @@ namespace KozoskodoAPI.Controllers
                         MediaContent media = new(newPost.Id, dto.Name, type); //mentés az adatbázisba
                         FileUpload newFile = new FileUpload(dto.Name, dto.Type, dto.File); //mentés a felhőbe
                         
-                        var fileName = await _storageController.AddFile(newFile, StorageController.BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
+                        var fileName = await _storageController.AddFile(newFile, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
                         media.FileName = fileName.ToString();
-                        //_context.MediaContent.Add(media);
-                        _PostRepository.InsertAsync<MediaContent>(media);
+                        await _PostRepository.InsertAsync<MediaContent>(media);
                         //await _context.SaveChangesAsync(); Elég a végén menteni most még...
                     }
 
