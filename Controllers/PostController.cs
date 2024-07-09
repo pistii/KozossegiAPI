@@ -49,7 +49,8 @@ namespace KozoskodoAPI.Controllers
         [HttpGet("GetAllPost/{profileId}/{userId}/{currentPage}/{itemPerRequest}/")]
         public async Task<ContentDto<PostDto>> GetAllPost(int profileId, int userId, int currentPage = 1, int itemPerRequest = 10)
          {
-            var sortedItems = _PostRepository.GetAllPost(profileId, userId, currentPage, itemPerRequest);
+            var sortedItems = _PostRepository.GetAllPost(profileId, userId);
+            if (sortedItems == null) return null;
             int totalPages = _PostRepository.GetTotalPages(sortedItems.Result, itemPerRequest).Result;
             //var returnValue = sortedItems
             //.Skip((currentPage - 1) * itemPerRequest)
