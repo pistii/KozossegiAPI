@@ -1,7 +1,6 @@
-﻿
-using Microsoft.Extensions.Caching.Memory;
+﻿using Microsoft.Extensions.Caching.Memory;
 
-namespace KozoskodoAPI.SMTP.Storage
+namespace KozossegiAPI.Storage
 {
     public class VerificationCodeCache : IVerificationCodeCache
     {
@@ -19,10 +18,10 @@ namespace KozoskodoAPI.SMTP.Storage
         {
             if (!_memoryCache.TryGetValue(verCode, out var val))
             {
-                
+
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                     .SetSlidingExpiration(TimeSpan.FromSeconds(900)); //15 perc után törlődik a gyorsítótárból
-                
+
                 _memoryCache.Set(verCode, guid, cacheEntryOptions);
                 return;
             }
