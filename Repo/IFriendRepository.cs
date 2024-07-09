@@ -15,5 +15,6 @@ namespace KozoskodoAPI.Repo
         public Task<Friend?> FriendshipExists(Friend friendship);
         Task<IEnumerable<Personal>> GetAllUserWhoHasBirthdayToday();
         Task<Personal?> GetUserWithNotification(int userId);
+        Task<IEnumerable<Personal>> GetAllFriendPersonalAsync(int userId);
     }
 }
