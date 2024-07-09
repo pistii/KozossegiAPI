@@ -172,26 +172,19 @@ namespace KozoskodoAPI.Controllers
                 return Ok();
             }
 
-        //Deletes the post if exists and can be found
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(int id) 
         {
-            //var post = await _context.Post.FindAsync(id);
-            var post = _PostRepository.GetByIdAsync<Post>(id).Result;
+            var post = await _PostRepository.GetByIdAsync<Post>(id);
             if (post == null)
                 return NotFound();
 
             //Find the person in the personalPost junction table and remove the connection
-            //var personalPost = _context.PersonalPost.FirstOrDefault(_ => _.postId == post.Id);
-            var personalPost = _PostRepository.GetByIdAsync<PersonalPost>(post.Id).Result;
-            //_context.PersonalPost.Remove(personalPost);
+            var personalPost = await _PostRepository.GetByIdAsync<PersonalPost>(post.Id);
             await _PostRepository.RemoveAsync<PersonalPost>(personalPost);
             await _PostRepository.RemoveAsync(post);
             await _PostRepository.SaveAsync();
-            //_context.Post.Remove(post);
-            //await _context.SaveChangesAsync();
-
-            return NoContent();
+            return Ok();
         }
 
         //Likes or dislikes a post.
