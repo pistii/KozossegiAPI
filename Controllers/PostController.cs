@@ -165,11 +165,10 @@ namespace KozoskodoAPI.Controllers
                 if (post == null || post.Id != id) 
                     return NotFound();
 
-                post.PostComments = null;
                 //Modify only the content and the date of post
                 post.PostContent = data.postContent;
                 post.DateOfPost = DateTime.UtcNow;
-                await _PostRepository.InsertSaveAsync(post);
+                await _PostRepository.UpdateThenSaveAsync(post);
                 return Ok();
             }
 
