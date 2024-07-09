@@ -19,6 +19,16 @@ namespace KozoskodoAPI.Repo
             helperService = new();
         }
 
+        public async Task<ContentDto<PostDto>> GetAllPost(int profileId, int userId, int currentPage = 1, int itemPerRequest = 10)
+        {
+            var sortedItems = GetAllPost(profileId, userId);
+            if (sortedItems == null) return null;
+            int totalPages = await GetTotalPages(sortedItems.Result, itemPerRequest);
+            var returnValue = Paginator(sortedItems.Result, currentPage, itemPerRequest).ToList();
+
+            return new ContentDto<PostDto>(returnValue, totalPages);
+        }
+
         /// <summary>
         /// Get all post with comments
         /// </summary>

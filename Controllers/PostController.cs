@@ -53,15 +53,7 @@ namespace KozoskodoAPI.Controllers
         [HttpGet("GetAllPost/{profileId}/{userId}/{currentPage}/{itemPerRequest}/")]
         public async Task<ContentDto<PostDto>> GetAllPost(int profileId, int userId, int currentPage = 1, int itemPerRequest = 10)
          {
-            var sortedItems = _PostRepository.GetAllPost(profileId, userId);
-            if (sortedItems == null) return null;
-            int totalPages = _PostRepository.GetTotalPages(sortedItems.Result, itemPerRequest).Result;
-            //var returnValue = sortedItems
-            //.Skip((currentPage - 1) * itemPerRequest)
-            //.Take(itemPerRequest).ToList();
-            var returnValue = _PostRepository.Paginator(sortedItems.Result, currentPage, itemPerRequest).ToList();
-
-            return new ContentDto<PostDto>(returnValue, totalPages);
+            return await _PostRepository.GetAllPost(profileId, userId, currentPage, itemPerRequest);
         }
 
         [HttpGet("getPhotos/{profileId}/{cp}/{ipr}")]
@@ -169,26 +161,17 @@ namespace KozoskodoAPI.Controllers
         [HttpPut("{id}")] 
         public async Task<IActionResult> Put(int id, [FromForm] CreatePostDto data)
         {
-            try
-            {
-                //var post = await _context.Post.FindAsync(id);
                 var post = await _PostRepository.GetByIdAsync<Post>(id);
                 if (post == null || post.Id != id) 
-                    return NotFound("The post id and the given id is incorrect.");
+                    return NotFound();
 
                 post.PostComments = null;
                 //Modify only the content and the date of post
                 post.PostContent = data.postContent;
-                //_context.Entry(post).State = EntityState.Modified;
-                //await _context.SaveChangesAsync();
+                post.DateOfPost = DateTime.UtcNow;
                 await _PostRepository.InsertSaveAsync(post);
-                return Ok("Sikeres módosítás");
-                
-            } catch (Exception ex)
-            {
-                return BadRequest(ex);
+                return Ok();
             }
-        }
 
         //Deletes the post if exists and can be found
         [HttpDelete("delete/{id}")]

@@ -103,16 +103,14 @@ namespace KozoskodoAPI.Controllers
             {
                 try
                 {
-                    PostController postController = new(_postRepository);
-
-                    var postsTask = postController.GetAllPost(profileToViewId, viewerUserId, 1);
-                    var friendsTask = _friendRepository.GetAll(profileToViewId);
+                    var postsTask = _postRepository.GetAllPost(profileToViewId, viewerUserId, 1);
+                    var friends = await _friendRepository.GetAll(profileToViewId);
                     var familiarityStatusTask = _friendRepository.CheckIfUsersInRelation(profileToViewId, viewerUserId);
 
-                    await Task.WhenAll(postsTask, friendsTask, familiarityStatusTask);
+                    await Task.WhenAll(postsTask, familiarityStatusTask);
 
                     var posts = await postsTask;
-                    var friends = await friendsTask;
+                    //var friends = await friendsTask;
                     var familiarityStatus = await familiarityStatusTask;
 
                     bool reminduser = false;
