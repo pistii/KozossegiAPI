@@ -1,15 +1,10 @@
-﻿using Humanizer;
-using KozoskodoAPI.Controllers.Cloud;
-using KozoskodoAPI.Data;
+﻿using KozossegiAPI.Controllers.Cloud;
 using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Drawing;
-using System.Runtime.Intrinsics.X86;
 using KozoskodoAPI.Repo;
+using KozossegiAPI.Models.Cloud;
+using KozossegiAPI.Services;
 
 namespace KozoskodoAPI.Controllers
 {
@@ -18,23 +13,17 @@ namespace KozoskodoAPI.Controllers
     //[Authorize]
     public class PostController : ControllerBase
     {
-        public readonly DBContext _context;
-        public StorageController? _storageController;
+        public IStorageController? _storageController;
         public INotificationRepository _InotificationRepository;
         public IPostRepository<PostDto> _PostRepository;
-        public PostController(DBContext context, 
-            StorageController? storageController,
-            INotificationRepository notificationRepository,
-            IPostRepository<PostDto> postRepository)
+        public PostController(
+
+            IPostRepository<PostDto> postRepository,
+            IStorageController? storageController = null,
+            INotificationRepository notificationRepository = null)
         {
-            _context = context;
             _storageController = storageController;
             _InotificationRepository = notificationRepository;
-            _PostRepository = postRepository;
-        }
-
-        public PostController(IPostRepository<PostDto> postRepository)
-        {
             _PostRepository = postRepository;
         }
 
@@ -66,6 +55,18 @@ namespace KozoskodoAPI.Controllers
             //.Skip((currentPage - 1) * itemPerRequest)
             //.Take(itemPerRequest).ToList();
             var returnValue = _PostRepository.Paginator(sortedItems.Result, currentPage, itemPerRequest).ToList();
+
+            return new ContentDto<PostDto>(returnValue, totalPages);
+        }
+
+        [HttpGet("getPhotos/{profileId}/{cp}/{ipr}")]
+        public async Task<ContentDto<PostDto>> GetImages(int profileId, int cp = 1, int ipr = 10)
+        {
+            var sortedItems = await _PostRepository.GetImages(profileId);
+            if (sortedItems == null) return null;
+            int totalPages = await _PostRepository.GetTotalPages(sortedItems, ipr);
+
+            var returnValue = _PostRepository.Paginator(sortedItems, cp, ipr).ToList();
 
             return new ContentDto<PostDto>(returnValue, totalPages);
         }
