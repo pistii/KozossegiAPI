@@ -82,13 +82,14 @@ namespace KozoskodoAPI.Models
     /// </summary>
     public partial class Personal_IsOnlineDto
     {
-        public Personal_IsOnlineDto(Personal user)
+        public Personal_IsOnlineDto(Personal user, bool isOnlineEnabled)
         {
             id = user.id;
             firstName = user.firstName;
             middleName = user.middleName;
             lastName = user.lastName;
             avatar = user.avatar;
+            isOnline = isOnlineEnabled;
         }
         public int id { get; set; }
         public string firstName { get; set; }
