@@ -43,7 +43,10 @@ namespace KozoskodoAPI.Realtime
                 if (conn.Value == userId)
                 {
                     await Clients.Client(userId.ToString()).ReceiveNotification(userId, dto);
-                    await Clients.Client(_connections.GetConnectionById(userId)).ReceiveNotification(userId, dto);
+                    foreach (var user in _connections.GetConnectionsById(userId))
+                    {
+                        await Clients.Client(user).ReceiveNotification(userId, dto);
+                    }
                 }
             }
             //await _connectionHandler.Clients.Client(userId.ToString()).ReceiveNotification(userId, dto);
@@ -53,7 +56,10 @@ namespace KozoskodoAPI.Realtime
 
         public async Task SendNotification(int toId, NotificationWithAvatarDto dto)
         {
-            await Clients.Client(_connections.GetConnectionById(toId)).ReceiveNotification(toId, dto);
+            foreach (var user in _connections.GetConnectionsById(toId))
+            {
+                await Clients.Client(user).ReceiveNotification(toId, dto);
+            }
         }
     }
 }
