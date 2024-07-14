@@ -52,7 +52,7 @@ namespace KozoskodoAPI.Controllers
         [HttpGet("GetAllPost/{profileId}/{userId}/{currentPage}/")]
         [HttpGet("GetAllPost/{profileId}/{userId}/{currentPage}/{itemPerRequest}/")]
         public async Task<ContentDto<PostDto>> GetAllPost(int profileId, int userId, int currentPage = 1, int itemPerRequest = 10)
-         {
+        {
             return await _PostRepository.GetAllPost(profileId, userId, currentPage, itemPerRequest);
         }
 
@@ -94,24 +94,24 @@ namespace KozoskodoAPI.Controllers
                     if (isVideo || _fileHandlerService.FormatIsImage(dto.Type))
                     {
                         ContentType type = isVideo ? ContentType.Video : ContentType.Image;
-                    if (dto.File != null)
-                    {
-                        MediaContent media = new(newPost.Id, dto.Name, type); //mentés az adatbázisba
-                        FileUpload newFile = new FileUpload(dto.Name, dto.Type, dto.File); //mentés a felhőbe
-                        
-                        var fileName = await _storageController.AddFile(newFile, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
-                        media.FileName = fileName.ToString();
-                        await _PostRepository.InsertAsync<MediaContent>(media);
-                        //await _context.SaveChangesAsync(); Elég a végén menteni most még...
-                    }
+                        if (dto.File != null)
+                        {
+                            MediaContent media = new(newPost.Id, dto.Name, type); //mentés az adatbázisba
+                            FileUpload newFile = new FileUpload(dto.Name, dto.Type, dto.File); //mentés a felhőbe
 
-                    //Create new junction table with user and postId
-                    PersonalPost personalPost = new PersonalPost()
-                    {
-                        personId = dto.userId,
-                        postId = newPost.Id
-                    };
-                    await _PostRepository.InsertSaveAsync<PersonalPost>(personalPost);
+                            var fileName = await _storageController.AddFile(newFile, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
+                            media.FileName = fileName.ToString();
+                            await _PostRepository.InsertAsync<MediaContent>(media);
+                            //await _context.SaveChangesAsync(); Elég a végén menteni most még...
+                        }
+
+                        //Create new junction table with user and postId
+                        PersonalPost personalPost = new PersonalPost()
+                        {
+                            personId = dto.userId,
+                            postId = newPost.Id
+                        };
+                        await _PostRepository.InsertSaveAsync<PersonalPost>(personalPost);
                     }
 
                     var closerFriends = _PostRepository.GetCloserFriendIds(dto.userId);
@@ -121,16 +121,16 @@ namespace KozoskodoAPI.Controllers
                     {
                         if (friendId != 0)
                         {
-                        NotificationWithAvatarDto notificationWithAvatarDto = 
-                            new NotificationWithAvatarDto(
-                                friendId, 
-                                user.id, 
-                                user.avatar, 
-                                dto.postContent, 
-                                NotificationType.NewPost);
-                        await _InotificationRepository.RealtimeNotification(friendId, notificationWithAvatarDto);
+                            NotificationWithAvatarDto notificationWithAvatarDto =
+                                new NotificationWithAvatarDto(
+                                    friendId,
+                                    user.id,
+                                    user.avatar,
+                                    dto.postContent,
+                                    NotificationType.NewPost);
+                            await _InotificationRepository.RealtimeNotification(friendId, notificationWithAvatarDto);
                             await _PostRepository.InsertAsync<Notification>(notificationWithAvatarDto);
-                    }
+                        }
                     }
                     await _PostRepository.SaveAsync();
 
@@ -158,11 +158,11 @@ namespace KozoskodoAPI.Controllers
         }
 
         //Gets the postId and the modified content of the post
-        [HttpPut("{id}")] 
+        [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromForm] CreatePostDto data)
         {
                 var post = await _PostRepository.GetByIdAsync<Post>(id);
-                if (post == null || post.Id != id) 
+                if (post == null || post.Id != id)
                     return NotFound();
 
                 //Modify only the content and the date of post
@@ -170,10 +170,10 @@ namespace KozoskodoAPI.Controllers
                 post.DateOfPost = DateTime.UtcNow;
                 await _PostRepository.UpdateThenSaveAsync(post);
                 return Ok();
-            }
+        }
 
         [HttpDelete("delete/{id}")]
-        public async Task<IActionResult> Delete(int id) 
+        public async Task<IActionResult> Delete(int id)
         {
             var post = await _PostRepository.GetByIdAsync<Post>(id);
             if (post == null)
@@ -189,11 +189,14 @@ namespace KozoskodoAPI.Controllers
 
         //Likes or dislikes a post.
         //Also increments or decrements the number of likes or dislikes
+        /*
         [HttpPut("action")]
         public async Task<IActionResult> DoAction(Like_DislikeDto dto)
         {
-            var post = await _context.Post.FindAsync(dto.postId);
-            if (post == null) return NotFound("Something went wrong...");
+            //TODO: This will be updated when the writing the tests are done. Make it work with comments also from commentcontroller.
+
+            var post = await _PostRepository.GetByIdAsync<Post>(dto.postId);
+            if (post == null) return NotFound();
             //TODO: Refactor into postDto and return also the userReaction
             var isUserDidAction = await _context.PostReaction.FirstOrDefaultAsync(u => u.PostId == dto.postId && u.UserId == dto.UserId);
 
@@ -252,7 +255,8 @@ namespace KozoskodoAPI.Controllers
             return Ok(post);
         }
 
-        
+        */
+
     }
 
 }

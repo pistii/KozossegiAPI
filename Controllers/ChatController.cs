@@ -216,11 +216,10 @@ namespace KozoskodoAPI.Controllers
             {
                 return null;
             }
-            var sortedChatContents = _chatRepository.GetSortedChatContent(roomid);
             //Map the original chatContent object to ChatContentDto. This way the ChatFile will contain the audio object.
             var content = _chatRepository.GetSortedChatContent(roomid).Select(c => c.ToDto()).Reverse().ToList();
 
-            var totalMessages = sortedChatContents.Count();
+            var totalMessages = content.Count();
             var totalPages = (int)Math.Ceiling((double)totalMessages / messagesPerPage);
 
             var returnValue = _chatRepository.Paginator<ChatContentDto>(content, currentPage, messagesPerPage).ToList();

@@ -20,6 +20,7 @@ using KozossegiAPI.SMTP;
 using KozossegiAPI.Controllers.Cloud;
 using KozossegiAPI.Storage;
 using KozossegiAPI.Controllers.Cloud.Helpers;
+using Serilog;
 
 namespace KozoskodoAPI
 {
@@ -85,6 +86,14 @@ namespace KozoskodoAPI
             services.AddHttpContextAccessor();
 
             services.AddMvc();
+
+            //services.AddLogging(builder => builder.AddConsole());
+            services.AddSerilog();
+            Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Console()
+            .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
+            .CreateLogger();
 
             services.AddSignalR(options =>
             {

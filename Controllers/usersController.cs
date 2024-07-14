@@ -4,26 +4,27 @@ using KozoskodoAPI.Auth.Helpers;
 using KozoskodoAPI.Data;
 using KozoskodoAPI.Repo;
 using KozoskodoAPI.SMTP;
-using KozoskodoAPI.SMTP.Storage;
 using KozoskodoAPI.Security;
 using KozoskodoAPI.DTOs;
 
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using KozoskodoAPI.Controllers.Cloud;
 using Bcry = BCrypt.Net.BCrypt;
 using System.Text.RegularExpressions;
 using KozossegiAPI.SMTP;
+using KozossegiAPI.Models.Cloud;
+using KozossegiAPI.Storage;
+using KozossegiAPI.Services;
 
 namespace KozoskodoAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class usersController : ControllerBase
     {
         private readonly IJwtTokenManager _jwtTokenManager;
         private readonly IJwtUtils _jwtUtils;
+        private ILogger _logger;
 
         private readonly IFriendRepository _friendRepository;
 
@@ -35,7 +36,7 @@ namespace KozoskodoAPI.Controllers
         private readonly IVerificationCodeCache _verCodeCache;
         private readonly IEncodeDecode _encodeDecode;
         protected readonly string URL_BASE = "http://localhost:5173/";
-
+        
         public usersController(
             IJwtTokenManager jwtTokenManager,
             IJwtUtils jwtUtils,
@@ -77,11 +78,15 @@ namespace KozoskodoAPI.Controllers
                 new Claim(ClaimTypes.GivenName, "A user"),
                 new Claim(ClaimTypes.NameIdentifier, userId.ToString())
             });
+            //using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
+            //_logger = factory.CreateLogger<usersController>();
+
+            //LoggerService.LogStartupMessage(_logger, "user logged in" + login.ToString());
 
             AuthenticateResponse userDto = new AuthenticateResponse(response.personal!, response.token, identity.Claims);
             return Ok(userDto);
         }
-        
+
         // GET: user
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
@@ -103,15 +108,15 @@ namespace KozoskodoAPI.Controllers
             {
                 try
                 {
-                    var postsTask = _postRepository.GetAllPost(profileToViewId, viewerUserId, 1);
+                    var posts = await _postRepository.GetAllPost(profileToViewId, viewerUserId, 1);
                     var friends = await _friendRepository.GetAll(profileToViewId);
-                    var familiarityStatusTask = _friendRepository.CheckIfUsersInRelation(profileToViewId, viewerUserId);
+                    var familiarityStatus = await _friendRepository.CheckIfUsersInRelation(profileToViewId, viewerUserId);
 
-                    await Task.WhenAll(postsTask, familiarityStatusTask);
+                    //await Task.WhenAll(postsTask, familiarityStatusTask);
 
-                    var posts = await postsTask;
-                    //var friends = await friendsTask;
-                    var familiarityStatus = await familiarityStatusTask;
+                    //var posts = await postsTask;
+                    //var friends = friends;
+                    //var familiarityStatus = await familiarityStatusTask;
 
                     bool reminduser = false;
 
@@ -226,7 +231,7 @@ namespace KozoskodoAPI.Controllers
             Personal? user = await _userRepository.GetPersonalWithSettingsAndUserAsync(userInfoDTO.UserId);
             bool emailOrPasswordChanged = false;
             string emailValidationPattern = @"!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/";
-
+            
             if (user != null)
             {//will be checked the values individually because the user can update one, or more info and don't want to change the non null values to null.
                 if (!string.IsNullOrEmpty(userInfoDTO.Name) && userInfoDTO.File != null)
@@ -302,8 +307,8 @@ namespace KozoskodoAPI.Controllers
                         fullName = user.firstName + " " + user.lastName;
                     }
 
-                    var htmlTemplate = getEmailTemplate("userDataChanged.html");
-                    htmlTemplate.Replace("{userFullName}", user.lastName);
+                    //var htmlTemplate = getEmailTemplate("userDataChanged.html");
+                    //htmlTemplate.Replace("{userFullName}", user.lastName);
                     //TODO: Enable the email sending
                     //_mailSender.SendMail("Módosítás történt a felhasználói fiókodban", htmlTemplate, fullName, user.email);
                 }
@@ -317,7 +322,7 @@ namespace KozoskodoAPI.Controllers
                         await _userRepository.InsertAsync(newStudy);
                     } else
                     {
-                        var userStudy = await _userRepository.GetByIdAsync<Studies>(user.id); //await _context.Studies.FirstOrDefaultAsync(s => s.FK_UserId == user.id);
+                        var userStudy = await _userRepository.GetByIdAsync<Studies>(user.id);
                         if (!string.IsNullOrEmpty(userInfoDTO.SchoolName))
                         {
                             userStudy.SchoolName = userInfoDTO.SchoolName;
@@ -333,16 +338,16 @@ namespace KozoskodoAPI.Controllers
                                 return BadRequest("Invalid school year");
                             else
                             {
-                        if (userInfoDTO.StartYear != null)
-                        {
+                                if (userInfoDTO.StartYear != null)
+                                {
                                     userStudy.StartYear = userInfoDTO.StartYear;
-                        }
-                        if (userInfoDTO.EndYear != null)
-                        {
+                                }
+                                if (userInfoDTO.EndYear != null)
+                                {
                                     userStudy.EndYear = userInfoDTO.EndYear;
+                                }
+                            }
                         }
-                    }
-                }
                     }
                 }
 
@@ -384,16 +389,16 @@ namespace KozoskodoAPI.Controllers
         /// <returns></returns>
         [AllowAnonymous]
         [HttpPost("ForgotPw")]
-        public async Task<IActionResult> ForgotPw([FromBody]  EncryptedDataDto dto) 
+        public async Task<IActionResult> ForgotPw([FromBody] EncryptedDataDto dto) 
         {
-            var ip = HttpContext.Connection.RemoteIpAddress.ToString();
+            //TODO: get ip to improve security
+            //var ip = HttpContext.Connection.RemoteIpAddress.ToString();
             var decryptedEmail = _encodeDecode.Decrypt(dto.Data, "I love chocolate");
             int verificationCode = 123456;
             user? user = await _userRepository.GetUserByEmailAsync(decryptedEmail);
             if (user != null)
             {
                 //var token = _jwtUtils.GenerateJwtToken(user); //TODO: generate 15min access tokens
-                //string link = $"{URL_BASE}" + HttpUtility.UrlPathEncode($"reset-pw/{token}");
                 Random random = new Random();
                 verificationCode = random.Next(100000, 999999);
 
@@ -401,8 +406,8 @@ namespace KozoskodoAPI.Controllers
 
                 string htmlTemplate = getEmailTemplate("forgotPassword.html");
 
-                htmlTemplate = htmlTemplate.Replace("{LastName}", user.personal.lastName);
-                htmlTemplate = htmlTemplate.Replace("{VerificationCode}", verificationCode.ToString());
+                htmlTemplate.Replace("{LastName}", user.personal.lastName);
+                htmlTemplate.Replace("{VerificationCode}", verificationCode.ToString());
 
                 //TODO: Send email
                 //_mailSender.SendMail("Elfelejtett jelszó", htmlTemplate, user.personal.firstName + " " + user.personal.lastName, user.email!);
@@ -418,9 +423,6 @@ namespace KozoskodoAPI.Controllers
         public async Task<IActionResult> IsVercodeCorrect(EncryptedDataDto dto)  //TODO: Add rate limiting to requests: https://learn.microsoft.com/en-us/aspnet/core/performance/rate-limit?view=aspnetcore-8.0
         {
             string verCode = _encodeDecode.Decrypt(dto.Data, "I love chocolateI love chocolate");
-            //var splitted = data.Split('&');
-            //var verCode = splitted[0];
-            //var tries = splitted[1];
             var matchVercode = _verCodeCache.GetValue(verCode);
             if (!string.IsNullOrEmpty(matchVercode))
             {
@@ -429,10 +431,10 @@ namespace KozoskodoAPI.Controllers
                 {
                     user.password = Bcry.HashPassword(verCode);
                     await _userRepository.InsertSaveAsync(user);
-                    return Ok(dto);
+                    return Ok();
                 }
             }
-            return NotFound("");
+            return NotFound();
         }
 
         [HttpPost("password/modify")]
@@ -496,7 +498,7 @@ namespace KozoskodoAPI.Controllers
             {
                 await _userRepository.UpdateThenSaveAsync(user);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception e)
             {
                 var exists = await _userRepository.GetByIdAsync<user>(id);
                 if (exists == null)

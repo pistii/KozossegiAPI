@@ -21,10 +21,10 @@ namespace KozoskodoAPI.Repo
 
         public async Task<ContentDto<PostDto>> GetAllPost(int profileId, int userId, int currentPage = 1, int itemPerRequest = 10)
         {
-            var sortedItems = GetAllPost(profileId, userId);
+            var sortedItems = await GetAllPost(profileId, userId);
             if (sortedItems == null) return null;
-            int totalPages = await GetTotalPages(sortedItems.Result, itemPerRequest);
-            var returnValue = Paginator(sortedItems.Result, currentPage, itemPerRequest).ToList();
+            int totalPages = await GetTotalPages(sortedItems, itemPerRequest);
+            var returnValue = Paginator(sortedItems, currentPage, itemPerRequest).ToList();
 
             return new ContentDto<PostDto>(returnValue, totalPages);
         }

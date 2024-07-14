@@ -27,7 +27,10 @@ namespace KozoskodoAPI.Repo
 
         public async Task<Personal?> GetPersonalWithSettingsAndUserAsync(int userId)
         {
-            var user = await _dbContext.Personal.Include(p => p.Settings).Include(u => u.users).FirstOrDefaultAsync(p => p.id == userId);
+            var user = await _dbContext.Personal
+                .Include(p => p.Settings)
+                .Include(u => u.users)
+                .FirstOrDefaultAsync(p => p.id == userId);
             return user;
         }
 
