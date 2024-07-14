@@ -1,15 +1,7 @@
 ﻿using KozoskodoAPI.Data;
 using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
-using KozossegiAPI.Controllers.Cloud;
-using KozossegiAPI.Controllers.Cloud.Helpers;
-using KozossegiAPI.DTOs;
-using KozossegiAPI.Models;
-using KozossegiAPI.Models.Cloud;
-using KozossegiAPI.Services;
 using Microsoft.EntityFrameworkCore;
-using MimeKit.Encodings;
-using System.Linq.Expressions;
 
 namespace KozoskodoAPI.Repo
 {
@@ -30,6 +22,19 @@ namespace KozoskodoAPI.Repo
                 .Where(user => user.senderId == userId || user.receiverId == userId)
                 .OrderByDescending(_ => _.endedDateTime)
                 .ToListAsync();
+
+            var chatContentIds = query.SelectMany(cr => cr.ChatContents)
+                .Select(cc => cc.MessageId)
+                .ToList();
+
+            var chatContents = await _context.ChatContent
+                .Include(c => c.ChatFile)
+                .Where(c => chatContentIds.Contains(c.MessageId))
+                .OrderByDescending(c => c.sentDate)
+                .Take(20))
+            .Where(user => user.senderId == userId || user.receiverId == userId)
+            .OrderByDescending(_ => _.endedDateTime)
+            .ToListAsync();
 
             var chatContentIds = query.SelectMany(cr => cr.ChatContents)
                 .Select(cc => cc.MessageId)

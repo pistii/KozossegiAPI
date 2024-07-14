@@ -1,6 +1,5 @@
 ﻿using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
-using KozossegiAPI.Models;
 
 namespace KozoskodoAPI.Repo
 {

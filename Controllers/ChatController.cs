@@ -218,9 +218,11 @@ namespace KozoskodoAPI.Controllers
             }
             //Map the original chatContent object to ChatContentDto. This way the ChatFile will contain the audio object.
             var content = _chatRepository.GetSortedChatContent(roomid).Select(c => c.ToDto()).Reverse().ToList();
-
+                content => content.chatContentId == roomid);
             var totalMessages = content.Count();
-            var totalPages = (int)Math.Ceiling((double)totalMessages / messagesPerPage);
+            var totalMessages = sortedChatContents.Count();
+
+            var returnValue = _chatRepository.Paginator<ChatContentDto>(content, currentPage, messagesPerPage).ToList();
 
             var returnValue = _chatRepository.Paginator<ChatContentDto>(content, currentPage, messagesPerPage).ToList();
 
@@ -250,7 +252,7 @@ namespace KozoskodoAPI.Controllers
                     Console.Error.WriteLine("Error while downloading file from cloud: " + ex);
                 }
             }
-
+            var returnValue = _chatRepository.Paginator<ChatContent>(sortedChatContents.ToList(), currentPage, messagesPerPage).ToList();
             return new ChatContentForPaginationDto<ChatContentDto>(returnValue, totalPages, currentPage, roomid);
         }
 
@@ -325,13 +327,13 @@ namespace KozoskodoAPI.Controllers
                 return null;
             }
             return null;
+            return new ContentDto<ChatContent>(returnValue, totalPages);
         }
 
 
         [Route("newChat")]
         [HttpPost]
         public async Task<IActionResult> SendMessage([FromBody] ChatDto chatDto)
-        {
             return await Send(chatDto);
         }
 
@@ -350,7 +352,7 @@ namespace KozoskodoAPI.Controllers
             {
                 room = await _chatRepository.CreateChatRoom(chatDto);
             }
-
+                }
             var chatContent = new ChatContent()
             {
                 message = chatDto.message,
@@ -362,7 +364,7 @@ namespace KozoskodoAPI.Controllers
             room.endedDateTime = DateTime.Now;
             room.ChatContents.Add(chatContent);
             await _chatRepository.SaveAsync();
-
+                await _chatRepository.SaveAsync();
             var senderId = chatDto.senderId;
             var toUserId = chatDto.receiverId;
 
@@ -382,7 +384,7 @@ namespace KozoskodoAPI.Controllers
                     };
 
                     await _chatRepository.InsertSaveAsync<ChatFile>(chatFile);
-
+                await RealtimeChatMessage(senderId, toUserId, chatDto.message);
                     if (_connections.ContainsUser(toUserId) && _chatStorage.GetValue(fileToken) != null) //If the receiver user is online
                     {
                         var bytes = helperService.ConvertToByteArray(fileObj.File);
@@ -398,10 +400,11 @@ namespace KozoskodoAPI.Controllers
                     return Ok(chatContent);
                 }
                 return BadRequest("File size exceeded or format not accepted.");
-            }
+                return BadRequest("Something went wrong..." + ex.Message);
             await RealtimeChatMessage(senderId, toUserId, chatDto.message);
 
             return Ok(chatContent);
+            }
         }
 
         [HttpPut("/update")]

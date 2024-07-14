@@ -12,5 +12,6 @@ namespace KozossegiAPI.Controllers.Cloud
         Task<IActionResult> GetVideoChunk(string fileName, long rangeStart, long rangeEnd);
         Task<IActionResult> GetVideo(string fileName);
         Task<byte[]> GetVideoChunkBytes(string fileName, long rangeStart, long rangeEnd);
+        Task<byte[]> GetFileAsByte(string fileName, BucketSelector selectedBucket);
     }
 }
