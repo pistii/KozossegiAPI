@@ -21,13 +21,13 @@ namespace KozoskodoAPI.SMTP
         {
             _appSettings = appsettings.Value;
 
-            if (string.IsNullOrEmpty(_appSettings.Key) || 
-                string.IsNullOrEmpty(_appSettings.Email) ||
-                string.IsNullOrEmpty(_appSettings.Host)
-                )
-            {
-                throw new Exception("No email configuration found.");
-            }
+            //if (string.IsNullOrEmpty(_appSettings.Key) || 
+            //    string.IsNullOrEmpty(_appSettings.Email) ||
+            //    string.IsNullOrEmpty(_appSettings.Host)
+            //    )
+            //{
+            //    throw new Exception("No email configuration found.");
+            //}
         }
 
         void IMailSender.SendMail(string subject, string content, string full_name, string email)

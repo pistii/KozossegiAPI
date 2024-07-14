@@ -1,18 +1,8 @@
-﻿using Humanizer;
-using KozoskodoAPI.Controllers.Cloud;
-using KozoskodoAPI.Data;
+﻿using KozossegiAPI.Controllers.Cloud;
 using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Drawing;
-using System.Runtime.Intrinsics.X86;
 using KozoskodoAPI.Repo;
-using System.Linq;
-using KozossegiAPI.Controllers.Cloud;
-using KozossegiAPI.Models.Cloud;
 
 namespace KozoskodoAPI.Controllers
 {
@@ -121,7 +111,7 @@ namespace KozoskodoAPI.Controllers
                         MediaContent media = new(newPost.Id, dto.Name, type); //mentés az adatbázisba
                         FileUpload newFile = new FileUpload(dto.Name, dto.Type, dto.File); //mentés a felhőbe
                         
-                        var fileName = await _storageController.AddFile(newFile, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
+                        var fileName = await _storageController.AddFile(newFile, StorageController.BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
                         media.FileName = fileName.ToString();
                         await _PostRepository.InsertAsync<MediaContent>(media);
                     }
@@ -177,7 +167,8 @@ namespace KozoskodoAPI.Controllers
 
                 //Modify only the content and the date of post
                 post.PostContent = data.postContent;
-                post.DateOfPost = DateTime.Now;
+                //_context.Entry(post).State = EntityState.Modified;
+                //await _context.SaveChangesAsync();
                 await _PostRepository.InsertSaveAsync(post);
                 return Ok();
                 

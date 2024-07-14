@@ -18,9 +18,9 @@ namespace KozoskodoAPI.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Comment>> Get(int id)
+        public async Task<IActionResult> Get(int id)
         {
-            var res = _commentRepository.GetByIdAsync<Comment>(id).Result;
+            var res = await _commentRepository.GetByIdAsync<Comment>(id);
             if (res != null)
             {
                 return Ok(res);
@@ -37,15 +37,15 @@ namespace KozoskodoAPI.Controllers
             var post = await _commentRepository.GetByIdAsync<Post>(comment.postId);
             if (user == null || post == null) return NotFound();
 
-                Comment newComment = new Comment();
-                newComment.PostId = post.Id;
-                newComment.FK_AuthorId = user.id;
-            newComment.CommentDate = DateTime.Now;
-                newComment.CommentText = comment.commentTxt;
+            Comment newComment = new Comment();
+            newComment.PostId = post.Id;
+            newComment.FK_AuthorId = user.id;
+            newComment.CommentDate = DateTime.UtcNow;
+            newComment.CommentText = comment.commentTxt;
 
-            await _commentRepository.InsertSaveAsync<Comment>(newComment);
-                return Ok(newComment);
-            }
+            await _commentRepository.InsertSaveAsync(newComment);
+            return Ok(newComment);
+        }
 
         //Delete a comment
         [HttpDelete("{id}")]
@@ -72,7 +72,7 @@ namespace KozoskodoAPI.Controllers
             targetComment.CommentDate = DateTime.Now;
                 targetComment.CommentText = comment.commentTxt;
 
-                await _commentRepository.UpdateThenSaveAsync(targetComment);
+            await _commentRepository.UpdateThenSaveAsync(targetComment);
 
                 return Ok();
             
