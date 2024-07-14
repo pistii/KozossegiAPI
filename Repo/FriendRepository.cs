@@ -22,14 +22,14 @@ namespace KozoskodoAPI.Repo
             return user;
         }
 
-        public async Task<IEnumerable<Personal>> GetAll(int id)
+        public async Task<IEnumerable<Personal_IsOnlineDto>> GetAll(int id)
         {
-            var users = await _context.Personal
+            var users = await _context.Personal.Include(u => u.users)
             .Where(p => _context.Friendship
                 .Where(f => (f.FriendId == id || f.UserId == id) && f.StatusId == 1)
                 .Select(f => f.UserId == id ? f.FriendId : f.UserId)
                 .Contains(p.id)
-            )
+            ).Select(f => new Personal_IsOnlineDto(f, f.users.isOnlineEnabled))
             .ToListAsync();
 
             return users;
@@ -38,6 +38,18 @@ namespace KozoskodoAPI.Repo
         public async Task<IEnumerable<Personal>> GetAllFriendAsync(int userId)
         {
             var friends = await _context.Personal.Include(user => user.users)
+            .Where(p => _context.Friendship
+                .Where(f => (f.FriendId == userId || f.UserId == userId) && f.StatusId == 1)
+                .Select(f => f.UserId == userId ? f.FriendId : f.UserId)
+                .Contains(p.id)
+            )
+            .ToListAsync();
+            return friends;
+        }
+
+        public async Task<IEnumerable<Personal>> GetAllFriendPersonalAsync(int userId)
+        {
+            var friends = await _context.Personal
             .Where(p => _context.Friendship
                 .Where(f => (f.FriendId == userId || f.UserId == userId) && f.StatusId == 1)
                 .Select(f => f.UserId == userId ? f.FriendId : f.UserId)

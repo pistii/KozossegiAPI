@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Newtonsoft.Json;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
 
 namespace KozoskodoAPI.Models
 {
@@ -16,7 +16,7 @@ namespace KozoskodoAPI.Models
         public int receiverId { get; set; }
         public DateTime? startedDateTime { get; set; } 
         public DateTime? endedDateTime { get; set; } = DateTime.Now;
-
+        [JsonIgnore]
         public virtual ICollection<ChatContent> ChatContents { get; set; } = new HashSet<ChatContent>();
 
     }

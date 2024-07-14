@@ -40,12 +40,12 @@ namespace KozoskodoAPI.Controllers
             Comment newComment = new Comment();
             newComment.PostId = post.Id;
             newComment.FK_AuthorId = user.id;
-            newComment.CommentDate = DateTime.UtcNow;
+            newComment.CommentDate = DateTime.Now;
             newComment.CommentText = comment.commentTxt;
 
-            await _commentRepository.InsertSaveAsync(newComment);
-            return Ok(newComment);
-        }
+            await _commentRepository.InsertSaveAsync<Comment>(newComment);
+                return Ok(newComment);
+            }
 
         //Delete a comment
         [HttpDelete("{id}")]
@@ -65,16 +65,16 @@ namespace KozoskodoAPI.Controllers
             //var post = await _commentRepository.GetPostWithCommentsById(comment.postId);
 
             //var targetComment = post?.PostComments?.FirstOrDefault(item => item.commentId == id);
-                
+
             var targetComment = await _commentRepository.GetByIdAsync<Comment>(comment.CommentId);
-                if (targetComment == null) return NotFound();
+            if (targetComment == null) return NotFound();
                 
             targetComment.CommentDate = DateTime.Now;
-                targetComment.CommentText = comment.commentTxt;
+            targetComment.CommentText = comment.commentTxt;
 
             await _commentRepository.UpdateThenSaveAsync(targetComment);
 
-                return Ok();
+            return Ok();
             
         }
 

@@ -18,10 +18,10 @@ namespace KozoskodoAPI.Controllers
     {
         private StorageController _storageController;
         private DBContext _ctx;
-        public ImageController(StorageController storageController)
+        public ImageController(StorageController storageController, DBContext dbContext)
         {
             _storageController = storageController;
-            _ctx = _storageController._context;
+            _ctx = dbContext;
         }
 
         //No use anymore
@@ -42,7 +42,7 @@ namespace KozoskodoAPI.Controllers
             var postsWithImage = await _ctx.PersonalPost
                 .Include(p => p.Posts.MediaContents)
                 .Include(p => p.Posts.PostComments)
-                .Where(p => p.Posts.SourceId == userId && p.Posts.MediaContents != null) //Ennyiben tér el a sima post kérelemtől, hogy még ezt kell vizsgálni
+                .Where(p => p.Posts.SourceId == userId && p.Posts.MediaContents.Count > 0) //Ennyiben tér el a sima post kérelemtől, hogy még ezt kell vizsgálni
                 .OrderByDescending(_ => _.Posts.DateOfPost)
                 .Take(requestItems)
                 .Select(p => new PostDto

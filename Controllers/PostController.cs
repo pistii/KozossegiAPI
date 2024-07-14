@@ -3,6 +3,9 @@ using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using KozoskodoAPI.Repo;
+using KozossegiAPI.Models.Cloud;
+using KozossegiAPI.Services;
+using KozossegiAPI.Controllers.Cloud.Helpers;
 
 namespace KozoskodoAPI.Controllers
 {
@@ -11,25 +14,21 @@ namespace KozoskodoAPI.Controllers
     //[Authorize]
     public class PostController : ControllerBase
     {
-        public IStorageController _storageController;
+        public IStorageController? _storageController;
         public INotificationRepository _InotificationRepository;
         public IPostRepository<PostDto> _PostRepository;
-        public IChatRepository<ChatRoom, Personal> _chatRepository;
+        public IFileHandlerService _fileHandlerService;
         public PostController(
-            IStorageController storageController,
-            INotificationRepository notificationRepository,
+
             IPostRepository<PostDto> postRepository,
-            IChatRepository<ChatRoom, Personal> chatRepository)
+            IFileHandlerService fileHandlerService,
+            IStorageController? storageController = null,
+            INotificationRepository notificationRepository = null)
         {
             _storageController = storageController;
             _InotificationRepository = notificationRepository;
             _PostRepository = postRepository;
-            _chatRepository = chatRepository;
-        }
-
-        public PostController(IPostRepository<PostDto> postRepository)
-        {
-            _PostRepository = postRepository;
+            _fileHandlerService = fileHandlerService;
         }
 
         [HttpGet("{id}")]
@@ -53,14 +52,18 @@ namespace KozoskodoAPI.Controllers
         [HttpGet("GetAllPost/{profileId}/{userId}/{currentPage}/")]
         [HttpGet("GetAllPost/{profileId}/{userId}/{currentPage}/{itemPerRequest}/")]
         public async Task<ContentDto<PostDto>> GetAllPost(int profileId, int userId, int currentPage = 1, int itemPerRequest = 10)
-         {
-            var sortedItems = _PostRepository.GetAllPost(profileId, userId);
+        {
+            return await _PostRepository.GetAllPost(profileId, userId, currentPage, itemPerRequest);
+        }
+
+        [HttpGet("getPhotos/{profileId}/{cp}/{ipr}")]
+        public async Task<ContentDto<PostDto>> GetImages(int profileId, int cp = 1, int ipr = 10)
+        {
+            var sortedItems = await _PostRepository.GetImages(profileId);
             if (sortedItems == null) return null;
-            int totalPages = _PostRepository.GetTotalPages(sortedItems.Result, itemPerRequest).Result;
-            //var returnValue = sortedItems
-            //.Skip((currentPage - 1) * itemPerRequest)
-            //.Take(itemPerRequest).ToList();
-            var returnValue = _PostRepository.Paginator(sortedItems.Result, currentPage, itemPerRequest).ToList();
+            int totalPages = await _PostRepository.GetTotalPages(sortedItems, ipr);
+
+            var returnValue = _PostRepository.Paginator(sortedItems, cp, ipr).ToList();
 
             return new ContentDto<PostDto>(returnValue, totalPages);
         }
@@ -84,66 +87,64 @@ namespace KozoskodoAPI.Controllers
 
                     await _PostRepository.InsertSaveAsync<Post>(newPost);
 
-                    
-                    if (dto.File != null)
+                    bool isVideo = _fileHandlerService.FormatIsVideo(dto.Type);
+                    if (isVideo || _fileHandlerService.FormatIsImage(dto.Type))
                     {
-                        string[] videoFormats = { ".mp4", ".avi", ".mkv", ".mov", ".wmv",
-                        ".flv", ".webm", ".mpeg", ".mpg", ".3gp", ".m4v",
-                        "video/mp4", "video/avi", "video/mkv", "video/mov",
-                        "video/mwmv", "video/flv", "video/webm", "video/mpeg",
-                        "video/mwpg", "video/3gp", "video/m4v", };
-                        string[] imageFormats = { ".jpg", ".jpeg", ".png", ".bmp", "gif",
-                        "image/jpg", "image/jpeg", "image/png", "image/bmp", "image/gif" };
-                        ContentType type = ContentType.Image;
-                        if (videoFormats.Contains(dto.Type))
+                        ContentType type = isVideo ? ContentType.Video : ContentType.Image;
+                        if (dto.File != null)
                         {
-                            type = ContentType.Video;
-                        }
-                        else if (imageFormats.Contains(dto.Type))
-                        {
-                            type = ContentType.Image;
-                        } else
-                        {
-                            return BadRequest("File must be an image or video");
+                            MediaContent media = new(newPost.Id, dto.Name, type); //mentés az adatbázisba
+                            FileUpload newFile = new FileUpload(dto.Name, dto.Type, dto.File); //mentés a felhőbe
+
+                            var fileName = await _storageController.AddFile(newFile, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
+                            media.FileName = fileName.ToString();
+                            await _PostRepository.InsertAsync<MediaContent>(media);
+                            //await _context.SaveChangesAsync(); Elég a végén menteni most még...
                         }
 
-
-                        MediaContent media = new(newPost.Id, dto.Name, type); //mentés az adatbázisba
-                        FileUpload newFile = new FileUpload(dto.Name, dto.Type, dto.File); //mentés a felhőbe
-                        
-                        var fileName = await _storageController.AddFile(newFile, StorageController.BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
-                        media.FileName = fileName.ToString();
-                        await _PostRepository.InsertAsync<MediaContent>(media);
+                        //Create new junction table with user and postId
+                        PersonalPost personalPost = new PersonalPost()
+                        {
+                            personId = dto.userId,
+                            postId = newPost.Id
+                        };
+                        await _PostRepository.InsertSaveAsync<PersonalPost>(personalPost);
                     }
 
-                    //Create new junction table with user and postId
-                    PersonalPost personalPost = new PersonalPost()
-                    {
-                        personId = dto.userId,
-                        postId = newPost.Id
-                    };
-
-                    await _PostRepository.InsertAsync<PersonalPost>(personalPost);
-
-                    var closerFriends = _chatRepository.GetChatPartenterIds(dto.userId);
+                    var closerFriends = _PostRepository.GetCloserFriendIds(dto.userId);
                     var stringLength = dto.postContent.Length > 60 ? dto.postContent.Take(50) + "..." : dto.postContent;
-                    if (closerFriends != null)
+
+                    foreach (var friendId in closerFriends)
                     {
-                        foreach (var friendId in closerFriends)
+                        if (friendId != 0)
                         {
-                            NotificationWithAvatarDto notificationWithAvatarDto = 
+                            NotificationWithAvatarDto notificationWithAvatarDto =
                                 new NotificationWithAvatarDto(
-                                    friendId, 
-                                    user.id, 
-                                    user.avatar, 
-                                    dto.postContent, 
+                                    friendId,
+                                    user.id,
+                                    user.avatar,
+                                    dto.postContent,
                                     NotificationType.NewPost);
                             await _InotificationRepository.RealtimeNotification(friendId, notificationWithAvatarDto);
-                            await _PostRepository.InsertAsync(notificationWithAvatarDto);
+                            await _PostRepository.InsertAsync<Notification>(notificationWithAvatarDto);
                         }
                     }
                     await _PostRepository.SaveAsync();
-                    return Ok(newPost);
+
+                    HelperService service = new();
+                    var postToReturn = new PostDto()
+                    {
+                        PostContent = newPost.PostContent,
+                        PostId = newPost.Id,
+                        AuthorId = dto.userId,
+                        AuthorAvatar = user.avatar,
+                        Dislikes = 0,
+                        Likes = 0,
+                        FullName = service.GetFullname(user.firstName, user.middleName, user.lastName),
+                        DateOfPost = DateTime.Now,
+                        PostComments = new()
+                    };
+                    return Ok(postToReturn);
                 }
                 return NotFound();
             }
@@ -154,33 +155,22 @@ namespace KozoskodoAPI.Controllers
         }
 
         //Gets the postId and the modified content of the post
-        [HttpPut("{id}")] 
+        [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromForm] CreatePostDto data)
         {
-            try
-            {
                 var post = await _PostRepository.GetByIdAsync<Post>(id);
-                if (post == null || post.Id != id) 
+                if (post == null || post.Id != id)
                     return NotFound();
-
-                //post.PostComments = null; //Kell ez a sor?
 
                 //Modify only the content and the date of post
                 post.PostContent = data.postContent;
-                //_context.Entry(post).State = EntityState.Modified;
-                //await _context.SaveChangesAsync();
-                await _PostRepository.InsertSaveAsync(post);
+                post.DateOfPost = DateTime.UtcNow;
+                await _PostRepository.UpdateThenSaveAsync(post);
                 return Ok();
-                
-            } catch (Exception ex)
-            {
-                return BadRequest(ex);
-            }
         }
 
-        //Deletes the post if exists
         [HttpDelete("delete/{id}")]
-        public async Task<IActionResult> Delete(int id) 
+        public async Task<IActionResult> Delete(int id)
         {
             var post = await _PostRepository.GetByIdAsync<Post>(id);
             if (post == null)
@@ -263,7 +253,7 @@ namespace KozoskodoAPI.Controllers
         }
 
         */
-        
+
     }
 
 }

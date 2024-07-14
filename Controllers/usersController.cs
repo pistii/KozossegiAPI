@@ -4,31 +4,27 @@ using KozoskodoAPI.Auth.Helpers;
 using KozoskodoAPI.Data;
 using KozoskodoAPI.Repo;
 using KozoskodoAPI.SMTP;
-using KozoskodoAPI.SMTP.Storage;
 using KozoskodoAPI.Security;
 using KozoskodoAPI.DTOs;
 
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using Microsoft.EntityFrameworkCore;
-using KozoskodoAPI.Controllers.Cloud;
-using Google.Api;
-using Newtonsoft.Json;
 using Bcry = BCrypt.Net.BCrypt;
 using System.Text.RegularExpressions;
 using KozossegiAPI.SMTP;
 using KozossegiAPI.Models.Cloud;
-using Microsoft.IdentityModel.Tokens;
+using KozossegiAPI.Storage;
+using KozossegiAPI.Services;
 
 namespace KozoskodoAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class usersController : ControllerBase
     {
         private readonly IJwtTokenManager _jwtTokenManager;
         private readonly IJwtUtils _jwtUtils;
+        private ILogger _logger;
 
         private readonly IFriendRepository _friendRepository;
 
@@ -40,7 +36,7 @@ namespace KozoskodoAPI.Controllers
         private readonly IVerificationCodeCache _verCodeCache;
         private readonly IEncodeDecode _encodeDecode;
         protected readonly string URL_BASE = "http://localhost:5173/";
-
+        
         public usersController(
             IJwtTokenManager jwtTokenManager,
             IJwtUtils jwtUtils,
@@ -82,11 +78,15 @@ namespace KozoskodoAPI.Controllers
                 new Claim(ClaimTypes.GivenName, "A user"),
                 new Claim(ClaimTypes.NameIdentifier, userId.ToString())
             });
+            //using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
+            //_logger = factory.CreateLogger<usersController>();
+
+            //LoggerService.LogStartupMessage(_logger, "user logged in" + login.ToString());
 
             AuthenticateResponse userDto = new AuthenticateResponse(response.personal!, response.token, identity.Claims);
             return Ok(userDto);
         }
-        
+
         // GET: user
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
@@ -108,11 +108,16 @@ namespace KozoskodoAPI.Controllers
             {
                 try
                 {
-                    PostController postController = new(_postRepository);
-                    var posts = await postController.GetAllPost(profileToViewId, viewerUserId, 1);
-
+                    var posts = await _postRepository.GetAllPost(profileToViewId, viewerUserId, 1);
                     var friends = await _friendRepository.GetAll(profileToViewId);
                     var familiarityStatus = await _friendRepository.CheckIfUsersInRelation(profileToViewId, viewerUserId);
+
+                    //await Task.WhenAll(postsTask, familiarityStatusTask);
+
+                    //var posts = await postsTask;
+                    //var friends = friends;
+                    //var familiarityStatus = await familiarityStatusTask;
+
                     bool reminduser = false;
 
                     if (familiarityStatus == "self" && user.users.LastOnline.Year == 1 || //If first login
@@ -302,8 +307,8 @@ namespace KozoskodoAPI.Controllers
                         fullName = user.firstName + " " + user.lastName;
                     }
 
-                    var htmlTemplate = getEmailTemplate("userDataChanged.html");
-                    htmlTemplate.Replace("{userFullName}", user.lastName);
+                    //var htmlTemplate = getEmailTemplate("userDataChanged.html");
+                    //htmlTemplate.Replace("{userFullName}", user.lastName);
                     //TODO: Enable the email sending
                     //_mailSender.SendMail("Módosítás történt a felhasználói fiókodban", htmlTemplate, fullName, user.email);
                 }
@@ -482,26 +487,26 @@ namespace KozoskodoAPI.Controllers
             return NotFound();
         } 
 
-        //[HttpPut("{id}")]
-        //public async Task<IActionResult> Put(int id, user user)
-        //{
-        //    if (id != user.userID)
-        //    {
-        //        return BadRequest();
-        //    }
-        //    try
-        //    {
-        //        await _userRepository.UpdateThenSaveAsync(user);
-        //    }
-        //    catch (DbUpdateConcurrencyException)
-        //    {
-        //        var exists = await _userRepository.GetByIdAsync<user>(id);
-        //        if (exists == null)
-        //            return NotFound();
-        //        return BadRequest();
-        //    }
-        //    return NoContent();
-        //}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Put(int id, user user)
+        {
+            if (id != user.userID)
+            {
+                return BadRequest();
+            }
+            try
+            {
+                await _userRepository.UpdateThenSaveAsync(user);
+            }
+            catch (Exception e)
+            {
+                var exists = await _userRepository.GetByIdAsync<user>(id);
+                if (exists == null)
+                    return NotFound();
+                return BadRequest();
+            }
+            return NoContent();
+        }
 
         //Used from connectionHandler, this method seems like is not needed 
         //public async Task LogoutUser()

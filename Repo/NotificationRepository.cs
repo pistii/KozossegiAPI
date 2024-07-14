@@ -74,7 +74,10 @@ namespace KozoskodoAPI.Repo
         public async Task RealtimeNotification(int toUserId, NotificationWithAvatarDto dto)
         {
             if (_connections.ContainsUser(toUserId))
-                await _notificationHub.Clients.Client(_connections.GetConnectionById(toUserId)).ReceiveNotification(toUserId, dto);
+                foreach (var user in _connections.GetConnectionsById(toUserId))
+                {
+                    await _notificationHub.Clients.Client(user).ReceiveNotification(toUserId, dto);
+                }
         }
 
         public async Task SelectNotification()

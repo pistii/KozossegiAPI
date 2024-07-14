@@ -8,20 +8,19 @@ using KozoskodoAPI.Auth;
 using KozoskodoAPI.Realtime;
 using KozoskodoAPI.Auth.Helpers;
 using KozoskodoAPI.Controllers;
-using KozoskodoAPI.Realtime.Helpers;
 using KozoskodoAPI.Realtime.Connection;
 using KozoskodoAPI.Controllers.Cloud;
 using KozoskodoAPI.Repo;
 using KozoskodoAPI.SMTP;
-using KozoskodoAPI.SMTP.Storage;
 using KozoskodoAPI.Security;
 using KozoskodoAPI.Services;
 using KozoskodoAPI.Models;
 using KozoskodoAPI.DTOs;
 using KozossegiAPI.SMTP;
-using System.Configuration;
-using KozossegiAPI.Services;
 using KozossegiAPI.Controllers.Cloud;
+using KozossegiAPI.Storage;
+using KozossegiAPI.Controllers.Cloud.Helpers;
+using Serilog;
 
 namespace KozoskodoAPI
 {
@@ -35,7 +34,7 @@ namespace KozoskodoAPI
             services.AddDbContext<DBContext>(options =>
                 options.UseMySql(
                     builder.Configuration.GetConnectionString("MediaDB"),
-                    ServerVersion.Parse("10.4.6-mariadb")));
+                    ServerVersion.Parse("10.4.20-mariadb"))); //10.4.6-mariadb
 
             services.AddAuthentication(options =>
                 {
@@ -77,7 +76,8 @@ namespace KozoskodoAPI
             services.AddScoped<IMailSender, SendMail>();
             services.AddSingleton<IVerificationCodeCache, VerificationCodeCache>();
             services.AddScoped<IEncodeDecode, EncodeDecode>();
-
+            services.AddScoped<IFileHandlerService, FileHandlerService>();
+            services.AddSingleton<IChatStorage, ChatStorage>();
             services.AddHostedService<NotificationService>();
 
             services.AddMemoryCache();
@@ -85,6 +85,14 @@ namespace KozoskodoAPI
             services.AddHttpContextAccessor();
 
             services.AddMvc();
+
+            //services.AddLogging(builder => builder.AddConsole());
+            services.AddSerilog();
+            Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Console()
+            .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
+            .CreateLogger();
 
             services.AddSignalR(options =>
             {

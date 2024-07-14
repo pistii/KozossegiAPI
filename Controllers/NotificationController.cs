@@ -1,6 +1,4 @@
-using KozoskodoAPI.Models;
-using KozoskodoAPI.Realtime;
-using KozoskodoAPI.Realtime.Connection;
+﻿using KozoskodoAPI.Models;
 using KozoskodoAPI.Repo;
 using Microsoft.AspNetCore.Mvc;
 
@@ -28,7 +26,7 @@ namespace KozoskodoAPI.Controllers
                 return null;
 
             var few = _notificationRepository.Paginator<NotificationWithAvatarDto>(notifications, currentPage, itemPerRequest);
-            
+                        
             if (notifications.Count > 0) 
                 return Ok(few);
             

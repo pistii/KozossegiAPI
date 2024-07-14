@@ -48,6 +48,13 @@ namespace KozoskodoAPI.Controllers
             return friends;
         }
 
+        [HttpGet("getFriends/{userId}/{currentPage}/{qty}")]
+        public async Task<List<Personal>> GetFriends(int userId)
+        {
+            var friends = await _friendRepository.GetAllFriendAsync(userId);
+            return friends.ToList();
+        }
+
         /// <summary>
         /// Általános lekérdezésnek
         /// </summary>
