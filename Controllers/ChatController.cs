@@ -224,8 +224,6 @@ namespace KozoskodoAPI.Controllers
 
             var returnValue = _chatRepository.Paginator<ChatContentDto>(content, currentPage, messagesPerPage).ToList();
 
-            var returnValue = _chatRepository.Paginator<ChatContentDto>(content, currentPage, messagesPerPage).ToList();
-
             //Check if any of the chatContent has a file
             bool hasFile = content.Any(x => x.ChatFile != null);
             if (hasFile)
