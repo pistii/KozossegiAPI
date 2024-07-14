@@ -1,7 +1,15 @@
 ﻿using KozoskodoAPI.Data;
 using KozoskodoAPI.DTOs;
 using KozoskodoAPI.Models;
+using KozossegiAPI.Controllers.Cloud;
+using KozossegiAPI.Controllers.Cloud.Helpers;
+using KozossegiAPI.DTOs;
+using KozossegiAPI.Models;
+using KozossegiAPI.Models.Cloud;
+using KozossegiAPI.Services;
 using Microsoft.EntityFrameworkCore;
+using MimeKit.Encodings;
+using System.Linq.Expressions;
 
 namespace KozoskodoAPI.Repo
 {
@@ -31,19 +39,6 @@ namespace KozoskodoAPI.Repo
                 .Include(c => c.ChatFile)
                 .Where(c => chatContentIds.Contains(c.MessageId))
                 .OrderByDescending(c => c.sentDate)
-                .Take(20))
-            .Where(user => user.senderId == userId || user.receiverId == userId)
-            .OrderByDescending(_ => _.endedDateTime)
-            .ToListAsync();
-
-            var chatContentIds = query.SelectMany(cr => cr.ChatContents)
-                .Select(cc => cc.MessageId)
-                .ToList();
-
-            var chatContents = await _context.ChatContent
-                .Include(c => c.ChatFile)
-                .Where(c => chatContentIds.Contains(c.MessageId))
-                .OrderByDescending(c => c.sentDate)
                 .Select(i => i.ToDto())
                 .ToListAsync();
 
@@ -56,7 +51,7 @@ namespace KozoskodoAPI.Repo
             //        item.ChatFile.FileData = audio;
             //    }
             //}
-            
+
             var room = query.Select(cr => new ChatRoomDto
             {
                 chatRoomId = cr.chatRoomId,
@@ -78,9 +73,9 @@ namespace KozoskodoAPI.Repo
         {
             var chatRoom = await _context.ChatRoom
                 .Include(x => x.ChatContents.OrderByDescending(x => x.sentDate).Take(20))
-                .FirstOrDefaultAsync(x => x.senderId == user1 && x.receiverId == user2 || 
+                .FirstOrDefaultAsync(x => x.senderId == user1 && x.receiverId == user2 ||
                 x.receiverId == user1 && x.senderId == user2);
-            return chatRoom;            
+            return chatRoom;
         }
 
         //For test only
@@ -117,7 +112,7 @@ namespace KozoskodoAPI.Repo
                 .Where(x => x.chatContentId == roomId)
                 .OrderByDescending(x => x.sentDate)
                 .ToList();
-             
+
             return sortedEntities;
         }
 
@@ -158,7 +153,7 @@ namespace KozoskodoAPI.Repo
             };
             //_context.PersonalChatRoom.Add(personalChatRoom);
             await InsertSaveAsync(personalChatRoom);
-            
+
             return room;
         }
 
@@ -175,6 +170,6 @@ namespace KozoskodoAPI.Repo
             return file.FileType;
         }
 
-         
+
     }
 }
