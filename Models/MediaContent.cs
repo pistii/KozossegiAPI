@@ -13,11 +13,11 @@ namespace KozoskodoAPI.Models
         {
             
         }
-        public MediaContent(int mediaContentId, string name, ContentType type)
+        public MediaContent(int mediaContentId, string name, string type)
         {
             this.MediaContentId = mediaContentId;
             this.FileName = name;
-            this.ContentType = type;
+            this.MediaType = type;
         }
         [Key]
         [Column(TypeName = "int(11)")]
@@ -26,7 +26,8 @@ namespace KozoskodoAPI.Models
         public int MediaContentId { get; set; }
         [StringLength(100)]
         public string? FileName { get; set; }
-        public ContentType ContentType { get; set; }
+        [StringLength(80)]
+        public string MediaType { get; set; }
         [JsonIgnore]
         public Post Post { get; set; }
     }

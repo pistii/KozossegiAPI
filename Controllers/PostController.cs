@@ -6,6 +6,7 @@ using KozoskodoAPI.Repo;
 using KozossegiAPI.Models.Cloud;
 using KozossegiAPI.Services;
 using KozossegiAPI.Controllers.Cloud.Helpers;
+using KozossegiAPI.Storage;
 
 namespace KozoskodoAPI.Controllers
 {
@@ -18,10 +19,13 @@ namespace KozoskodoAPI.Controllers
         public INotificationRepository _InotificationRepository;
         public IPostRepository<PostDto> _PostRepository;
         public IFileHandlerService _fileHandlerService;
+        //private IPostPhotoStorage _postPhotoStorage;
+
         public PostController(
 
             IPostRepository<PostDto> postRepository,
             IFileHandlerService fileHandlerService,
+            //IPostPhotoStorage postPhotoStorage,
             IStorageController? storageController = null,
             INotificationRepository notificationRepository = null)
         {
@@ -29,6 +33,7 @@ namespace KozoskodoAPI.Controllers
             _InotificationRepository = notificationRepository;
             _PostRepository = postRepository;
             _fileHandlerService = fileHandlerService;
+            //_postPhotoStorage = postPhotoStorage;
         }
 
         [HttpGet("{id}")]
@@ -90,10 +95,9 @@ namespace KozoskodoAPI.Controllers
                     bool isVideo = _fileHandlerService.FormatIsVideo(dto.Type);
                     if (isVideo || _fileHandlerService.FormatIsImage(dto.Type))
                     {
-                        ContentType type = isVideo ? ContentType.Video : ContentType.Image;
                         if (dto.File != null)
                         {
-                            MediaContent media = new(newPost.Id, dto.Name, type); //mentés az adatbázisba
+                            MediaContent media = new(newPost.Id, dto.Name, dto.Type); //mentés az adatbázisba
                             FileUpload newFile = new FileUpload(dto.Name, dto.Type, dto.File); //mentés a felhőbe
 
                             var fileName = await _storageController.AddFile(newFile, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
@@ -116,6 +120,7 @@ namespace KozoskodoAPI.Controllers
 
                     foreach (var friendId in closerFriends)
                     {
+                        //TODO: Ötlet, ahelyett hogy mindegyik user táblájához csatolok egy külön értesítést, lehetne egyet, amit vagy külön táblába, vagy külön rekorddal kezelve követve EGYSZER mentenék el. Ezáltal egy "feliratkozási" tulajdonságot készítve. 
                         if (friendId != 0)
                         {
                             NotificationWithAvatarDto notificationWithAvatarDto =
@@ -126,7 +131,7 @@ namespace KozoskodoAPI.Controllers
                                     dto.postContent,
                                     NotificationType.NewPost);
                             await _InotificationRepository.RealtimeNotification(friendId, notificationWithAvatarDto);
-                            await _PostRepository.InsertAsync<Notification>(notificationWithAvatarDto);
+                            await _PostRepository.InsertAsync<Notification> (notificationWithAvatarDto);
                         }
                     }
                     await _PostRepository.SaveAsync();
@@ -142,8 +147,18 @@ namespace KozoskodoAPI.Controllers
                         Likes = 0,
                         FullName = service.GetFullname(user.firstName, user.middleName, user.lastName),
                         DateOfPost = DateTime.Now,
-                        PostComments = new()
+                        PostComments = new(),
                     };
+
+                    if (!string.IsNullOrEmpty(dto.Name) && dto.File != null)
+                    {
+                        postToReturn.MediaContent = new MediaContent()
+                        {
+                            MediaType = dto.Type,
+                            FileName = dto.Name,
+                            Id = postToReturn.PostId,
+                        };
+                    }
                     return Ok(postToReturn);
                 }
                 return NotFound();

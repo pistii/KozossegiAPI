@@ -20,7 +20,7 @@ namespace KozoskodoAPI.Models
         [StringLength(500)]
         public string? PostContent { get; set; }
         public virtual ICollection<Comment> PostComments { get; set; } = new HashSet<Comment>();
-        public virtual ICollection<MediaContent>? MediaContents { get; set; } = new HashSet<MediaContent>();
+        public virtual MediaContent? MediaContent { get; set; }
         public virtual ICollection<PostReaction>? PostReactions { get; set; } = new HashSet<PostReaction>();
 
         [JsonIgnore]

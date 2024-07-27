@@ -175,14 +175,8 @@ namespace KozoskodoAPI.Data
             modelBuilder.Entity<MediaContent>(entity =>
             {
                 entity.HasOne(p => p.Post)
-                .WithMany(p => p.MediaContents)
-                .HasForeignKey(id => id.MediaContentId);
-
-                entity.Property(e => e.ContentType)
-                .HasConversion(
-                    c => Enum.GetName(typeof(ContentType), c), // Enum.GetName használata
-                    v => (ContentType)Enum.Parse(typeof(ContentType), v, true));
-
+                .WithOne(p => p.MediaContent)
+                .HasForeignKey<MediaContent>(p => p.MediaContentId);
             });
 
             //https://www.learnentityframeworkcore.com/configuration/many-to-many-relationship-configuration

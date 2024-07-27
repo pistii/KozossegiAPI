@@ -16,7 +16,7 @@ namespace KozoskodoAPI.DTOs
         public DateTime DateOfPost { get; set; } = DateTime.Now;
         public string PostContent { get; set; }
         public List<CommentDto> PostComments { get; set; }
-        public List<MediaContent> MediaContents { get; set; }
+        public  MediaContent MediaContent { get; set; }
 
         public string? userReaction { get; set; } = string.Empty;
     }

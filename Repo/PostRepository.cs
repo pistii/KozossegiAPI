@@ -40,7 +40,7 @@ namespace KozoskodoAPI.Repo
         public async Task<List<PostDto>> GetAllPost(int profileId, int userId)
         {
             var sortedItems = await _context.PersonalPost
-                .Include(p => p.Posts.MediaContents)
+                //.Include(p => p.Posts.MediaContent)
                 .Include(p => p.Posts.PostComments)
                 .Where(p => p.Posts.SourceId == profileId)
                 .OrderByDescending(_ => _.Posts.DateOfPost)
@@ -69,7 +69,7 @@ namespace KozoskodoAPI.Repo
                             CommentText = c.CommentText!
                         })
                         .ToList(),
-                    MediaContents = p.Posts.MediaContents.ToList(),
+                    MediaContent = p.Posts.MediaContent,
                     userReaction = _context.PostReaction.FirstOrDefault(u => p.Posts.Id == u.PostId && u.UserId == userId).ReactionType
                 })
                 .ToListAsync();
@@ -79,9 +79,9 @@ namespace KozoskodoAPI.Repo
         public async Task<List<PostDto>> GetImages(int userId)
         {
             var sortedItems = await _context.PersonalPost
-                .Include(p => p.Posts.MediaContents)
+                .Include(p => p.Posts.MediaContent)
                 .Include(p => p.Posts.PostComments)
-                .Where(p => p.Posts.SourceId == userId && p.Posts.MediaContents.Count > 0)
+                .Where(p => p.Posts.SourceId == userId && p.Posts.MediaContent != null)
                 .OrderByDescending(_ => _.Posts.DateOfPost)
                 .AsNoTracking()
                 .Select(p => new PostDto
@@ -108,7 +108,7 @@ namespace KozoskodoAPI.Repo
                             CommentText = c.CommentText!
                         })
                         .ToList(),
-                    MediaContents = p.Posts.MediaContents.ToList(),
+                    MediaContent = p.Posts.MediaContent,
                     userReaction = _context.PostReaction.FirstOrDefault(u => p.Posts.Id == u.PostId && u.UserId == userId).ReactionType
                 })
                 .ToListAsync();

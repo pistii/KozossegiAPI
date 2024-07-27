@@ -40,9 +40,9 @@ namespace KozoskodoAPI.Controllers
         public async Task<List<PostDto>> GetAll(int userId, int currentPage = 1, int requestItems = 9) //Todo: implements from interface, it is not tested. Currentpage is recently added 1.22 after disabled gcloud 
         {
             var postsWithImage = await _ctx.PersonalPost
-                .Include(p => p.Posts.MediaContents)
+                .Include(p => p.Posts.MediaContent)
                 .Include(p => p.Posts.PostComments)
-                .Where(p => p.Posts.SourceId == userId && p.Posts.MediaContents.Count > 0) //Ennyiben tér el a sima post kérelemtől, hogy még ezt kell vizsgálni
+                .Where(p => p.Posts.SourceId == userId && p.Posts.MediaContent != null) //Ennyiben tér el a sima post kérelemtől, hogy még ezt kell vizsgálni
                 .OrderByDescending(_ => _.Posts.DateOfPost)
                 .Take(requestItems)
                 .Select(p => new PostDto
@@ -69,7 +69,7 @@ namespace KozoskodoAPI.Controllers
                             CommentText = c.CommentText!
                         })
                         .ToList(),
-                    MediaContents = p.Posts.MediaContents.ToList()
+                    MediaContent = p.Posts.MediaContent
                 })
                 .ToListAsync();
 
