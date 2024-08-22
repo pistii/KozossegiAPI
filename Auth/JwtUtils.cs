@@ -23,6 +23,58 @@ namespace KozoskodoAPI.Auth
             }
         }
 
+        public string GenerateAccessToken(string email)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_appSettings.Secret!);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[] { new Claim("email", email)
+                }),
+                Expires = DateTime.UtcNow.AddMinutes(1),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+
+        public string? ValidateAccessToken(string? token)
+        {
+            if (token != null)
+            {
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.ASCII.GetBytes(_appSettings?.Secret!);
+
+                TokenValidationParameters parameters = new TokenValidationParameters()
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ClockSkew = TimeSpan.Zero
+                };
+
+                try
+                {
+                    tokenHandler.ValidateToken(token, parameters, out SecurityToken validatedToken);
+
+                    var jwtToken = (JwtSecurityToken)validatedToken;
+                    var email = jwtToken.Claims.First(_ => _.Type == "email").Value;
+
+                    return email;
+                }
+                catch (SecurityTokenExpiredException ex)
+                {
+                    return null;
+                }
+            }
+            return null;
+        }
+    
+
+
         public string GenerateJwtToken(user user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -77,7 +129,9 @@ namespace KozoskodoAPI.Auth
 
     public interface IJwtUtils
     {
+        string GenerateAccessToken(string email);
         public string GenerateJwtToken(user user);
+        string? ValidateAccessToken(string? token);
         public int? ValidateJwtToken(string? token);
     }
 }
