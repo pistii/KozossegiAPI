@@ -12,6 +12,7 @@ using KozossegiAPI.DTOs;
 using KozossegiAPI.Services;
 using KozossegiAPI.Controllers.Cloud.Helpers;
 using KozossegiAPI.Storage;
+using KozoskodoAPI.Auth.Helpers;
 
 namespace KozoskodoAPI.Controllers
 {
@@ -22,7 +23,7 @@ namespace KozoskodoAPI.Controllers
         private readonly IHubContext<ChatHub, IChatClient> _chatHub;
         private readonly IMapConnections _connections;
         private readonly IChatRepository<ChatRoom, Personal> _chatRepository;
-        private readonly IStorageController _storageController;
+        private readonly IStorageRepository _storageRepository;
         private readonly IFileHandlerService _fileHandlerService;
         private readonly IChatStorage _chatStorage;
 
@@ -30,14 +31,14 @@ namespace KozoskodoAPI.Controllers
           IHubContext<ChatHub, IChatClient> hub,
           IMapConnections mapConnections,
           IChatRepository<ChatRoom, Personal> chatRepository,
-          IStorageController storageController,
+          IStorageRepository storageController,
           IFileHandlerService fileHandlerService,
           IChatStorage chatStorage)
         {
             _chatHub = hub;
             _connections = mapConnections;
             _chatRepository = chatRepository;
-            _storageController = storageController;
+            _storageRepository = storageController;
             _fileHandlerService = fileHandlerService;
             _chatStorage = chatStorage;
         }
@@ -101,7 +102,7 @@ namespace KozoskodoAPI.Controllers
                             }
                             else
                             {
-                                var downloadFile = await _storageController.GetFileAsByte(file.FileToken, BucketSelector.CHAT_BUCKET_NAME);
+                                var downloadFile = await _storageRepository.GetFileAsByte(file.FileToken, BucketSelector.CHAT_BUCKET_NAME);
                                 _chatStorage.Create(file.FileToken, downloadFile);
                                 contentWithFile.ChatFile.FileData = downloadFile;
                             }
@@ -127,7 +128,7 @@ namespace KozoskodoAPI.Controllers
                             //Return 30% percent of the file
                             //var endSize = (long)(file.FileSize * 0.30);
                             //var chunk = await _storageController.GetVideoChunkBytes(file.FileToken, 0, endSize);
-                            var chunk = await _storageController.GetFileAsByte(file.FileToken, BucketSelector.CHAT_BUCKET_NAME);
+                            var chunk = await _storageRepository.GetFileAsByte(file.FileToken, BucketSelector.CHAT_BUCKET_NAME);
                             if (chunk != null)
                             {
                                 var contentsWithFile = returnValue.Where(x => x.ChatFile != null);
@@ -140,7 +141,7 @@ namespace KozoskodoAPI.Controllers
                         }
                         else
                         {
-                            var fileBytes = await GetFile<byte[]>(file.FileToken);
+                            var fileBytes = await GetFile(file.FileToken); //await GetFile<byte[]>(file.FileToken);
 
                             var contentsWithFile = returnValue.Where(x => x.ChatFile != null);
                             var contentWithFile = contentsWithFile.FirstOrDefault(x => x.ChatFile.FileToken == file.FileToken);
@@ -234,7 +235,7 @@ namespace KozoskodoAPI.Controllers
                     foreach (var token in fileTokens)
                     {
                         //Get all files from cloud and insert it into the dto
-                        var file = await _storageController.GetFileAsByte(token, BucketSelector.CHAT_BUCKET_NAME);
+                        var file = await _storageRepository.GetFileAsByte(token, BucketSelector.CHAT_BUCKET_NAME);
 
                         var contentWithFile = returnValue.Find(x => x.ChatFile != null && x.ChatFile.FileToken == token);
                         if (contentWithFile != null)
@@ -309,8 +310,8 @@ namespace KozoskodoAPI.Controllers
                 }
                 try
                 {
-                    file = await _storageController.GetFileAsByte(fileToken, BucketSelector.CHAT_BUCKET_NAME);
-                    var fileChunk = _storageController.GetVideo(fileToken);
+                    file = await _storageRepository.GetFileAsByte(fileToken, BucketSelector.CHAT_BUCKET_NAME);
+                    var fileChunk = _storageRepository.GetVideo(fileToken);
                 }
                 catch (Exception ex)
                 {
@@ -374,7 +375,7 @@ namespace KozoskodoAPI.Controllers
                     string fileToken = _fileHandlerService.UploadFile(fileObj.File, fileObj.Name, fileObj.Type, BucketSelector.CHAT_BUCKET_NAME);
 
                     FileUpload fileUpload = new FileUpload(fileObj.Name, fileObj.Type, fileObj.File);
-                    var savedName = await _storageController.AddFile(fileUpload, BucketSelector.CHAT_BUCKET_NAME);
+                    var savedName = await _storageRepository.AddFile(fileUpload, BucketSelector.CHAT_BUCKET_NAME);
                 if (fileToken != null) //Upload file only if corresponds to the requirements.
                 {
                     ChatFile chatFile = new()
