@@ -1,7 +1,12 @@
 ﻿using Google.Api;
+using Google.Apis.Storage.v1.Data;
+using Google.Type;
 using KozoskodoAPI.Data;
 using KozoskodoAPI.Models;
+using KozossegiAPI.DTOs;
+using KozossegiAPI.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 
 namespace KozoskodoAPI.Repo
@@ -30,6 +35,7 @@ namespace KozoskodoAPI.Repo
             var user = await _dbContext.Personal
                 .Include(p => p.Settings)
                 .Include(u => u.users)
+                .Include(s => s.activeStudy)
                 .FirstOrDefaultAsync(p => p.id == userId);
             return user;
         }
