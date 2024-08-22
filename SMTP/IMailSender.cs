@@ -2,6 +2,7 @@
 {
     public interface IMailSender
     {
-        public void SendMail(string subject, string content, string full_name, string email);
+        string getEmailTemplate(string fileName);
+        void SendEmail(string subject, string content, string full_name, string email);
     }
 }

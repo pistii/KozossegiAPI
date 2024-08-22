@@ -8,8 +8,7 @@ using Microsoft.Extensions.Options;
 using MimeKit;
 using System;
 using System.Net;
-using System.Security.Policy;
-using System.Web;
+using System.Text;
 
 namespace KozoskodoAPI.SMTP
 {
@@ -21,16 +20,17 @@ namespace KozoskodoAPI.SMTP
         {
             _appSettings = appsettings.Value;
 
-            //if (string.IsNullOrEmpty(_appSettings.Key) || 
-            //    string.IsNullOrEmpty(_appSettings.Email) ||
-            //    string.IsNullOrEmpty(_appSettings.Host)
-            //    )
-            //{
-            //    throw new Exception("No email configuration found.");
-            //}
+            if (string.IsNullOrEmpty(_appSettings.Email) ||
+                string.IsNullOrEmpty(_appSettings.Server) ||
+                _appSettings.Port == 0 ||
+                _appSettings.SSL == 0
+                )
+            {
+                throw new Exception("No email configuration found.");
+            }
         }
 
-        void IMailSender.SendMail(string subject, string content, string full_name, string email)
+        public void SendEmail(string subject, string content, string full_name, string email)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var mailMessage = new MimeMessage();
@@ -45,11 +45,19 @@ namespace KozoskodoAPI.SMTP
 
             using (var smtpClient = new SmtpClient())
             {
-                smtpClient.Connect(_appSettings.Host, _appSettings.Port, SecureSocketOptions.StartTlsWhenAvailable);
-                smtpClient.Authenticate(_appSettings.UserName, _appSettings.Key);
+                smtpClient.Connect(_appSettings.Server, _appSettings.Port, SecureSocketOptions.StartTlsWhenAvailable);
+                smtpClient.Authenticate(_appSettings.Email, _appSettings.Password);
                 smtpClient.Send(mailMessage);
                 smtpClient.Disconnect(true);
             }
         }
+
+        public string getEmailTemplate(string fileName)
+        {
+            string fullpath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "templates");
+            string templatePath = Path.Combine(fullpath, fileName);
+            return System.IO.File.ReadAllText(templatePath);
+        }
+
     }
 }
