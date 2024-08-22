@@ -23,12 +23,14 @@ namespace KozoskodoAPI.Models
         public int id { get; set; }
         
         [StringLength(30)]
+        [Required(ErrorMessage = "First name is required")]
         public string? firstName { get; set; }
 
         [StringLength(30)]
         public string? middleName { get; set; }
 
         [StringLength(30)]
+        [Required(ErrorMessage = "Last name is required")]
         public string? lastName { get; set; }
         public bool isMale { get; set; }
         [StringLength(70)]
@@ -49,6 +51,10 @@ namespace KozoskodoAPI.Models
 
         [StringLength(120)]
         public string? Workplace { get; set; } = string.Empty;
+
+        [ForeignKey("activeStudy")]
+        public int? publicStudyId { get; set; }
+        public virtual Study? activeStudy { get; set; }
 
         [JsonIgnore]
         public virtual Friend? friends { get; set; }

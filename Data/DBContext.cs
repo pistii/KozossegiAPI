@@ -40,7 +40,7 @@ namespace KozoskodoAPI.Data
         public virtual DbSet<ChatFile> ChatFile { get; set; }
         public virtual DbSet<MediaContent> MediaContent { get; set; }
         public virtual DbSet<PostReaction> PostReaction { get; set; }
-        public virtual DbSet<Studies> Studies { get; set; }
+        public virtual DbSet<Study> Study { get; set; }
         public virtual DbSet<Settings> Settings { get; set; }
 
 
