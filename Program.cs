@@ -72,7 +72,7 @@ namespace KozoskodoAPI
             services.AddScoped<IPostRepository<PostDto>, PostRepository>();
             services.AddScoped<IPersonalRepository, PersonalRepository>();
             services.AddScoped<INotificationRepository, NotificationRepository>();
-            services.AddScoped<IImageRepository, ImageController>();
+            services.AddScoped<IImageRepository, ImageRepository>();
             services.AddScoped<IMailSender, SendMail>();
             services.AddSingleton<IVerificationCodeCache, VerificationCodeCache>();
             services.AddScoped<IEncodeDecode, EncodeDecode>();
