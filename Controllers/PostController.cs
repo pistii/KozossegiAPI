@@ -6,7 +6,8 @@ using KozoskodoAPI.Repo;
 using KozossegiAPI.Models.Cloud;
 using KozossegiAPI.Services;
 using KozossegiAPI.Controllers.Cloud.Helpers;
-using KozossegiAPI.Storage;
+using System.Linq;
+using KozoskodoAPI.Auth.Helpers;
 
 namespace KozoskodoAPI.Controllers
 {
@@ -15,7 +16,7 @@ namespace KozoskodoAPI.Controllers
     //[Authorize]
     public class PostController : ControllerBase
     {
-        public IStorageController? _storageController;
+        public IStorageRepository? _storageController;
         public INotificationRepository _InotificationRepository;
         public IPostRepository<PostDto> _PostRepository;
         public IFileHandlerService _fileHandlerService;
@@ -26,7 +27,7 @@ namespace KozoskodoAPI.Controllers
             IPostRepository<PostDto> postRepository,
             IFileHandlerService fileHandlerService,
             //IPostPhotoStorage postPhotoStorage,
-            IStorageController? storageController = null,
+            IStorageRepository? storageController = null,
             INotificationRepository notificationRepository = null)
         {
             _storageController = storageController;
@@ -73,101 +74,107 @@ namespace KozoskodoAPI.Controllers
             return new ContentDto<PostDto>(returnValue, totalPages);
         }
 
+        [Authorize]
         [HttpPost]
         [Route("createNew")]
         public async Task<ActionResult<Post>> Post([FromForm] CreatePostDto dto)
         {
-            try
+            var userFromHeader = (user?)HttpContext.Items["User"];
+            if (userFromHeader == null) return Unauthorized();
+            
+
+            var authorUser = await _PostRepository.GetByIdAsync<Personal>(userFromHeader.userID);
+            var receiverUser = await _PostRepository.GetByIdAsync<Personal>(dto.receiverUserId);
+            
+            if (receiverUser != null)
             {
-                var user = await _PostRepository.GetByIdAsync<Personal>(dto.userId);
-                if (user != null)
+                Post newPost = new()
                 {
-                    Post newPost = new()
+                    SourceId = receiverUser.id,
+                    PostContent = dto.postContent,
+                    Dislikes = 0,
+                    Likes = 0
+                };
+
+                await _PostRepository.InsertSaveAsync<Post>(newPost);
+
+                bool isVideo = _fileHandlerService.FormatIsVideo(dto.Type);
+                //If file is accepted format: save. Otherwise return with badRequest
+                if (isVideo || _fileHandlerService.FormatIsImage(dto.Type))
+                {
+                    if (dto.File != null)
                     {
-                        SourceId = dto.SourceId,
-                        PostContent = dto.postContent,
-                        Dislikes = 0,
-                        Likes = 0
-                    };
+                        MediaContent media = new(newPost.Id, dto.Name, dto.Type); //mentés az adatbázisba
+                        FileUpload newFile = new FileUpload(dto.Name, dto.Type, dto.File); //mentés a felhőbe
 
-                    await _PostRepository.InsertSaveAsync<Post>(newPost);
-
-                    bool isVideo = _fileHandlerService.FormatIsVideo(dto.Type);
-                    if (isVideo || _fileHandlerService.FormatIsImage(dto.Type))
-                    {
-                        if (dto.File != null)
-                        {
-                            MediaContent media = new(newPost.Id, dto.Name, dto.Type); //mentés az adatbázisba
-                            FileUpload newFile = new FileUpload(dto.Name, dto.Type, dto.File); //mentés a felhőbe
-
-                            var fileName = await _storageController.AddFile(newFile, KozossegiAPI.Controllers.Cloud.Helpers.BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
-                            media.FileName = fileName.ToString();
-                            await _PostRepository.InsertAsync<MediaContent>(media);
-                            //await _context.SaveChangesAsync(); Elég a végén menteni most még...
-                        }
-
-                        //Create new junction table with user and postId
-                        PersonalPost personalPost = new PersonalPost()
-                        {
-                            personId = dto.userId,
-                            postId = newPost.Id
-                        };
-                        await _PostRepository.InsertSaveAsync<PersonalPost>(personalPost);
+                        var fileName = await _storageController.AddFile(newFile, BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
+                        media.FileName = fileName.ToString();
+                        await _PostRepository.InsertAsync<MediaContent>(media);
                     }
 
-                    var closerFriends = _PostRepository.GetCloserFriendIds(dto.userId);
-                    var stringLength = dto.postContent.Length > 60 ? dto.postContent.Take(50) + "..." : dto.postContent;
-
-                    foreach (var friendId in closerFriends)
-                    {
-                        //TODO: Ötlet, ahelyett hogy mindegyik user táblájához csatolok egy külön értesítést, lehetne egyet, amit vagy külön táblába, vagy külön rekorddal kezelve követve EGYSZER mentenék el. Ezáltal egy "feliratkozási" tulajdonságot készítve. 
-                        if (friendId != 0)
-                        {
-                            NotificationWithAvatarDto notificationWithAvatarDto =
-                                new NotificationWithAvatarDto(
-                                    friendId,
-                                    user.id,
-                                    user.avatar,
-                                    dto.postContent,
-                                    NotificationType.NewPost);
-                            await _InotificationRepository.RealtimeNotification(friendId, notificationWithAvatarDto);
-                            await _PostRepository.InsertAsync<Notification> (notificationWithAvatarDto);
-                        }
-                    }
-                    await _PostRepository.SaveAsync();
-
-                    HelperService service = new();
-                    var postToReturn = new PostDto()
-                    {
-                        PostContent = newPost.PostContent,
-                        PostId = newPost.Id,
-                        AuthorId = dto.userId,
-                        AuthorAvatar = user.avatar,
-                        Dislikes = 0,
-                        Likes = 0,
-                    FullName = HelperService.GetFullname(authorUser.firstName, authorUser.middleName, authorUser.lastName),
-                        DateOfPost = DateTime.Now,
-                        PostComments = new(),
-                    };
-
-                    if (!string.IsNullOrEmpty(dto.Name) && dto.File != null)
-                    {
-                        postToReturn.MediaContent = new MediaContent()
-                        {
-                            MediaType = dto.Type,
-                            FileName = dto.Name,
-                            Id = postToReturn.PostId,
-                        };
-                    }
-                    return Ok(postToReturn);
                 }
-                return NotFound();
+                else if (!string.IsNullOrEmpty(dto.Type) && dto.File != null)
+                {
+                    return BadRequest("Invalid file format.");
+                }
+
+
+                //Create new junction table with user and postId
+                PersonalPost personalPost = new PersonalPost()
+                {
+                    personId = userFromHeader.userID,
+                    postId = newPost.Id
+                };
+                await _PostRepository.InsertSaveAsync<PersonalPost>(personalPost);
+
+                var closerFriends = _PostRepository.GetCloserFriendIds(userFromHeader.userID);
+                var stringLength = dto.postContent.Length > 60 ? dto.postContent.Take(50) + "..." : dto.postContent;
+
+                foreach (var friendId in closerFriends)
+                {
+                    //TODO: Ötlet, ahelyett hogy mindegyik user táblájához csatolok egy külön értesítést, lehetne egyet, amit vagy külön táblába, vagy külön rekorddal kezelve követve EGYSZER mentenék el. Ezáltal egy "feliratkozási" tulajdonságot készítve. 
+                    if (friendId != 0)
+                    {
+                        NotificationWithAvatarDto notificationWithAvatarDto =
+                            new NotificationWithAvatarDto(
+                                friendId,
+                                authorUser.id,
+                                authorUser.avatar,
+                                stringLength,
+                                NotificationType.NewPost);
+                        await _InotificationRepository.RealtimeNotification(friendId, notificationWithAvatarDto);
+                        await _PostRepository.InsertAsync<Notification>(notificationWithAvatarDto);
+                    }
+                }
+                await _PostRepository.SaveAsync();
+
+                var postToReturn = new PostDto()
+                {
+                    PostContent = newPost.PostContent,
+                    PostId = newPost.Id,
+                    AuthorId = dto.SourceId,
+                    AuthorAvatar = authorUser.avatar,
+                    Dislikes = 0,
+                    Likes = 0,
+                    FullName = HelperService.GetFullname(authorUser.firstName, authorUser.middleName, authorUser.lastName),
+                    DateOfPost = DateTime.Now,
+                    PostComments = new(),
+                };
+
+                if (!string.IsNullOrEmpty(dto.Name) && dto.File != null)
+                {
+                    postToReturn.MediaContent = new MediaContent()
+                    {
+                        MediaType = dto.Type,
+                        FileName = dto.Name,
+                        Id = postToReturn.PostId,
+                    };
+                }
+                return Ok(postToReturn);
             }
-            catch (Exception ex)
-            {
-                return BadRequest();
-            }
+            return NotFound();
         }
+    
 
         //Gets the postId and the modified content of the post
         [HttpPut("{id}")]
@@ -270,5 +277,4 @@ namespace KozoskodoAPI.Controllers
         */
 
     }
-
 }
