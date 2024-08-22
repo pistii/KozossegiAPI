@@ -323,11 +323,10 @@ namespace KozoskodoAPI.Controllers
                     return file;
                 }
                 return null;
-            }
-            return null;
         }
 
 
+        [Authorize]
         [Route("newChat")]
         [HttpPost]
         public async Task<IActionResult> SendMessage([FromBody] ChatDto chatDto)
@@ -335,6 +334,7 @@ namespace KozoskodoAPI.Controllers
             return await Send(chatDto);
         }
 
+        [Authorize]
         [Route("file")]
         [HttpPost]
         public async Task<IActionResult> SendMessageWithFile([FromForm] ChatDto chatDto)
@@ -342,8 +342,7 @@ namespace KozoskodoAPI.Controllers
             return await Send(chatDto);
         }
 
-        [Route("chat")] //Not a used endpoint, used for fix ambigious reference to RealtimeChatMessage method
-        public async Task<IActionResult> Send(ChatDto chatDto)
+        private async Task<IActionResult> Send(ChatDto chatDto)
         {
             ChatRoom room = await _chatRepository.ChatRoomExists(chatDto);
             if (room == null)
@@ -370,7 +369,12 @@ namespace KozoskodoAPI.Controllers
             if (chatDto.chatFile != null && chatDto.chatFile.File != null)
             {
                 var fileObj = chatDto.chatFile;
-                string fileToken = await _fileHandlerService.UploadFile(fileObj.File, fileObj.Name, fileObj.Type, BucketSelector.CHAT_BUCKET_NAME);
+                if (!_fileHandlerService.FormatIsValid(fileObj.Type) && !_fileHandlerService.FileSizeCorrect(fileObj.File, fileObj.Type))
+                {
+                    string fileToken = _fileHandlerService.UploadFile(fileObj.File, fileObj.Name, fileObj.Type, BucketSelector.CHAT_BUCKET_NAME);
+
+                    FileUpload fileUpload = new FileUpload(fileObj.Name, fileObj.Type, fileObj.File);
+                    var savedName = await _storageController.AddFile(fileUpload, BucketSelector.CHAT_BUCKET_NAME);
                 if (fileToken != null) //Upload file only if corresponds to the requirements.
                 {
                     ChatFile chatFile = new()
@@ -388,15 +392,12 @@ namespace KozoskodoAPI.Controllers
                             var bytes = HelperService.ConvertToByteArray(fileObj.File);
                         _chatStorage.Create(fileToken, bytes);
                     }
-                    FileUpload fileUpload = new FileUpload()
-                    {
-                        Name = fileToken,
-                        Type = fileObj.Type,
-                    };
 
                     await RealtimeChatMessage(senderId, toUserId, chatDto.message, fileUpload);
                     return Ok(chatContent);
                 }
+                }
+               
                 return BadRequest("File size exceeded or format not accepted.");
             }
             await RealtimeChatMessage(senderId, toUserId, chatDto.message);

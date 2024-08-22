@@ -1,5 +1,6 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using KozoskodoAPI.Auth;
+using KozoskodoAPI.Auth.Helpers;
 using KozoskodoAPI.Data;
 using KozoskodoAPI.Models;
 using KozoskodoAPI.Realtime.Connection;
@@ -12,6 +13,7 @@ using System.Linq;
 
 namespace KozoskodoAPI.Realtime
 {
+    [Authorize]
     public class ChatHub : ConnectionHandler<IChatClient>
     {
         private readonly ConnectionHandler<IChatClient> _connectionHandler;
