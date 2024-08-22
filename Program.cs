@@ -53,12 +53,31 @@ namespace KozoskodoAPI
                         ValidateIssuer = true,
                         ClockSkew = TimeSpan.Zero
                     };
+
+                    jwt.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            var accessToken = context.Request.Query["access_token"];
+                            var path = context.HttpContext.Request.Path;
+                            if (!string.IsNullOrEmpty(accessToken) &&
+                                (path.StartsWithSegments("/Chat")))
+                            {
+                                // Read the token out of the query string
+                                context.Token = accessToken;
+
+
+                            }
+                            return Task.CompletedTask;
+                        }
+                    };
                 });
             
             services.AddAuthorization();
             services.AddAuthentication();
             
-            services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
+            services.Configure<Auth.Helpers.AppSettings>(builder.Configuration.GetSection("AppSettings"));
+            services.Configure<KozossegiAPI.SMTP.Helpers.AppSettings>(builder.Configuration.GetSection("SMTP"));
 
             services.AddScoped<IJwtUtils, JwtUtils>();
             services.AddScoped<IJwtTokenManager, JwtTokenManager>();
@@ -76,7 +95,6 @@ namespace KozoskodoAPI
             services.AddScoped<IMailSender, SendMail>();
             services.AddSingleton<IVerificationCodeCache, VerificationCodeCache>();
             services.AddScoped<IEncodeDecode, EncodeDecode>();
-            services.AddScoped<IFileHandlerService, FileHandlerService>();
             services.AddSingleton<IChatStorage, ChatStorage>();
             services.AddHostedService<NotificationService>();
             services.AddScoped<ISettingRepository, SettingRepository>();
