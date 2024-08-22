@@ -12,11 +12,9 @@ namespace KozoskodoAPI.Repo
     public class PostRepository : GenericRepository<PostDto>, IPostRepository<PostDto>, IPostRepository<Comment>
     {
         private readonly DBContext _context;
-        private HelperService helperService;
         public PostRepository(DBContext context) : base(context)
         {
             _context = context;
-            helperService = new();
         }
 
         public async Task<ContentDto<PostDto>> GetAllPost(int profileId, int userId, int currentPage = 1, int itemPerRequest = 10)
@@ -48,7 +46,7 @@ namespace KozoskodoAPI.Repo
                 .Select(p => new PostDto
                 {
                     PersonalPostId = p.personalPostId,
-                    FullName = helperService.GetFullname(p.Personal_posts.firstName!, p.Personal_posts.middleName, p.Personal_posts.lastName!), //p.Personal_posts.firstName! + " " + p.Personal_posts.middleName + " " + p.Personal_posts.lastName!, //TODO
+                    FullName = HelperService.GetFullname(p.Personal_posts.firstName!, p.Personal_posts.middleName, p.Personal_posts.lastName!), //p.Personal_posts.firstName! + " " + p.Personal_posts.middleName + " " + p.Personal_posts.lastName!, //TODO
                     PostId = p.Posts.Id,
                     AuthorAvatar = p.Personal_posts.avatar!,
                     AuthorId = p.Personal_posts.id,
@@ -87,7 +85,7 @@ namespace KozoskodoAPI.Repo
                 .Select(p => new PostDto
                 {
                     PersonalPostId = p.personalPostId,
-                    FullName = helperService.GetFullname(p.Personal_posts.firstName!, p.Personal_posts.middleName, p.Personal_posts.lastName!), //p.Personal_posts.firstName! + " " + p.Personal_posts.middleName + " " + p.Personal_posts.lastName!, //TODO
+                    FullName = HelperService.GetFullname(p.Personal_posts.firstName!, p.Personal_posts.middleName, p.Personal_posts.lastName!), //p.Personal_posts.firstName! + " " + p.Personal_posts.middleName + " " + p.Personal_posts.lastName!, //TODO
                     PostId = p.Posts.Id,
                     AuthorAvatar = p.Personal_posts.avatar!,
                     AuthorId = p.Personal_posts.id,

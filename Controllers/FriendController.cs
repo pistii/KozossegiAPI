@@ -19,7 +19,6 @@ namespace KozoskodoAPI.Controllers
         private readonly INotificationRepository _notificationRepository;
         private readonly IHubContext<NotificationHub, INotificationClient> _notificationHub;
         private readonly IMapConnections _connections;
-        private HelperService helperService;
 
         public FriendController(
             IFriendRepository friendRepository,
@@ -34,7 +33,6 @@ namespace KozoskodoAPI.Controllers
             _notificationHub = hub;
             _connections = connections;
 
-            helperService = new();
         }
 
         /// <summary>
@@ -86,7 +84,7 @@ namespace KozoskodoAPI.Controllers
                     notification.ReceiverId,
                     notification.SenderId,
                     requestedFromUser?.avatar,
-                    helperService.GetFullname(requestedFromUser!.firstName, requestedFromUser.middleName, requestedFromUser!.lastName) + " ismerősnek jelölt.",
+                    HelperService.GetFullname(requestedFromUser!.firstName, requestedFromUser.middleName, requestedFromUser!.lastName) + " ismerősnek jelölt.",
                     notification.notificationType);
 
                 if (requestedUsersNotification != null)

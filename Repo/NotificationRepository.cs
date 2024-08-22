@@ -15,8 +15,6 @@ namespace KozoskodoAPI.Repo
         private readonly IFriendRepository _friendRepository;
         private readonly IHubContext<NotificationHub, INotificationClient> _notificationHub;
         private readonly IMapConnections _connections; 
-        private HelperService helperService;
-
 
         public NotificationRepository(DBContext context, 
             IFriendRepository friendRepository, 
@@ -27,8 +25,6 @@ namespace KozoskodoAPI.Repo
             _connections = mapConnections;
             _context = context;
             _friendRepository = friendRepository;
-
-            helperService = new HelperService();
         }
 
 
@@ -50,7 +46,7 @@ namespace KozoskodoAPI.Repo
                 var friendIds = await _friendRepository.GetAll(person.id); //TODO: tesztelésre vár
 
                 //Formázás
-                string personName = helperService.GetFullname(person.firstName, person.middleName, person.lastName);
+                string personName = HelperService.GetFullname(person.firstName, person.middleName, person.lastName);
                 string birthdayContent = personName + " ma ünnepli a születésnapját.";
 
                 foreach (var friend in friendIds)

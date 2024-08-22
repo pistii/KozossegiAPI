@@ -25,7 +25,6 @@ namespace KozoskodoAPI.Controllers
         private readonly IStorageController _storageController;
         private readonly IFileHandlerService _fileHandlerService;
         private readonly IChatStorage _chatStorage;
-        private HelperService helperService;
 
         public ChatController(
           IHubContext<ChatHub, IChatClient> hub,
@@ -41,7 +40,6 @@ namespace KozoskodoAPI.Controllers
             _storageController = storageController;
             _fileHandlerService = fileHandlerService;
             _chatStorage = chatStorage;
-            helperService = new();
         }
 
         [HttpGet("room/{id}")]
@@ -387,7 +385,7 @@ namespace KozoskodoAPI.Controllers
 
                     if (_connections.ContainsUser(toUserId) && _chatStorage.GetValue(fileToken) != null) //If the receiver user is online
                     {
-                        var bytes = helperService.ConvertToByteArray(fileObj.File);
+                            var bytes = HelperService.ConvertToByteArray(fileObj.File);
                         _chatStorage.Create(fileToken, bytes);
                     }
                     FileUpload fileUpload = new FileUpload()

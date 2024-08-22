@@ -145,7 +145,7 @@ namespace KozoskodoAPI.Controllers
                         AuthorAvatar = user.avatar,
                         Dislikes = 0,
                         Likes = 0,
-                        FullName = service.GetFullname(user.firstName, user.middleName, user.lastName),
+                    FullName = HelperService.GetFullname(authorUser.firstName, authorUser.middleName, authorUser.lastName),
                         DateOfPost = DateTime.Now,
                         PostComments = new(),
                     };
