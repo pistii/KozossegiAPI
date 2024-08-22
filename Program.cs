@@ -79,6 +79,8 @@ namespace KozoskodoAPI
             services.AddScoped<IFileHandlerService, FileHandlerService>();
             services.AddSingleton<IChatStorage, ChatStorage>();
             services.AddHostedService<NotificationService>();
+            services.AddScoped<ISettingRepository, SettingRepository>();
+            services.AddScoped<IStudyRepository, StudyRepository>();
 
             services.AddMemoryCache();
 
