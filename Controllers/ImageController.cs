@@ -1,5 +1,6 @@
 ﻿using Google.Api;
 using Google.Cloud.Storage.V1;
+using KozoskodoAPI.Auth.Helpers;
 using KozoskodoAPI.Controllers.Cloud;
 using KozoskodoAPI.Data;
 using KozoskodoAPI.DTOs;
@@ -9,20 +10,54 @@ using KozossegiAPI.Controllers.Cloud.Helpers;
 using KozossegiAPI.Models.Cloud;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace KozoskodoAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ImageController : ControllerBase, IImageRepository
+    public class ImageController : ControllerBase
     {
-        private StorageController _storageController;
-        private DBContext _ctx;
-        public ImageController(StorageController storageController, DBContext dbContext)
+        private StorageRepository _storageRepository;
+        private IImageRepository _imageRepository;
+        private IFileHandlerService _fileHandlerService;
+
+        public ImageController(StorageRepository storageRepository, 
+            IImageRepository imageRepository,
+            IFileHandlerService fileHandlerService)
         {
-            _storageController = storageController;
-            _ctx = dbContext;
+            _storageRepository = storageRepository;
+            _imageRepository = imageRepository;
+            _fileHandlerService = fileHandlerService;
         }
+
+
+        [Authorize]
+        [HttpPost("upload/avatar")]
+        public async Task<IActionResult> Upload([FromForm] AvatarUpload fileUpload)
+        {
+
+            if (fileUpload.File != null)
+            {
+                if (_fileHandlerService.FormatIsValid(fileUpload.File.ContentType))
+                {
+                    try
+                    {
+                        string url = await _storageRepository.AddFile(fileUpload, BucketSelector.AVATAR_BUCKET_NAME);
+                        await _imageRepository.UpdateDatabaseImageUrl(fileUpload.UserId, url);
+                        return Ok();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Error on avatar upload. (P1:file, P2:userId)", fileUpload.File.ContentType, fileUpload.UserId);
+                        return null;
+                    }
+                }
+                return ValidationProblem("Format not accepted");
+            }
+            return NotFound();
+        }
+
 
         //No use anymore
         [HttpGet("{postId}")]
