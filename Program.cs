@@ -64,8 +64,8 @@ namespace KozoskodoAPI
             services.AddScoped<IJwtTokenManager, JwtTokenManager>();
             services.AddScoped<IUserService, UserService>();
             services.AddSingleton<IMapConnections,  ConnectionMapping>();
-            services.AddScoped<StorageController>();
-            services.AddScoped<IStorageController, StorageController>();
+            services.AddScoped<StorageRepository>();
+            services.AddScoped<IStorageRepository, StorageRepository>();
             services.AddScoped<IFriendRepository, FriendRepository>();
             services.AddScoped<IUserRepository<user>, UserRepository>();
             services.AddScoped<IChatRepository<ChatRoom, Personal>, ChatRepository>();

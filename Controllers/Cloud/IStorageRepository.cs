@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KozossegiAPI.Controllers.Cloud
 {
-    public interface IStorageController 
+    public interface IStorageRepository 
     {
         public Task<IActionResult> GetFile(string fileName, BucketSelector selectedBucket);
         public Task<string> AddFile([FromForm] FileUpload fileUpload, BucketSelector selectedBucket);

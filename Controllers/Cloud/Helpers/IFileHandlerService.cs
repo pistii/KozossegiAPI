@@ -6,6 +6,7 @@
         bool FormatIsVideo(string format);
         bool FormatIsImage(string format);
         bool FormatIsAudio(string format);
-        Task<string> UploadFile(IFormFile file, string fileName, string fileType, BucketSelector bucketName);
+        string UploadFile(IFormFile file, string fileName, string fileType, BucketSelector bucketName);
+        bool FileSizeCorrect(IFormFile file, string fileType);
     }
 }

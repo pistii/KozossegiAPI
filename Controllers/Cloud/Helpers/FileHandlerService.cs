@@ -7,8 +7,6 @@ namespace KozossegiAPI.Controllers.Cloud.Helpers
 {
     public class FileHandlerService : IFileHandlerService
     {
-        private IStorageController _storageController;
-
         //Sizes in bytes
         const uint IMAGES_MAX_SIZE = 150_000_000; //15mb
         const uint VIDEOS_MAX_SIZE = 512_000_000; //512mb
@@ -62,7 +60,7 @@ namespace KozossegiAPI.Controllers.Cloud.Helpers
             return null;
         }
 
-        private bool FileSizeCorrect(IFormFile file, string fileType)
+        public bool FileSizeCorrect(IFormFile file, string fileType)
         {
             long size = file.Length;
             if (imageFormats.Contains(fileType))

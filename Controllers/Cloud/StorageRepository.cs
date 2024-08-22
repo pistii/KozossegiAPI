@@ -8,13 +8,13 @@ using KozossegiAPI.Storage;
 using Microsoft.AspNetCore.Mvc;
 namespace KozoskodoAPI.Controllers.Cloud
 {
-    public class StorageController : ControllerBase, IStorageController
+    public class StorageRepository : ControllerBase, IStorageRepository
     {
         protected readonly string BASE_URL = "https://storage.googleapis.com/";
         protected readonly Dictionary<BucketSelector, string> bucketUrls;
         private IChatStorage _chatStorage;
 
-        public StorageController(IChatStorage chatStorage)
+        public StorageRepository(IChatStorage chatStorage)
         {   
             _chatStorage = chatStorage;
             bucketUrls = new Dictionary<BucketSelector, string>
