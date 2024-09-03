@@ -23,7 +23,7 @@ namespace KozoskodoAPI.Auth
             }
         }
 
-        public string GenerateAccessToken(string email)
+        public string GenerateAccessToken(string email, int duration)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_appSettings.Secret!);
@@ -32,7 +32,7 @@ namespace KozoskodoAPI.Auth
             {
                 Subject = new ClaimsIdentity(new[] { new Claim("email", email)
                 }),
-                Expires = DateTime.UtcNow.AddMinutes(1),
+                Expires = DateTime.UtcNow.AddMinutes(duration),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
@@ -129,7 +129,7 @@ namespace KozoskodoAPI.Auth
 
     public interface IJwtUtils
     {
-        string GenerateAccessToken(string email);
+        string GenerateAccessToken(string email, int duration = 15);
         public string GenerateJwtToken(user user);
         string? ValidateAccessToken(string? token);
         public int? ValidateJwtToken(string? token);
