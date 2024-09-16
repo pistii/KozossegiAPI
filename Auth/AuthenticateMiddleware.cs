@@ -17,6 +17,12 @@ namespace KozossegiAPI.Auth
         {
             var tokenfromPw = context.Request.Headers["Authentication"].FirstOrDefault()?.Split(" ").Last();
 
+            if (!context.Response.HasStarted)
+            {
+                await _next(context);
+                return;
+            }
+
             var email_otp = jwtUtils.ValidateAccessToken(tokenfromPw);
 
             if (email_otp != null)
@@ -32,7 +38,8 @@ namespace KozossegiAPI.Auth
                     await context.Response.WriteAsync("Unauthorized");
                 }
             }
-            await _next(context);
+
+            await _next(context);            
         }
     }
 }
