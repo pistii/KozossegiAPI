@@ -228,19 +228,21 @@ namespace KozoskodoAPI.Controllers
         /// This method is used when the user registered and the required to activate the email
         /// </summary>
         /// <returns></returns>
-        [HttpGet("Validate")]
+        [HttpGet("validate")]
+        [AllowAnonymous]
         public async Task<IActionResult> ActivateUser()
         {
-            var user = (user?)HttpContext.Items["User"]; //Get the user from headers
+            var token = HttpContext.Request.Headers["Validation-token"];
+            var email = _jwtUtils.ValidateAccessToken(token);
 
-            if (user != null)
+            if (email != null)
             {
-                user? userExists = await _userRepository.GetUserByEmailOrPassword(user.email, user.password);
+                user? userExists = await _userRepository.GetUserByEmailAsync(email);
                 if (userExists != null && !userExists.isActivated)
                 {
                     userExists.isActivated = true;
                     await _userRepository.UpdateThenSaveAsync(userExists);
-                    return Ok(userExists); //Sikeres aktiválás
+                    return Ok(); //Sikeres aktiválás
                 }
                 return NotFound(); // Már aktivált felhasználó
             }
