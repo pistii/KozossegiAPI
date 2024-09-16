@@ -18,9 +18,12 @@ using KozossegiAPI.Security;
 using Google.Api;
 using Serilog;
 using KozossegiAPI.Auth.Helpers;
-using NuGet.Protocol.Plugins;
-using static Google.Rpc.Context.AttributeContext.Types;
-using KozossegiAPI.DTOs;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Globalization;
+using System.Resources;
+using KozossegiAPI;
+using System.Security.Policy;
+using Google.Api;
 
 namespace KozoskodoAPI.Controllers
 {
@@ -40,7 +43,7 @@ namespace KozoskodoAPI.Controllers
         private readonly IMailSender _mailSender;
         private readonly IVerificationCodeCache _verCodeCache;
         private readonly IEncodeDecode _encodeDecode;
-        protected readonly string URL_BASE = "http://localhost:5173/";
+        protected readonly string URL_BASE = "https://192.168.0.16:8888";
         
         public usersController(
             IJwtTokenManager jwtTokenManager,
@@ -77,16 +80,12 @@ namespace KozoskodoAPI.Controllers
                 return NotFound("Username or password is incorrect");
             }
 
-            var userId = response?.personal?.id;
-
-            var identity = new ClaimsIdentity(new[] {
-                new Claim(ClaimTypes.Name, login.Email),
-                new Claim(ClaimTypes.GivenName, "A user"),
-                new Claim(ClaimTypes.NameIdentifier, userId?.ToString())
-            });
-
+            if (response.personal.users.isActivated)
+            {
             AuthenticateResponse userDto = new AuthenticateResponse(response.personal!, response.token);
             return Ok(userDto);
+        }
+            return BadRequest("Not activated");
         }
 
         // GET: user
