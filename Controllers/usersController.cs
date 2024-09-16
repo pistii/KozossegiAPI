@@ -189,11 +189,11 @@ namespace KozoskodoAPI.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> SignUp(RegisterForm user)
         {
+            if (user == null && user.email == null) 
+                return BadRequest("error");
 
-            if (user != null && user.email != null)
-            {
                 user? userExistsByEmail = await _userRepository.GetUserByEmailAsync(user.email);
-                if (userExistsByEmail == null)
+            if (userExistsByEmail != null)
                 {
                     return BadRequest("used email");
                 }
@@ -206,24 +206,24 @@ namespace KozoskodoAPI.Controllers
 
                 await _userRepository.InsertSaveAsync<user>(newUser);
 
-                var token = _jwtUtils.GenerateJwtToken(newUser); //TODO: generate 15min access tokens
-
-                string fullpath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "templates"); //TODO: this will fail in production
-                string content = Path.Combine(fullpath, "register.html");
-
-                string htmlTemplate = System.IO.File.ReadAllText(content);
-                string url = $"{URL_BASE}validate/{token}";
-                htmlTemplate = htmlTemplate.Replace("{Url}", url);
-
-                //_mailSender.SendMail("Sikeres regisztráció", htmlTemplate, newUser.personal.firstName + " " + newUser.personal.lastName, newUser.email);
-
-                return Ok("success");
-            }
-            return BadRequest("error");
+            await _userRepository.SendActivationEmail(user.email, newUser);
+            return Ok("success");   
         }
 
+        [AllowAnonymous]
+        [HttpPost("register/send/email-activator/{to}")]
+        public async Task<IActionResult> SendEmailActivator(string to)
+        {
+            user? userExistsByEmail = await _userRepository.GetUserByEmailAsync(to);
+            if (userExistsByEmail == null) return NotFound();
 
-
+            var requestGranted = await _userRepository.CanUserRequestMoreActivatorToday(to);
+            if (!userExistsByEmail.isActivated && requestGranted)
+            {
+                await _userRepository.SendActivationEmail(to, userExistsByEmail);
+            }
+            return Ok();
+        }
 
         /// <summary>
         /// This method is used when the user registered and the required to activate the email
