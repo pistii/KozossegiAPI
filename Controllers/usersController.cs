@@ -329,10 +329,7 @@ namespace KozoskodoAPI.Controllers
             return BadRequest();
         }
 
-        //[HttpPost("password/reset/otp")]
-        //public async Task<IActionResult> PasswordReset_2([FromForm] )
-
-        [HttpPut("password/modify")]
+        [HttpPost("password/reset/modify")]
         [Authenticate]
         public async Task<IActionResult> ModifyPassword(ModifyPassword form)
         {
@@ -350,6 +347,7 @@ namespace KozoskodoAPI.Controllers
 
                     _verCodeCache.Remove(form.otpKey);
                     await _userRepository.UpdateThenSaveAsync(user);
+                    //TODO: értesítés küldése a módosított jelszó miatt
                     return Ok();
                 }
                 return NotFound();
@@ -417,14 +415,19 @@ namespace KozoskodoAPI.Controllers
 
 
         [HttpDelete("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _userRepository.GetByIdAsync<user>(id);
+            var result = await _userRepository.GetByIdAsync<Personal>(id);
+            var user = await _userRepository.GetByIdAsync<user>(id);
+
             if (result == null)
             {
                 return NotFound();
             }
-            await _userRepository.RemoveThenSaveAsync<user>(result);
+            await _userRepository.RemoveThenSaveAsync<Personal>(result);
+            await _userRepository.RemoveThenSaveAsync<user>(user);
+
             return Ok();
         }
 
