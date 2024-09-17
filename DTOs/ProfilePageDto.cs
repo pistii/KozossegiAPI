@@ -1,7 +1,6 @@
-﻿using KozoskodoAPI.Models;
-using Microsoft.AspNetCore.Mvc;
+﻿using KozossegiAPI.Models;
 
-namespace KozoskodoAPI.DTOs
+namespace KozossegiAPI.DTOs
 {
     public class ProfilePageDto
     {

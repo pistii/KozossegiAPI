@@ -1,8 +1,8 @@
-﻿using KozoskodoAPI.Data;
+﻿using KozossegiAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
-namespace KozoskodoAPI.Repo
+namespace KozossegiAPI.Repo
 {
 
     public class GenericRepository<T> : IGenericRepository<T> where T : class

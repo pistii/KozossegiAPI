@@ -1,6 +1,6 @@
-﻿using KozoskodoAPI.Models;
+﻿using KozossegiAPI.Models;
 
-namespace KozoskodoAPI.Repo
+namespace KozossegiAPI.Repo
 {
     public interface INotificationRepository : IGenericRepository<Notification>
     {

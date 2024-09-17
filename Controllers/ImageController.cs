@@ -1,18 +1,13 @@
-﻿using Google.Api;
-using Google.Cloud.Storage.V1;
-using KozoskodoAPI.Auth.Helpers;
-using KozoskodoAPI.Controllers.Cloud;
-using KozoskodoAPI.Data;
-using KozoskodoAPI.DTOs;
-using KozoskodoAPI.Models;
-using KozoskodoAPI.Repo;
+﻿using KozossegiAPI.Auth.Helpers;
+using KozossegiAPI.Controllers.Cloud;
+using KozossegiAPI.DTOs;
+using KozossegiAPI.Repo;
 using KozossegiAPI.Controllers.Cloud.Helpers;
 using KozossegiAPI.Models.Cloud;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Serilog;
 
-namespace KozoskodoAPI.Controllers
+namespace KozossegiAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

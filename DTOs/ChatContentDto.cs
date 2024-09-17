@@ -1,5 +1,4 @@
-﻿using KozoskodoAPI.Models;
-using KozossegiAPI.Models;
+﻿using KozossegiAPI.Models;
 
 namespace KozossegiAPI.DTOs
 {

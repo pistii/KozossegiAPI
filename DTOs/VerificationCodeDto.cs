@@ -1,4 +1,4 @@
-﻿namespace KozoskodoAPI.DTOs
+﻿namespace KozossegiAPI.DTOs
 {
     public class VerificationCodeDto
     {

@@ -1,20 +1,17 @@
-﻿using KozoskodoAPI.DTOs;
-using KozoskodoAPI.Models;
-using KozoskodoAPI.Realtime.Connection;
-using KozoskodoAPI.Realtime;
+﻿using KozossegiAPI.DTOs;
+using KozossegiAPI.Models;
+using KozossegiAPI.Realtime.Connection;
+using KozossegiAPI.Realtime;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using KozoskodoAPI.Repo;
+using KozossegiAPI.Repo;
 using KozossegiAPI.Models.Cloud;
 using KozossegiAPI.Controllers.Cloud;
-using KozossegiAPI.Models;
-using KozossegiAPI.DTOs;
 using KozossegiAPI.Services;
 using KozossegiAPI.Controllers.Cloud.Helpers;
 using KozossegiAPI.Storage;
-using KozoskodoAPI.Auth.Helpers;
 
-namespace KozoskodoAPI.Controllers
+namespace KozossegiAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -141,7 +138,7 @@ namespace KozoskodoAPI.Controllers
                         }
                         else
                         {
-                            var fileBytes = await GetFile(file.FileToken); //await GetFile<byte[]>(file.FileToken);
+                            var fileBytes = await GetFile<byte[]>(file.FileToken); //await GetFile<byte[]>(file.FileToken);
 
                             var contentsWithFile = returnValue.Where(x => x.ChatFile != null);
                             var contentWithFile = contentsWithFile.FirstOrDefault(x => x.ChatFile.FileToken == file.FileToken);
@@ -218,7 +215,7 @@ namespace KozoskodoAPI.Controllers
             //Map the original chatContent object to ChatContentDto. This way the ChatFile will contain the audio object.
             var content = _chatRepository.GetSortedChatContent(roomid).Select(c => c.ToDto()).Reverse().ToList();
 
-            var totalMessages = content.Count();
+            var totalMessages = content.Count;
             var totalPages = (int)Math.Ceiling((double)totalMessages / messagesPerPage);
 
             var returnValue = _chatRepository.Paginator<ChatContentDto>(content, currentPage, messagesPerPage).ToList();
@@ -279,20 +276,20 @@ namespace KozoskodoAPI.Controllers
                         {
                             //var rangeFile = (long)(rangeStart + rangeTo - 1);
 
-                            file = await _storageController.GetVideoChunkBytes(fileToken, 0, 13000);//_storageController.GetFileAsByte(fileToken, BucketSelector.CHAT_BUCKET_NAME);
+                            file = await _storageRepository.GetVideoChunkBytes(fileToken, 0, 13000);//_storageController.GetFileAsByte(fileToken, BucketSelector.CHAT_BUCKET_NAME);
                             Response.StatusCode = 206; // Partial Content
                             Response.Headers["Content-Range"] = $"bytes={0}-{13000}/{file.Length}";
 
                         }
                         else if (_fileHandlerService.FormatIsImage(fileType))
                         {
-                            file = await _storageController.GetFileAsByte(fileToken, BucketSelector.CHAT_BUCKET_NAME);
+                            file = await _storageRepository.GetFileAsByte(fileToken, BucketSelector.CHAT_BUCKET_NAME);
                         }
                         else return null;
                         _chatStorage.Create(fileToken, file); //Save in cache
                     }
                     //}
-                    file = await _storageController.GetFileAsByte(fileToken, BucketSelector.CHAT_BUCKET_NAME);
+                    file = await _storageRepository.GetFileAsByte(fileToken, BucketSelector.CHAT_BUCKET_NAME);
 
                     return File(file, "video/mp4", enableRangeProcessing: true);
                     //var fileChunk = _storageController.GetVideo(fileToken);
@@ -324,10 +321,12 @@ namespace KozoskodoAPI.Controllers
                     return file;
                 }
                 return null;
+            }
+            return null;
         }
 
 
-        [Authorize]
+        //[Authorize]
         [Route("newChat")]
         [HttpPost]
         public async Task<IActionResult> SendMessage([FromBody] ChatDto chatDto)
@@ -335,7 +334,7 @@ namespace KozoskodoAPI.Controllers
             return await Send(chatDto);
         }
 
-        [Authorize]
+        //[Authorize]
         [Route("file")]
         [HttpPost]
         public async Task<IActionResult> SendMessageWithFile([FromForm] ChatDto chatDto)

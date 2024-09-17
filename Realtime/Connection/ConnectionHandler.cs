@@ -1,14 +1,12 @@
-﻿using Google.Api;
-using KozoskodoAPI.Auth;
-using KozoskodoAPI.Auth.Helpers;
-using KozoskodoAPI.Data;
-using KozoskodoAPI.Models;
-using KozoskodoAPI.Realtime.Connection;
-using KozoskodoAPI.Realtime.Helpers;
+﻿using KozossegiAPI.Auth;
+using KozossegiAPI.Auth.Helpers;
+using KozossegiAPI.Data;
+using KozossegiAPI.Models;
+using KozossegiAPI.Realtime.Helpers;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
-namespace KozoskodoAPI.Realtime.Connection
+namespace KozossegiAPI.Realtime.Connection
 {
     [Authorize]
     public class ConnectionHandler<T> : Hub<T> where T : class

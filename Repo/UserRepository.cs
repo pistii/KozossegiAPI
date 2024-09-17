@@ -1,15 +1,9 @@
-﻿using Google.Api;
-using Google.Apis.Storage.v1.Data;
-using Google.Type;
-using KozoskodoAPI.Data;
-using KozoskodoAPI.Models;
-using KozossegiAPI.DTOs;
+﻿using KozossegiAPI.Data;
 using KozossegiAPI.Models;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 
-namespace KozoskodoAPI.Repo
+namespace KozossegiAPI.Repo
 {
     public class UserRepository : GenericRepository<user>, IUserRepository<user>
     {

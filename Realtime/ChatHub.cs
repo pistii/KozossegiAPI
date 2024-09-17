@@ -1,17 +1,12 @@
-﻿using Google.Protobuf.WellKnownTypes;
-using KozoskodoAPI.Auth;
-using KozoskodoAPI.Auth.Helpers;
-using KozoskodoAPI.Data;
-using KozoskodoAPI.Models;
-using KozoskodoAPI.Realtime.Connection;
-using KozoskodoAPI.Repo;
+﻿using KozossegiAPI.Auth;
+using KozossegiAPI.Auth.Helpers;
+using KozossegiAPI.Data;
 using KozossegiAPI.Models;
 using KozossegiAPI.Models.Cloud;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
-using System.Linq;
+using KozossegiAPI.Realtime.Connection;
+using KozossegiAPI.Repo;
 
-namespace KozoskodoAPI.Realtime
+namespace KozossegiAPI.Realtime
 {
     [Authorize]
     public class ChatHub : ConnectionHandler<IChatClient>

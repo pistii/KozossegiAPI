@@ -1,5 +1,5 @@
 ﻿
-namespace KozoskodoAPI.Models
+namespace KozossegiAPI.Models
 {
     public class UserRestriction
     {

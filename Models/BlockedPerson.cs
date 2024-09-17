@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace KozoskodoAPI.Models
+namespace KozossegiAPI.Models
 {
     public class BlockedPerson
     {

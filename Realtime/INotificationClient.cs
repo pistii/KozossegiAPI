@@ -1,6 +1,6 @@
-﻿using KozoskodoAPI.Models;
+﻿using KozossegiAPI.Models;
 
-namespace KozoskodoAPI.Realtime
+namespace KozossegiAPI.Realtime
 {
     public interface INotificationClient
     {

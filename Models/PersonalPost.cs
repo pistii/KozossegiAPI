@@ -1,8 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
 
-namespace KozoskodoAPI.Models
+namespace KozossegiAPI.Models
 {
     [Table("PersonalPost")]
     public class PersonalPost

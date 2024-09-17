@@ -1,4 +1,4 @@
-﻿namespace KozoskodoAPI.DTOs
+﻿namespace KozossegiAPI.DTOs
 {
     /// <summary>
     /// TODO/NOTE -> This dto can be used in the future if will be implemented a server-client interval communication

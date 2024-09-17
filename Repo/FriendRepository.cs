@@ -1,11 +1,8 @@
-﻿using KozoskodoAPI.Data;
-using KozoskodoAPI.Models;
-using Microsoft.AspNetCore.JsonPatch.Internal;
-using Microsoft.AspNetCore.Mvc;
+﻿using KozossegiAPI.Data;
+using KozossegiAPI.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Collections;
 
-namespace KozoskodoAPI.Repo
+namespace KozossegiAPI.Repo
 {
     public class FriendRepository : GenericRepository<Friend>, IFriendRepository
     {

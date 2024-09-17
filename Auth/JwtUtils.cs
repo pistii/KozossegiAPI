@@ -1,13 +1,12 @@
-﻿using KozoskodoAPI.Auth.Helpers;
-using KozoskodoAPI.DTOs;
-using KozoskodoAPI.Models;
+﻿using KozossegiAPI.Auth.Helpers;
+using KozossegiAPI.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace KozoskodoAPI.Auth
+namespace KozossegiAPI.Auth
 {
     public class JwtUtils : IJwtUtils
     {

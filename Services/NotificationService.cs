@@ -1,15 +1,6 @@
-﻿
-using KozoskodoAPI.Controllers;
-using KozoskodoAPI.Data;
-using KozoskodoAPI.Models;
-using KozoskodoAPI.Repo;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System;
-using System.Threading;
+﻿using KozossegiAPI.Repo;
 
-namespace KozoskodoAPI.Services
+namespace KozossegiAPI.Services
 {
     //Implementation based on:
     //https://learn.microsoft.com/en-us/aspnet/core/fundamentals/host/hosted-services?view=aspnetcore-8.0&tabs=netcore-cli

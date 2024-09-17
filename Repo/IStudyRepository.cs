@@ -1,6 +1,5 @@
-﻿using KozoskodoAPI.Models;
-using KozoskodoAPI.Repo;
-using KozossegiAPI.DTOs;
+﻿using KozossegiAPI.DTOs;
+using KozossegiAPI.Models;
 using System.Net;
 
 namespace KozossegiAPI.Repo

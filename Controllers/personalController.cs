@@ -1,14 +1,10 @@
-﻿using KozoskodoAPI.Data;
-using KozoskodoAPI.DTOs;
-using KozoskodoAPI.Models;
-using Microsoft.AspNetCore.Authentication;
+﻿using KozossegiAPI.DTOs;
+using KozossegiAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Firebase.Database;
-using KozoskodoAPI.Repo;
+using KozossegiAPI.Repo;
 
-namespace KozoskodoAPI.Controllers
+namespace KozossegiAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

@@ -1,8 +1,7 @@
-﻿using KozoskodoAPI.Data;
-using KozoskodoAPI.Models;
-using Microsoft.EntityFrameworkCore;
+﻿using KozossegiAPI.Data;
+using KozossegiAPI.Models;
 
-namespace KozoskodoAPI.Repo
+namespace KozossegiAPI.Repo
 {
     public class PersonalRepository : GenericRepository<Personal>, IPersonalRepository
     {

@@ -1,7 +1,7 @@
-﻿using KozoskodoAPI.DTOs;
-using KozoskodoAPI.Models;
+﻿using KozossegiAPI.DTOs;
+using KozossegiAPI.Models;
 
-namespace KozoskodoAPI.Repo
+namespace KozossegiAPI.Repo
 {
     public interface IPostRepository<T1> : IGenericRepository<T1>
     {

@@ -1,6 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-namespace KozoskodoAPI.Repo
+﻿
+namespace KozossegiAPI.Repo
 {
     public interface IRepositoryBase<T>
     {

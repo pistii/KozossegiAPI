@@ -1,8 +1,8 @@
-﻿using KozoskodoAPI.Models;
+﻿using KozossegiAPI.Models;
 using KozossegiAPI.Models.Cloud;
 using System.ComponentModel.DataAnnotations;
 
-namespace KozoskodoAPI.DTOs
+namespace KozossegiAPI.DTOs
 {
     public class ChatDto
     {

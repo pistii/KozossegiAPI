@@ -1,11 +1,7 @@
-﻿using KozoskodoAPI.Controllers;
-using KozoskodoAPI.Controllers.Cloud;
-using KozoskodoAPI.DTOs;
-using KozoskodoAPI.Models;
-using KozossegiAPI.Models.Cloud;
-using Microsoft.AspNetCore.Mvc;
+﻿using KozossegiAPI.DTOs;
+using KozossegiAPI.Models;
 
-namespace KozoskodoAPI.Repo
+namespace KozossegiAPI.Repo
 {
     public interface IImageRepository
     {

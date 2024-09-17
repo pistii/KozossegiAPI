@@ -1,5 +1,5 @@
-﻿using KozoskodoAPI.Models;
-using KozossegiAPI.DTOs;
+﻿using KozossegiAPI.DTOs;
+using KozossegiAPI.Models;
 
 namespace KozossegiAPI.Services
 {

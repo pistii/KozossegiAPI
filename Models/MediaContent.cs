@@ -1,10 +1,9 @@
-﻿using Humanizer;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
+﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace KozoskodoAPI.Models
+namespace KozossegiAPI.Models
 {
     [Table("MediaContent")]
     public class MediaContent

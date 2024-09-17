@@ -1,7 +1,5 @@
-﻿using KozoskodoAPI.Models;
-using KozoskodoAPI.Repo;
+﻿using KozossegiAPI.Models;
 using KozossegiAPI.DTOs;
-using KozossegiAPI.Models.Cloud;
 
 namespace KozossegiAPI.Repo
 {

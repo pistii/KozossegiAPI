@@ -1,8 +1,7 @@
-﻿using AutoMapper;
-using KozoskodoAPI.Auth.Helpers;
-using KozoskodoAPI.Data;
-using KozoskodoAPI.Models;
+﻿using KozossegiAPI.Auth.Helpers;
+using KozossegiAPI.Data;
 using KozossegiAPI.DTOs;
+using KozossegiAPI.Models;
 using KozossegiAPI.Repo;
 using KozossegiAPI.SMTP;
 using Microsoft.AspNetCore.Mvc;

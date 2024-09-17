@@ -1,28 +1,25 @@
 using Microsoft.EntityFrameworkCore;
-using KozoskodoAPI.Data;
+using KozossegiAPI.Data;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using KozoskodoAPI.Auth;
-using KozoskodoAPI.Realtime;
-using KozoskodoAPI.Auth.Helpers;
-using KozoskodoAPI.Controllers;
-using KozoskodoAPI.Realtime.Connection;
-using KozoskodoAPI.Controllers.Cloud;
-using KozoskodoAPI.Repo;
-using KozoskodoAPI.SMTP;
-using KozoskodoAPI.Security;
-using KozoskodoAPI.Services;
-using KozoskodoAPI.Models;
-using KozoskodoAPI.DTOs;
-using KozossegiAPI.SMTP;
+using KozossegiAPI.Auth;
+using KozossegiAPI.Realtime;
+using KozossegiAPI.Auth.Helpers;
+using KozossegiAPI.Realtime.Connection;
 using KozossegiAPI.Controllers.Cloud;
+using KozossegiAPI.Repo;
+using KozossegiAPI.SMTP;
+using KozossegiAPI.Security;
+using KozossegiAPI.Services;
+using KozossegiAPI.Models;
+using KozossegiAPI.DTOs;
 using KozossegiAPI.Storage;
-using KozossegiAPI.Controllers.Cloud.Helpers;
 using Serilog;
+using KozossegiAPI.Controllers.Cloud.Helpers;
 
-namespace KozoskodoAPI
+namespace KozossegiAPI
 {
     public class Program
     {
@@ -99,7 +96,8 @@ namespace KozoskodoAPI
             services.AddHostedService<NotificationService>();
             services.AddScoped<ISettingRepository, SettingRepository>();
             services.AddScoped<IStudyRepository, StudyRepository>();
-
+            services.AddScoped<IMobileRepository<user>, MobileRepository>();
+            
             services.AddMemoryCache();
 
             services.AddHttpContextAccessor();

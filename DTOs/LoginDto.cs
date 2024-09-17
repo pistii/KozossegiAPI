@@ -1,6 +1,6 @@
 ﻿using Microsoft.Build.Framework;
 
-namespace KozoskodoAPI.DTOs
+namespace KozossegiAPI.DTOs
 {
     public class LoginDto
     {

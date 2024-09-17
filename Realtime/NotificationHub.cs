@@ -1,13 +1,9 @@
-﻿using Google.Api;
-using KozoskodoAPI.Models;
-using KozoskodoAPI.Auth.Helpers;
-using Microsoft.AspNetCore.SignalR;
-using KozoskodoAPI.Realtime.Helpers;
-using KozoskodoAPI.Auth;
-using KozoskodoAPI.Realtime.Connection;
-using KozoskodoAPI.Data;
+﻿using KozossegiAPI.Models;
+using KozossegiAPI.Auth;
+using KozossegiAPI.Data;
+using KozossegiAPI.Realtime.Connection;
 
-namespace KozoskodoAPI.Realtime
+namespace KozossegiAPI.Realtime
 {
     public class NotificationHub : ConnectionHandler<INotificationClient>
     {

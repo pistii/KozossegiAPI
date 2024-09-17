@@ -1,8 +1,9 @@
-﻿using KozoskodoAPI.Data;
-using KozoskodoAPI.DTOs;
-using KozoskodoAPI.Models;
+﻿using KozossegiAPI.Data;
+using KozossegiAPI.DTOs;
+using KozossegiAPI.Models;
 using Microsoft.EntityFrameworkCore;
-namespace KozoskodoAPI.Auth
+
+namespace KozossegiAPI.Auth
 {
     public class JwtTokenManager : IJwtTokenManager
     {

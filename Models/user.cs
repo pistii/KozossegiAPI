@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Newtonsoft.Json;
 
-namespace KozoskodoAPI.Models
+namespace KozossegiAPI.Models
 {
    public partial class user
     {

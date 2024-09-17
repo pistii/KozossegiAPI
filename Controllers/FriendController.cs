@@ -1,14 +1,12 @@
-﻿using KozoskodoAPI.Data;
-using KozoskodoAPI.Models;
-using KozoskodoAPI.Realtime;
-using KozoskodoAPI.Realtime.Connection;
-using KozoskodoAPI.Repo;
+﻿using KozossegiAPI.Models;
+using KozossegiAPI.Realtime;
+using KozossegiAPI.Realtime.Connection;
+using KozossegiAPI.Repo;
 using KozossegiAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
 
-namespace KozoskodoAPI.Controllers
+namespace KozossegiAPI.Controllers
 {
     [ApiController]
     [Route("/api/[controller]")]

@@ -1,11 +1,7 @@
-﻿using Google.Rpc;
-using KozoskodoAPI.Models;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace KozoskodoAPI.Security
+namespace KozossegiAPI.Security
 {
     //https://medium.com/@adarsh-d/encryption-and-decryption-using-c-and-js-954d3836753a
     public class EncodeDecode : IEncodeDecode

@@ -1,10 +1,7 @@
-﻿using KozoskodoAPI.Data;
-using KozoskodoAPI.Models;
-using KozoskodoAPI.Repo;
+﻿using KozossegiAPI.Data;
 using KozossegiAPI.DTOs;
-using Microsoft.AspNetCore.Http.HttpResults;
+using KozossegiAPI.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Net;
 
 namespace KozossegiAPI.Repo

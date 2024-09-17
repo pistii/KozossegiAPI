@@ -1,11 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using KozoskodoAPI.DTOs;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-using Org.BouncyCastle.Asn1.Mozilla;
 
-namespace KozoskodoAPI.Models
+namespace KozossegiAPI.Models
 {
 
     /// <summary>

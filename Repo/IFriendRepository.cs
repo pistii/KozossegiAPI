@@ -1,8 +1,6 @@
-﻿using KozoskodoAPI.Controllers;
-using KozoskodoAPI.Models;
-using Microsoft.AspNetCore.Mvc;
+﻿using KozossegiAPI.Models;
 
-namespace KozoskodoAPI.Repo
+namespace KozossegiAPI.Repo
 {
     public interface IFriendRepository : IGenericRepository<Friend>
     {

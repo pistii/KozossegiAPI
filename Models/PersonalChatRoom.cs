@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using Newtonsoft.Json;
 
-namespace KozoskodoAPI.Models
+namespace KozossegiAPI.Models
 {
     [Table("PersonalChatRoom")]
     public class PersonalChatRoom

@@ -1,6 +1,4 @@
-﻿using KozoskodoAPI.Models;
-using KozossegiAPI.Models;
-using KozossegiAPI.Models.Cloud;
+﻿using KozossegiAPI.Models;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 
