@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace KozoskodoAPI.Models
+namespace KozossegiAPI.Models
 {
     [Table("Comment")]
     public partial class Comment

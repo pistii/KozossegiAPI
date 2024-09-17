@@ -1,8 +1,7 @@
-﻿using KozoskodoAPI.Controllers.Cloud;
-using KozoskodoAPI.Models;
+﻿using KozossegiAPI.Models;
 using KozossegiAPI.Models.Cloud;
 
-namespace KozoskodoAPI.DTOs
+namespace KozossegiAPI.DTOs
 {
     public class PostDto
     {

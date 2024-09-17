@@ -1,7 +1,6 @@
-﻿using KozoskodoAPI.DTOs;
-using KozoskodoAPI.Models;
+﻿using KozossegiAPI.DTOs;
 
-namespace KozoskodoAPI.Auth
+namespace KozossegiAPI.Auth
 {
     public interface IJwtTokenManager
     {

@@ -1,8 +1,7 @@
-﻿using KozoskodoAPI.Models;
-using KozossegiAPI.Models;
+﻿using KozossegiAPI.Models;
 using KozossegiAPI.Models.Cloud;
 
-namespace KozoskodoAPI.Realtime
+namespace KozossegiAPI.Realtime
 {
     public interface IChatClient
     {

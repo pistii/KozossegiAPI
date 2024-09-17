@@ -1,7 +1,6 @@
-﻿using KozoskodoAPI.Models;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 
-namespace KozoskodoAPI.Realtime.Connection
+namespace KozossegiAPI.Realtime.Connection
 {
     public class ConnectionMapping : IMapConnections
     {

@@ -1,15 +1,14 @@
 ﻿using KozossegiAPI.Controllers.Cloud;
-using KozoskodoAPI.DTOs;
-using KozoskodoAPI.Models;
+using KozossegiAPI.DTOs;
+using KozossegiAPI.Models;
 using Microsoft.AspNetCore.Mvc;
-using KozoskodoAPI.Repo;
+using KozossegiAPI.Repo;
 using KozossegiAPI.Models.Cloud;
 using KozossegiAPI.Services;
 using KozossegiAPI.Controllers.Cloud.Helpers;
-using System.Linq;
-using KozoskodoAPI.Auth.Helpers;
+using KozossegiAPI.Auth.Helpers;
 
-namespace KozoskodoAPI.Controllers
+namespace KozossegiAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -81,7 +80,7 @@ namespace KozoskodoAPI.Controllers
             
 
             var authorUser = await _PostRepository.GetByIdAsync<Personal>(userFromHeader.userID);
-            var receiverUser = await _PostRepository.GetByIdAsync<Personal>(dto.receiverUserId);
+            var receiverUser = await _PostRepository.GetByIdAsync<Personal>(dto.SourceId);
             
             if (receiverUser != null)
             {

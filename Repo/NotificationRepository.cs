@@ -1,13 +1,12 @@
-﻿using KozoskodoAPI.Data;
-using KozoskodoAPI.Models;
-using KozoskodoAPI.Realtime;
-using KozoskodoAPI.Realtime.Connection;
-using KozoskodoAPI.Repo;
+﻿using KozossegiAPI.Data;
+using KozossegiAPI.Models;
+using KozossegiAPI.Realtime;
+using KozossegiAPI.Realtime.Connection;
 using KozossegiAPI.Services;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
-namespace KozoskodoAPI.Repo
+namespace KozossegiAPI.Repo
 {
     public class NotificationRepository : GenericRepository<Notification>, INotificationRepository
     {

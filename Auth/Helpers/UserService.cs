@@ -1,8 +1,7 @@
-﻿using KozoskodoAPI.Controllers;
-using KozoskodoAPI.Data;
-using KozoskodoAPI.Models;
+﻿using KozossegiAPI.Data;
+using KozossegiAPI.Models;
 
-namespace KozoskodoAPI.Auth.Helpers
+namespace KozossegiAPI.Auth.Helpers
 {
     public interface IUserService
     {

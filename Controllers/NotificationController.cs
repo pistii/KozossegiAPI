@@ -1,8 +1,8 @@
-﻿using KozoskodoAPI.Models;
-using KozoskodoAPI.Repo;
+﻿using KozossegiAPI.Models;
+using KozossegiAPI.Repo;
 using Microsoft.AspNetCore.Mvc;
 
-namespace KozoskodoAPI.Controllers
+namespace KozossegiAPI.Controllers
 {
     [ApiController]
     [Route("/api/[controller]")]

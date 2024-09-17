@@ -1,13 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using KozoskodoAPI.Models;
-using System.Reflection.Emit;
-using static Grpc.Core.Metadata;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using KozoskodoAPI.Controllers;
-using System.Diagnostics;
 using KozossegiAPI.Models;
 
-namespace KozoskodoAPI.Data
+namespace KozossegiAPI.Data
 {
 
     public partial class DBContext : DbContext

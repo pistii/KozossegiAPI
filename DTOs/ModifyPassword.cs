@@ -1,7 +1,6 @@
-﻿using KozoskodoAPI.Models;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace KozoskodoAPI.DTOs
+namespace KozossegiAPI.DTOs
 {
     public class OneTimePassword
     {

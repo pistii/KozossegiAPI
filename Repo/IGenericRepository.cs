@@ -1,7 +1,6 @@
-﻿
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
-namespace KozoskodoAPI.Repo
+namespace KozossegiAPI.Repo
 {
     public interface IGenericRepository<T>
     {

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 using Newtonsoft.Json;
 
-namespace KozoskodoAPI.Models
+namespace KozossegiAPI.Models
 {
     public class PostReaction
     {

@@ -1,9 +1,6 @@
-﻿using KozoskodoAPI.Auth.Helpers;
-using KozoskodoAPI.Controllers;
-using KozoskodoAPI.Data;
-using System.Linq;
+﻿using KozossegiAPI.Auth.Helpers;
 
-namespace KozoskodoAPI.Auth
+namespace KozossegiAPI.Auth
 {
     public class JwtMiddleware 
     {

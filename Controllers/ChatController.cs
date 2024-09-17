@@ -1,20 +1,17 @@
-﻿using KozoskodoAPI.DTOs;
-using KozoskodoAPI.Models;
-using KozoskodoAPI.Realtime.Connection;
-using KozoskodoAPI.Realtime;
+﻿using KozossegiAPI.DTOs;
+using KozossegiAPI.Models;
+using KozossegiAPI.Realtime.Connection;
+using KozossegiAPI.Realtime;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using KozoskodoAPI.Repo;
+using KozossegiAPI.Repo;
 using KozossegiAPI.Models.Cloud;
 using KozossegiAPI.Controllers.Cloud;
-using KozossegiAPI.Models;
-using KozossegiAPI.DTOs;
 using KozossegiAPI.Services;
 using KozossegiAPI.Controllers.Cloud.Helpers;
 using KozossegiAPI.Storage;
-using KozoskodoAPI.Auth.Helpers;
 
-namespace KozoskodoAPI.Controllers
+namespace KozossegiAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -215,7 +212,7 @@ namespace KozoskodoAPI.Controllers
             //Map the original chatContent object to ChatContentDto. This way the ChatFile will contain the audio object.
             var content = _chatRepository.GetSortedChatContent(roomid).Select(c => c.ToDto()).Reverse().ToList();
 
-            var totalMessages = content.Count();
+            var totalMessages = content.Count;
             var totalPages = (int)Math.Ceiling((double)totalMessages / messagesPerPage);
 
             var returnValue = _chatRepository.Paginator<ChatContentDto>(content, currentPage, messagesPerPage).ToList();
@@ -322,10 +319,12 @@ namespace KozoskodoAPI.Controllers
                     return file;
                 }
                 return null;
+            //}
+            return null;
         }
 
 
-        [Authorize]
+        //[Authorize]
         [Route("newChat")]
         [HttpPost]
         public async Task<IActionResult> SendMessage([FromBody] ChatDto chatDto)
@@ -333,7 +332,7 @@ namespace KozoskodoAPI.Controllers
             return await Send(chatDto);
         }
 
-        [Authorize]
+        //[Authorize]
         [Route("file")]
         [HttpPost]
         public async Task<IActionResult> SendMessageWithFile([FromForm] ChatDto chatDto)

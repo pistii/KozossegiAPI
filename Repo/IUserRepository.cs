@@ -1,7 +1,6 @@
-﻿using KozoskodoAPI.Models;
-using Microsoft.AspNetCore.Mvc;
+﻿using KozossegiAPI.Models;
 
-namespace KozoskodoAPI.Repo
+namespace KozossegiAPI.Repo
 {
     public interface IUserRepository<T> : IGenericRepository<T>
     {
@@ -11,6 +10,6 @@ namespace KozoskodoAPI.Repo
         Task<user?> GetUserByEmailOrPassword(string email = null, string password = null);
         Task<user?> GetUserByEmailAsync(string email, bool withPersonal = true);
         Task SendActivationEmail(string email, user user);
-        Task<bool> CanUserRequestMoreActivatorToday(string to);
+        Task<bool> CanUserRequestMoreActivatorToday(string email);
     }
 }

@@ -1,31 +1,17 @@
-﻿using KozoskodoAPI.Models;
-using KozoskodoAPI.Auth;
-using KozoskodoAPI.Auth.Helpers;
-using KozoskodoAPI.Repo;
-using KozoskodoAPI.SMTP;
-using KozoskodoAPI.Security;
-using KozoskodoAPI.DTOs;
-
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using Bcry = BCrypt.Net.BCrypt;
 using System.Text.RegularExpressions;
 using KozossegiAPI.SMTP;
-using KozossegiAPI.Models.Cloud;
 using KozossegiAPI.Storage;
 using KozossegiAPI.Services;
 using KozossegiAPI.Security;
-using Google.Api;
-using Serilog;
+using KozossegiAPI.Auth;
+using KozossegiAPI.Repo;
+using KozossegiAPI.DTOs;
+using KozossegiAPI.Models;
 using KozossegiAPI.Auth.Helpers;
-using Microsoft.AspNetCore.RateLimiting;
-using System.Globalization;
-using System.Resources;
-using KozossegiAPI;
-using System.Security.Policy;
-using Google.Api;
 
-namespace KozoskodoAPI.Controllers
+namespace KozossegiAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

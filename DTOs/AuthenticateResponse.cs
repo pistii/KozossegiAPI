@@ -1,7 +1,7 @@
-﻿using KozoskodoAPI.Models;
+﻿using KozossegiAPI.Models;
 using System.Security.Claims;
 
-namespace KozoskodoAPI.DTOs
+namespace KozossegiAPI.DTOs
 {
     public class AuthenticateResponse
     {

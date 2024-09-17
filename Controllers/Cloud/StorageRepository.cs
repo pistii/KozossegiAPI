@@ -1,12 +1,9 @@
-﻿using Google.Apis.Storage.v1;
-using Google.Cloud.Storage.V1;
-using KozoskodoAPI.Data;
-using KozossegiAPI.Controllers.Cloud;
+﻿using Google.Cloud.Storage.V1;
 using KozossegiAPI.Controllers.Cloud.Helpers;
 using KozossegiAPI.Models.Cloud;
 using KozossegiAPI.Storage;
 using Microsoft.AspNetCore.Mvc;
-namespace KozoskodoAPI.Controllers.Cloud
+namespace KozossegiAPI.Controllers.Cloud
 {
     public class StorageRepository : ControllerBase, IStorageRepository
     {

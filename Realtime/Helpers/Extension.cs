@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http.Connections.Features;
 using Microsoft.AspNetCore.SignalR;
 
-namespace KozoskodoAPI.Realtime.Helpers
+namespace KozossegiAPI.Realtime.Helpers
 {
     public static class Extension
     {

@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 
-namespace KozoskodoAPI.Models
+namespace KozossegiAPI.Models
 {
     [MetadataType(typeof(Personal))]
     public partial class Relationship

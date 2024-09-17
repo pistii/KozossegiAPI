@@ -1,16 +1,11 @@
-﻿using Google.Api;
-using KozossegiAPI.SMTP;
-using KozossegiAPI.SMTP.Helpers;
-using MailKit.Net;
+﻿using KozossegiAPI.SMTP.Helpers;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
-using System;
 using System.Net;
-using System.Text;
 
-namespace KozoskodoAPI.SMTP
+namespace KozossegiAPI.SMTP
 {
     public class SendMail : IMailSender
     {

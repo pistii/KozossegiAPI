@@ -1,13 +1,9 @@
-﻿namespace KozoskodoAPI.Auth.Helpers
+﻿using KozossegiAPI.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
+ 
+namespace KozossegiAPI.Auth.Helpers
 {
-    using KozoskodoAPI.Data;
-    using KozoskodoAPI.Models;
-    using Microsoft.AspNetCore.Authorization;
-    using Microsoft.AspNetCore.Mvc;
-    using Microsoft.AspNetCore.Mvc.Filters;
-    using Microsoft.AspNetCore.Session;
-    using Microsoft.AspNetCore.SignalR;
-    using System.Security.Claims;
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
     public class AuthorizeAttribute : Attribute, IAuthorizationFilter

@@ -1,11 +1,9 @@
-﻿using KozossegiAPI.Models;
-using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 
-namespace KozoskodoAPI.Models
+namespace KozossegiAPI.Models
 {
     [Table("chatContent")]
     public class ChatContent

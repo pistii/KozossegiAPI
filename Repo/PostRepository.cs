@@ -1,13 +1,10 @@
-﻿using Humanizer;
-using KozoskodoAPI.Data;
-using KozoskodoAPI.DTOs;
-using KozoskodoAPI.Models;
+﻿using KozossegiAPI.Data;
+using KozossegiAPI.DTOs;
+using KozossegiAPI.Models;
 using KozossegiAPI.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.Linq;
 
-namespace KozoskodoAPI.Repo
+namespace KozossegiAPI.Repo
 {
     public class PostRepository : GenericRepository<PostDto>, IPostRepository<PostDto>, IPostRepository<Comment>
     {

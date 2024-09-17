@@ -1,4 +1,4 @@
-﻿namespace KozoskodoAPI.Auth.Helpers
+﻿namespace KozossegiAPI.Auth.Helpers
 {
     public class AppSettings
     {

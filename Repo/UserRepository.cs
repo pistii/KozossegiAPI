@@ -1,17 +1,13 @@
-﻿using KozoskodoAPI.Auth;
-using KozoskodoAPI.Data;
-using KozoskodoAPI.Models;
-using KozossegiAPI;
-using KozossegiAPI.DTOs;
+using KozossegiAPI.Auth;
+using KozossegiAPI.Data;
 using KozossegiAPI.Models;
 using KozossegiAPI.SMTP;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Resources;
 
-namespace KozoskodoAPI.Repo
+namespace KozossegiAPI.Repo
 {
     public class UserRepository : GenericRepository<user>, IUserRepository<user>
     {
