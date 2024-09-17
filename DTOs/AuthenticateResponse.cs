@@ -10,10 +10,6 @@ namespace KozoskodoAPI.DTOs
             this.token = token;
         }
 
-        public AuthenticateResponse(Personal personal, string token, IEnumerable<Claim> claims) : this(personal, token)
-        {
-        }
-
         public Personal? personal { get; set; }
         public string token { get; set; }
     }
