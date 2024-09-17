@@ -1,15 +1,10 @@
-﻿using KozoskodoAPI.Data;
-using KozoskodoAPI.DTOs;
-using KozoskodoAPI.Models;
-using KozossegiAPI.Controllers.Cloud;
-using KozossegiAPI.Controllers.Cloud.Helpers;
+﻿using KozossegiAPI.Controllers.Cloud;
+using KozossegiAPI.Data;
 using KozossegiAPI.DTOs;
 using KozossegiAPI.Models;
-using KozossegiAPI.Models.Cloud;
+using KozossegiAPI.Repo;
 using KozossegiAPI.Services;
 using Microsoft.EntityFrameworkCore;
-using MimeKit.Encodings;
-using System.Linq.Expressions;
 
 namespace KozoskodoAPI.Repo
 {
@@ -162,6 +157,14 @@ namespace KozoskodoAPI.Repo
             return file.FileType;
         }
 
+        public Task<IEnumerable<ChatRoom>> GetAllChatRoomAsQueryWithLastMessage(int userId)
+        {
+            throw new NotImplementedException();
+        }
 
+        public Task<IEnumerable<ChatRoom>> Search(int chatRoomId, int userId, string keyWord)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

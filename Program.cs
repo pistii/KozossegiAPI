@@ -18,7 +18,7 @@ using KozossegiAPI.DTOs;
 using KozossegiAPI.Storage;
 using Serilog;
 using System.Threading.RateLimiting;
-using Automapper;
+using AutoMapper;
 using KozoskodoAPI.Repo;
 
 namespace KozossegiAPI

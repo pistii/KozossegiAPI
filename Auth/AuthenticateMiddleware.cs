@@ -1,7 +1,4 @@
-﻿using KozoskodoAPI.Auth.Helpers;
-using KozoskodoAPI.Auth;
-using KozossegiAPI.Storage;
-using KozoskodoAPI.Models;
+﻿using KozossegiAPI.Storage;
 
 namespace KozossegiAPI.Auth
 {

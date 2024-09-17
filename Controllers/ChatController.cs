@@ -135,7 +135,7 @@ namespace KozossegiAPI.Controllers
                         }
                         else
                         {
-                            var fileBytes = await GetFile<byte[]>(file.FileToken); //await GetFile<byte[]>(file.FileToken);
+                            var fileBytes = await GetFile(file.FileToken); //await GetFile<byte[]>(file.FileToken);
 
                             var contentsWithFile = returnValue.Where(x => x.ChatFile != null);
                             var contentWithFile = contentsWithFile.FirstOrDefault(x => x.ChatFile.FileToken == file.FileToken);
@@ -319,7 +319,7 @@ namespace KozossegiAPI.Controllers
                     return file;
                 }
                 return null;
-            }
+            //}
             return null;
         }
 

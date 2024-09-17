@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc;
-using KozoskodoAPI.Auth.Helpers;
-using KozoskodoAPI.Models;
 
 namespace KozossegiAPI.Auth.Helpers
 {
