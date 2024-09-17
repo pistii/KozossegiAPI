@@ -1,10 +1,10 @@
 ﻿using KozossegiAPI.Auth;
 using KozossegiAPI.Auth.Helpers;
 using KozossegiAPI.Data;
+using KozossegiAPI.Interfaces;
 using KozossegiAPI.Models;
 using KozossegiAPI.Models.Cloud;
 using KozossegiAPI.Realtime.Connection;
-using KozossegiAPI.Repo;
 
 namespace KozossegiAPI.Realtime
 {

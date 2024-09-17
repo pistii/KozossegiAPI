@@ -1,9 +1,9 @@
 ﻿using KozossegiAPI.Auth.Helpers;
 using KozossegiAPI.Data;
-using KozossegiAPI.Repo;
 using KozossegiAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using KozossegiAPI.Interfaces;
 
 namespace KozossegiAPI.Controllers
 {

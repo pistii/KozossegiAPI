@@ -1,6 +1,7 @@
 ﻿using KozossegiAPI.Controllers.Cloud;
 using KozossegiAPI.Data;
 using KozossegiAPI.DTOs;
+using KozossegiAPI.Interfaces;
 using KozossegiAPI.Models;
 using KozossegiAPI.Repo;
 using KozossegiAPI.Services;

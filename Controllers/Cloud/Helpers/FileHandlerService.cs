@@ -27,7 +27,7 @@ namespace KozossegiAPI.Controllers.Cloud.Helpers
 
         static List<string> imageFormats = new List<string>()
             {
-                "image/png", "image/jpeg", "image/gif", "image/bmp"
+                "image/png", "image/jpg", "image/jpeg", "image/gif", "image/bmp"
             };
         static List<string> videoFormats = new List<string>()
             {

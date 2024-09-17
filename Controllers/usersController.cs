@@ -6,10 +6,11 @@ using KozossegiAPI.Storage;
 using KozossegiAPI.Services;
 using KozossegiAPI.Security;
 using KozossegiAPI.Auth;
-using KozossegiAPI.Repo;
 using KozossegiAPI.DTOs;
 using KozossegiAPI.Models;
 using KozossegiAPI.Auth.Helpers;
+using Serilog;
+using KozossegiAPI.Interfaces;
 
 namespace KozossegiAPI.Controllers
 {

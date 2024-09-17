@@ -1,4 +1,4 @@
-﻿using KozossegiAPI.Repo;
+﻿using KozossegiAPI.Interfaces;
 
 namespace KozossegiAPI.Services
 {

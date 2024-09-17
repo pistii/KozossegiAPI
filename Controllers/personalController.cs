@@ -2,7 +2,7 @@
 using KozossegiAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using KozossegiAPI.Repo;
+using KozossegiAPI.Interfaces;
 
 namespace KozossegiAPI.Controllers
 {

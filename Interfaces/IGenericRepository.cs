@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace KozossegiAPI.Repo
+namespace KozossegiAPI.Interfaces
 {
     public interface IGenericRepository<T>
     {

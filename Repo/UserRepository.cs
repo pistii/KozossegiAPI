@@ -1,5 +1,6 @@
 using KozossegiAPI.Auth;
 using KozossegiAPI.Data;
+using KozossegiAPI.Interfaces;
 using KozossegiAPI.Models;
 using KozossegiAPI.SMTP;
 using Microsoft.CodeAnalysis;

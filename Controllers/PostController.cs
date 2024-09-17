@@ -2,11 +2,11 @@
 using KozossegiAPI.DTOs;
 using KozossegiAPI.Models;
 using Microsoft.AspNetCore.Mvc;
-using KozossegiAPI.Repo;
 using KozossegiAPI.Models.Cloud;
 using KozossegiAPI.Services;
 using KozossegiAPI.Controllers.Cloud.Helpers;
 using KozossegiAPI.Auth.Helpers;
+using KozossegiAPI.Interfaces;
 
 namespace KozossegiAPI.Controllers
 {
@@ -15,9 +15,10 @@ namespace KozossegiAPI.Controllers
     //[Authorize]
     public class PostController : ControllerBase
     {
-        public IStorageRepository? _storageController;
-        public INotificationRepository _InotificationRepository;
-        public IPostRepository<PostDto> _PostRepository;
+        private IStorageRepository? _storageController;
+        private INotificationRepository _InotificationRepository;
+        private IPostRepository<PostDto> _PostRepository;
+        private IChatRepository<ChatRoom, Personal> _chatRepository;
         //private IPostPhotoStorage _postPhotoStorage;
 
         public PostController(
@@ -25,11 +26,13 @@ namespace KozossegiAPI.Controllers
             IPostRepository<PostDto> postRepository,
             //IPostPhotoStorage postPhotoStorage,
             IStorageRepository? storageController = null,
-            INotificationRepository notificationRepository = null)
+            INotificationRepository notificationRepository = null,
+            IChatRepository<ChatRoom, Personal> chatRepository = null)
         {
             _storageController = storageController;
             _InotificationRepository = notificationRepository;
             _PostRepository = postRepository;
+            _chatRepository = chatRepository;
             //_postPhotoStorage = postPhotoStorage;
         }
 
@@ -80,13 +83,12 @@ namespace KozossegiAPI.Controllers
             
 
             var authorUser = await _PostRepository.GetByIdAsync<Personal>(userFromHeader.userID);
-            var receiverUser = await _PostRepository.GetByIdAsync<Personal>(dto.SourceId);
             
-            if (receiverUser != null)
+            if (authorUser != null)
             {
                 Post newPost = new()
                 {
-                    SourceId = receiverUser.id,
+                    SourceId = authorUser.id,
                     PostContent = dto.postContent,
                     Dislikes = 0,
                     Likes = 0
@@ -94,26 +96,28 @@ namespace KozossegiAPI.Controllers
 
                 await _PostRepository.InsertSaveAsync<Post>(newPost);
 
-                bool isVideo = FileHandlerService.FormatIsVideo(dto.Type);
-                //If file is accepted format: save. Otherwise return with badRequest
-                if (isVideo || FileHandlerService.FormatIsImage(dto.Type))
+                if (dto.postContent != null)
                 {
-                    if (dto.File != null)
+                    bool isVideo = FileHandlerService.FormatIsVideo(dto.Type);
+                    bool isImage = FileHandlerService.FormatIsImage(dto.Type);
+                    //If file is accepted format: save. Otherwise return with badRequest
+                    if (isVideo || isImage)
                     {
-                        MediaContent media = new(newPost.Id, dto.Name, dto.Type); //mentés az adatbázisba
-                        FileUpload newFile = new FileUpload(dto.Name, dto.Type, dto.File); //mentés a felhőbe
+                        if (dto.File != null)
+                        {
+                            MediaContent media = new(newPost.Id, dto.Name, dto.Type); //mentés az adatbázisba
+                            FileUpload newFile = new FileUpload(dto.Name, dto.Type, dto.File); //mentés a felhőbe
 
-                        var fileName = await _storageController.AddFile(newFile, BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
-                        media.FileName = fileName.ToString();
-                        await _PostRepository.InsertAsync<MediaContent>(media);
+                            var fileName = await _storageController.AddFile(newFile, BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
+                            media.FileName = fileName.ToString();
+                            await _PostRepository.InsertAsync<MediaContent>(media);
+                        }
                     }
-
+                    else if (!string.IsNullOrEmpty(dto.Type) && dto.File != null)
+                    {
+                        return BadRequest("Invalid file format.");
+                    }
                 }
-                else if (!string.IsNullOrEmpty(dto.Type) && dto.File != null)
-                {
-                    return BadRequest("Invalid file format.");
-                }
-
 
                 //Create new junction table with user and postId
                 PersonalPost personalPost = new PersonalPost()
@@ -123,7 +127,7 @@ namespace KozossegiAPI.Controllers
                 };
                 await _PostRepository.InsertSaveAsync<PersonalPost>(personalPost);
 
-                var closerFriends = _PostRepository.GetCloserFriendIds(userFromHeader.userID);
+                var closerFriends = _chatRepository.GetChatPartenterIds(userFromHeader.userID);
                 var stringLength = dto.postContent.Length > 60 ? dto.postContent.Take(50) + "..." : dto.postContent;
 
                 foreach (var friendId in closerFriends)
@@ -139,7 +143,8 @@ namespace KozossegiAPI.Controllers
                                 stringLength,
                                 NotificationType.NewPost);
                         await _InotificationRepository.RealtimeNotification(friendId, notificationWithAvatarDto);
-                        await _PostRepository.InsertAsync<Notification>(notificationWithAvatarDto);
+
+                        await _PostRepository.InsertSaveAsync<Notification>(notificationWithAvatarDto);
                     }
                 }
                 await _PostRepository.SaveAsync();

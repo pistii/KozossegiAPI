@@ -1,11 +1,11 @@
 ﻿using KozossegiAPI.Auth.Helpers;
 using KozossegiAPI.Controllers.Cloud;
 using KozossegiAPI.DTOs;
-using KozossegiAPI.Repo;
 using KozossegiAPI.Controllers.Cloud.Helpers;
 using KozossegiAPI.Models.Cloud;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
+using KozossegiAPI.Interfaces;
 
 namespace KozossegiAPI.Controllers
 {

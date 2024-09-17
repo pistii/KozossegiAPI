@@ -1,7 +1,7 @@
 ﻿using KozossegiAPI.Models;
 using KozossegiAPI.DTOs;
 
-namespace KozossegiAPI.Repo
+namespace KozossegiAPI.Interfaces
 {
     public interface ISettingRepository : IGenericRepository<Study>
     {

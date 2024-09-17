@@ -1,6 +1,6 @@
 using KozossegiAPI.Models;
 
-namespace KozossegiAPI.Repo
+namespace KozossegiAPI.Interfaces
 {
     public interface IMobileRepository<T> : IGenericRepository<T>
     {

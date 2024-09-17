@@ -1,8 +1,8 @@
 ﻿using KozossegiAPI.Auth.Helpers;
 using KozossegiAPI.Data;
 using KozossegiAPI.DTOs;
+using KozossegiAPI.Interfaces;
 using KozossegiAPI.Models;
-using KozossegiAPI.Repo;
 using KozossegiAPI.SMTP;
 using Microsoft.AspNetCore.Mvc;
 using Bcrypt = BCrypt.Net.BCrypt;
@@ -13,20 +13,15 @@ namespace KozossegiAPI.Controllers
     [Route("api/[controller]")]
     public class SettingController : ControllerBase
     {
-        public DBContext _context;
         private ISettingRepository _settingRepository;
         private IStudyRepository _studyRepository;
-        private IMailSender _mailSender;
-        public SettingController(DBContext dbContext, 
+        public SettingController(
             ISettingRepository settingRepository, 
-            IStudyRepository studyRepository,
-            IMailSender mailSender
+            IStudyRepository studyRepository
             )
         {
-            _context = dbContext;
             _settingRepository = settingRepository;
             _studyRepository = studyRepository;
-            _mailSender = mailSender;
         }
 
         [Authorize]

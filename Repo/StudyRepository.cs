@@ -1,5 +1,6 @@
 ﻿using KozossegiAPI.Data;
 using KozossegiAPI.DTOs;
+using KozossegiAPI.Interfaces;
 using KozossegiAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;

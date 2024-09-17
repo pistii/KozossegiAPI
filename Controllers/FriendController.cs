@@ -1,7 +1,7 @@
-﻿using KozossegiAPI.Models;
+﻿using KozossegiAPI.Interfaces;
+using KozossegiAPI.Models;
 using KozossegiAPI.Realtime;
 using KozossegiAPI.Realtime.Connection;
-using KozossegiAPI.Repo;
 using KozossegiAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;

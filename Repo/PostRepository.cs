@@ -1,5 +1,6 @@
 ﻿using KozossegiAPI.Data;
 using KozossegiAPI.DTOs;
+using KozossegiAPI.Interfaces;
 using KozossegiAPI.Models;
 using KozossegiAPI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -108,14 +109,6 @@ namespace KozossegiAPI.Repo
                 })
                 .ToListAsync();
             return sortedItems;
-        }
-
-        public List<int> GetCloserFriendIds(int userId)
-        {
-            var res = _context.ChatRoom.Where(
-             u => u.senderId == userId || u.receiverId == userId)
-            .Select(f => f.senderId == userId ? f.receiverId : f.senderId).ToList();
-            return res;
         }
 
         public async Task<Post?> GetPostWithCommentsById(int postId)

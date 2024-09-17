@@ -4,12 +4,12 @@ using KozossegiAPI.Realtime.Connection;
 using KozossegiAPI.Realtime;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using KozossegiAPI.Repo;
 using KozossegiAPI.Models.Cloud;
 using KozossegiAPI.Controllers.Cloud;
 using KozossegiAPI.Services;
 using KozossegiAPI.Controllers.Cloud.Helpers;
 using KozossegiAPI.Storage;
+using KozossegiAPI.Interfaces;
 
 namespace KozossegiAPI.Controllers
 {

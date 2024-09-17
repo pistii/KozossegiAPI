@@ -1,4 +1,5 @@
 using KozossegiAPI.Data;
+using KozossegiAPI.Interfaces;
 using KozossegiAPI.Models;
 
 namespace KozossegiAPI.Repo

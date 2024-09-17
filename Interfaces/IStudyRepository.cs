@@ -2,7 +2,7 @@
 using KozossegiAPI.Models;
 using System.Net;
 
-namespace KozossegiAPI.Repo
+namespace KozossegiAPI.Interfaces
 {
     public interface IStudyRepository : IGenericRepository<Study>
     {

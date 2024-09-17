@@ -1,5 +1,5 @@
+using KozossegiAPI.Interfaces;
 using KozossegiAPI.Models;
-using KozossegiAPI.Repo;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KozossegiAPI.Controllers

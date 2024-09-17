@@ -1,7 +1,7 @@
 ﻿using KozossegiAPI.DTOs;
 using KozossegiAPI.Models;
 
-namespace KozossegiAPI.Repo
+namespace KozossegiAPI.Interfaces
 {
     public interface IImageRepository
     {

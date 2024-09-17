@@ -1,6 +1,6 @@
 ﻿using KozossegiAPI.Data;
 using KozossegiAPI.DTOs;
-using KozossegiAPI.Repo;
+using KozossegiAPI.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 

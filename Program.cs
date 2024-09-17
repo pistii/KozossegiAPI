@@ -20,6 +20,7 @@ using Serilog;
 using System.Threading.RateLimiting;
 using AutoMapper;
 using KozoskodoAPI.Repo;
+using KozossegiAPI.Interfaces;
 
 namespace KozossegiAPI
 {

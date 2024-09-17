@@ -1,4 +1,5 @@
 ﻿using KozossegiAPI.Data;
+using KozossegiAPI.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
