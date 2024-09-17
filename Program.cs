@@ -8,16 +8,18 @@ using KozossegiAPI.Auth;
 using KozossegiAPI.Realtime;
 using KozossegiAPI.Auth.Helpers;
 using KozossegiAPI.Realtime.Connection;
+using KozossegiAPI.SMTP;
 using KozossegiAPI.Controllers.Cloud;
 using KozossegiAPI.Repo;
-using KozossegiAPI.SMTP;
 using KozossegiAPI.Security;
 using KozossegiAPI.Services;
 using KozossegiAPI.Models;
 using KozossegiAPI.DTOs;
 using KozossegiAPI.Storage;
 using Serilog;
-using KozossegiAPI.Controllers.Cloud.Helpers;
+using System.Threading.RateLimiting;
+using Automapper;
+using KozoskodoAPI.Repo;
 
 namespace KozossegiAPI
 {
@@ -27,6 +29,7 @@ namespace KozossegiAPI
         {
             var builder = WebApplication.CreateBuilder(args);
             var services = builder.Services;
+            
             // Az appsettings.json f�jlb�l olvasson be adatot
             services.AddDbContext<DBContext>(options =>
                 options.UseMySql(
@@ -119,6 +122,69 @@ namespace KozossegiAPI
                 
             });
 
+            var config = new MapperConfiguration(cfg =>
+            {
+
+                //cfg.CreateMap<SettingDto, UserDto>()
+                //    .ForMember(dest => dest.personal, opt => opt.MapFrom(src => src.User.personal))
+                //    .ForMember(dest => dest.StudiesDto, opt => opt.MapFrom(src => src.User.StudiesDto));
+
+                //cfg.CreateMap<UserDto, user>()
+                //    .ForMember(dest => dest.personal, opt => opt.MapFrom(src => src.personal))
+                //    .ForMember(dest => dest.Studies, opt => opt.MapFrom(src => src.StudiesDto));
+                cfg.CreateMap<UserDto, user>().ForMember(p => p.email, opt => opt.MapFrom(src => src.email));
+                cfg.CreateMap<SettingDto, StudyDto>();
+//cfg.CreateMap<UserDto, user>();
+                
+            });
+            services.AddRateLimiter(options =>
+            {
+                // General limiter
+                options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+                    RateLimitPartition.GetSlidingWindowLimiter(
+                        partitionKey: context.Request.Headers.Host.ToString(),
+                        factory: partition => new SlidingWindowRateLimiterOptions
+                        {
+                            AutoReplenishment = true,
+                            PermitLimit = 50,
+                            SegmentsPerWindow = 15,
+                            Window = TimeSpan.FromMinutes(1)
+                        }));
+
+                // Password changing
+                options.AddPolicy("password_reset", context =>
+                  RateLimitPartition.GetFixedWindowLimiter(context.Request.Headers.Host.ToString(),
+                  partition => new FixedWindowRateLimiterOptions
+                  {
+                      PermitLimit = 3,
+                      Window = TimeSpan.FromMinutes(30)
+                  }));
+
+                options.OnRejected = async (context, token) =>
+                {
+                    context.HttpContext.Response.StatusCode = 429;
+
+                    // Set CORS headers
+                    context.HttpContext.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+
+                    if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+                    {
+                        await context.HttpContext.Response.WriteAsync(
+                            $"Too many requests. Try again in a few seconds", cancellationToken: token);
+                    }
+                    else
+                    {
+                        await context.HttpContext.Response.WriteAsync(
+                            "Too many requests. Try again later.", cancellationToken: token);
+                    }
+                };
+            });
+
+
+
+            var mapper = config.CreateMapper();
+            services.AddAutoMapper(typeof(Program));
+
             services.AddDistributedMemoryCache();
             services.AddSession(options =>
             {
@@ -129,7 +195,7 @@ namespace KozossegiAPI
             services.AddControllers().AddNewtonsoftJson().AddJsonOptions(options =>
                     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter())); ;
 
-            var origins = "http://localhost:5173";
+            var origins = "http://localhost:5173;http://192.168.0.16:8888";
             services.AddCors(options => options.AddPolicy("AllowAll", p => p
             .WithOrigins(origins)
             .AllowAnyMethod()
@@ -137,31 +203,41 @@ namespace KozossegiAPI
             .AllowCredentials()
             ));
             
+            
             var app = builder.Build();
 
             app.UseRouting();
             app.UseSession();
 
-            app.UseAuthentication();
-            app.UseAuthorization();
-            app.UseSession();
-
-            app.Use(async (context, next) =>
-            {
-                Thread.CurrentPrincipal = context.User;
-                await next(context);
-            });
-
-            app.UseMiddleware<JwtMiddleware>().UseCors(x => x
-                .AllowAnyOrigin()
-                .AllowAnyMethod()
-                .AllowAnyHeader());
 
             app.UseCors(x => x
                 .AllowAnyOrigin()
                 .AllowAnyMethod()
                 .AllowAnyHeader());
 
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.UseMiddleware<AuthenticateMiddleware>().UseCors(x => x
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader());
+
+            app.UseMiddleware<JwtMiddleware>().UseCors(x => x
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader());
+
+            app.UseRateLimiter();
+
+
+            //app.Use(async (context, next) =>
+            //{
+            //    Thread.CurrentPrincipal = context.User;
+            //    await next(context);
+            //});
+
+            //websockets
             app.MapHub<NotificationHub>("/Notification");
             app.MapHub<ChatHub>("/Chat");
             

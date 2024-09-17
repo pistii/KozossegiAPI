@@ -14,7 +14,7 @@ namespace KozossegiAPI.Models
         [StringLength(400)]
         public string Description { get; set; }
         public DateTime EndDate { get; set; }
-
+        public DateTime HappenedOnDate { get; set; } = DateTime.Now;
         [JsonIgnore]
         public virtual ICollection<UserRestriction> UserRestriction { get; }
         

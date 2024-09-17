@@ -18,13 +18,11 @@ namespace KozossegiAPI.Controllers
         public IStorageRepository? _storageController;
         public INotificationRepository _InotificationRepository;
         public IPostRepository<PostDto> _PostRepository;
-        public IFileHandlerService _fileHandlerService;
         //private IPostPhotoStorage _postPhotoStorage;
 
         public PostController(
 
             IPostRepository<PostDto> postRepository,
-            IFileHandlerService fileHandlerService,
             //IPostPhotoStorage postPhotoStorage,
             IStorageRepository? storageController = null,
             INotificationRepository notificationRepository = null)
@@ -32,7 +30,6 @@ namespace KozossegiAPI.Controllers
             _storageController = storageController;
             _InotificationRepository = notificationRepository;
             _PostRepository = postRepository;
-            _fileHandlerService = fileHandlerService;
             //_postPhotoStorage = postPhotoStorage;
         }
 
@@ -97,9 +94,9 @@ namespace KozossegiAPI.Controllers
 
                 await _PostRepository.InsertSaveAsync<Post>(newPost);
 
-                bool isVideo = _fileHandlerService.FormatIsVideo(dto.Type);
+                bool isVideo = FileHandlerService.FormatIsVideo(dto.Type);
                 //If file is accepted format: save. Otherwise return with badRequest
-                if (isVideo || _fileHandlerService.FormatIsImage(dto.Type))
+                if (isVideo || FileHandlerService.FormatIsImage(dto.Type))
                 {
                     if (dto.File != null)
                     {

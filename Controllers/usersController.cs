@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using Bcry = BCrypt.Net.BCrypt;
 using System.Text.RegularExpressions;
 using KozossegiAPI.SMTP;
@@ -30,7 +29,7 @@ namespace KozossegiAPI.Controllers
         private readonly IMailSender _mailSender;
         private readonly IVerificationCodeCache _verCodeCache;
         private readonly IEncodeDecode _encodeDecode;
-        protected readonly string URL_BASE = "http://localhost:5173/";
+        protected readonly string URL_BASE = "https://192.168.0.16:8888";
         
         public usersController(
             IJwtTokenManager jwtTokenManager,
@@ -67,16 +66,12 @@ namespace KozossegiAPI.Controllers
                 return NotFound("Username or password is incorrect");
             }
 
-            var userId = response?.personal?.id;
-
-            var identity = new ClaimsIdentity(new[] {
-                new Claim(ClaimTypes.Name, login.Email),
-                new Claim(ClaimTypes.GivenName, "A user"),
-                new Claim(ClaimTypes.NameIdentifier, userId?.ToString())
-            });
-
+            if (response.personal.users.isActivated)
+            {
             AuthenticateResponse userDto = new AuthenticateResponse(response.personal!, response.token);
             return Ok(userDto);
+        }
+            return BadRequest("Not activated");
         }
 
         // GET: user
@@ -179,11 +174,11 @@ namespace KozossegiAPI.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> SignUp(RegisterForm user)
         {
+            if (user == null && user.email == null) 
+                return BadRequest("error");
 
-            if (user != null && user.email != null)
-            {
                 user? userExistsByEmail = await _userRepository.GetUserByEmailAsync(user.email);
-                if (userExistsByEmail == null)
+            if (userExistsByEmail != null)
                 {
                     return BadRequest("used email");
                 }
@@ -196,42 +191,44 @@ namespace KozossegiAPI.Controllers
 
                 await _userRepository.InsertSaveAsync<user>(newUser);
 
-                var token = _jwtUtils.GenerateJwtToken(newUser); //TODO: generate 15min access tokens
-
-                string fullpath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "templates"); //TODO: this will fail in production
-                string content = Path.Combine(fullpath, "register.html");
-
-                string htmlTemplate = System.IO.File.ReadAllText(content);
-                string url = $"{URL_BASE}validate/{token}";
-                htmlTemplate = htmlTemplate.Replace("{Url}", url);
-
-                //_mailSender.SendMail("Sikeres regisztráció", htmlTemplate, newUser.personal.firstName + " " + newUser.personal.lastName, newUser.email);
-
-                return Ok("success");
-            }
-            return BadRequest("error");
+            await _userRepository.SendActivationEmail(user.email, newUser);
+            return Ok("success");   
         }
 
+        [AllowAnonymous]
+        [HttpPost("register/send/email-activator/{to}")]
+        public async Task<IActionResult> SendEmailActivator(string to)
+        {
+            user? userExistsByEmail = await _userRepository.GetUserByEmailAsync(to);
+            if (userExistsByEmail == null) return NotFound();
 
-
+            var requestGranted = await _userRepository.CanUserRequestMoreActivatorToday(to);
+            if (!userExistsByEmail.isActivated && requestGranted)
+            {
+                await _userRepository.SendActivationEmail(to, userExistsByEmail);
+            }
+            return Ok();
+        }
 
         /// <summary>
         /// This method is used when the user registered and the required to activate the email
         /// </summary>
         /// <returns></returns>
-        [HttpGet("Validate")]
+        [HttpGet("validate")]
+        [AllowAnonymous]
         public async Task<IActionResult> ActivateUser()
         {
-            var user = (user?)HttpContext.Items["User"]; //Get the user from headers
+            var token = HttpContext.Request.Headers["Validation-token"];
+            var email = _jwtUtils.ValidateAccessToken(token);
 
-            if (user != null)
+            if (email != null)
             {
-                user? userExists = await _userRepository.GetUserByEmailOrPassword(user.email, user.password);
+                user? userExists = await _userRepository.GetUserByEmailAsync(email);
                 if (userExists != null && !userExists.isActivated)
                 {
                     userExists.isActivated = true;
                     await _userRepository.UpdateThenSaveAsync(userExists);
-                    return Ok(userExists); //Sikeres aktiválás
+                    return Ok(); //Sikeres aktiválás
                 }
                 return NotFound(); // Már aktivált felhasználó
             }

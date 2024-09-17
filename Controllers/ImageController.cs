@@ -15,15 +15,12 @@ namespace KozossegiAPI.Controllers
     {
         private StorageRepository _storageRepository;
         private IImageRepository _imageRepository;
-        private IFileHandlerService _fileHandlerService;
 
         public ImageController(StorageRepository storageRepository, 
-            IImageRepository imageRepository,
-            IFileHandlerService fileHandlerService)
+            IImageRepository imageRepository)
         {
             _storageRepository = storageRepository;
             _imageRepository = imageRepository;
-            _fileHandlerService = fileHandlerService;
         }
 
 
@@ -34,7 +31,8 @@ namespace KozossegiAPI.Controllers
 
             if (fileUpload.File != null)
             {
-                if (_fileHandlerService.FormatIsValid(fileUpload.File.ContentType))
+                bool isValid = FileHandlerService.FormatIsValid(fileUpload.File.ContentType);
+                if (isValid)
                 {
                     try
                     {

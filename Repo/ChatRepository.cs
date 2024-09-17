@@ -27,6 +27,7 @@ namespace KozoskodoAPI.Repo
         public async Task<IEnumerable<ChatRoom>> GetAllChatRoomAsQuery(int userId)
         {
             var query = await _context.ChatRoom.Include(x => x.ChatContents)
+                .AsNoTracking()
                 .Where(user => user.senderId == userId || user.receiverId == userId)
                 .OrderByDescending(_ => _.endedDateTime)
                 .ToListAsync();
@@ -36,21 +37,12 @@ namespace KozoskodoAPI.Repo
                 .ToList();
 
             var chatContents = await _context.ChatContent
+                .AsNoTracking()
                 .Include(c => c.ChatFile)
                 .Where(c => chatContentIds.Contains(c.MessageId))
                 .OrderByDescending(c => c.sentDate)
                 .Select(i => i.ToDto())
                 .ToListAsync();
-
-
-            //foreach (var item in chatContents)
-            //{
-            //    if (item.ChatFile != null)
-            //    {
-            //        var audio = await _storageController.GetFileAsByte(item.ChatFile.FileToken, BucketSelector.CHAT_BUCKET_NAME);
-            //        item.ChatFile.FileData = audio;
-            //    }
-            //}
 
             var room = query.Select(cr => new ChatRoomDto
             {
