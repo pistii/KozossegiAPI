@@ -60,7 +60,8 @@ namespace KozoskodoAPI.DTOs
         }
 
         public int SourceId { get; set; }
-        public int userId { get; set; }
+        public int userId { get; set; } //This was the receiverUserId
+        public int receiverUserId { get; set; }
         public string postContent { get; set; }
     }
 }
