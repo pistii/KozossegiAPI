@@ -20,7 +20,7 @@ namespace KozossegiAPI.Storage
             {
 
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
-                    .SetSlidingExpiration(TimeSpan.FromSeconds(900)); //15 perc után törlődik a gyorsítótárból
+                    .SetSlidingExpiration(TimeSpan.FromSeconds(300)); //5 perc után törlődik
 
                 _memoryCache.Set(verCode, guid, cacheEntryOptions);
                 return;
@@ -30,9 +30,16 @@ namespace KozossegiAPI.Storage
             return;
         }
 
-        public string GetValue(string verCode)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="verCode"></param>
+        /// <returns>
+        ///     Returns the guid for the given verification code
+        /// </returns>
+        public string? GetValue(string verCode)
         {
-            if (_memoryCache.TryGetValue(verCode, out string value))
+            if (_memoryCache.TryGetValue(verCode, out string? value))
             {
                 return value;
             }
@@ -61,7 +68,7 @@ namespace KozossegiAPI.Storage
         /// <param name="hashed"></param>
         /// <param name="verCode"></param>
         void Create(string verCode, string guid);
-        string GetValue(string verCode);
+        string? GetValue(string verCode);
         void Remove(string verCode);
     }
 }
