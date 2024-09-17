@@ -250,63 +250,74 @@ namespace KozoskodoAPI.Controllers
         }
 
 
-        [HttpGet("password/check/{token}")]
-        public async Task<IActionResult> CheckIfEmailValid(string token)
-        {
-            return Ok(_jwtUtils.ValidateAccessToken(token));
-        }
         /// <summary>
         /// This is the process to request a change a new password when user requests a new one 
         /// </summary>
         /// <param name="email"></param>
         /// <returns></returns>
         [AllowAnonymous]
-        [HttpPost("password/reset")]
-        public async Task<IActionResult> PasswordReset_1([FromBody] EncryptedDataDto dto) 
+        [HttpPost("password/reset/email/")]
+        //[EnableRateLimiting("password_reset")]
+        public async Task<IActionResult> PasswordReset_1(EncryptedDataDto dto) 
         {
-            //TODO: Add rate limiting to requests: https://learn.microsoft.com/en-us/aspnet/core/performance/rate-limit?view=aspnetcore-8.0
-            //var ip = HttpContext.Connection.RemoteIpAddress.ToString();
+            var ip = HttpContext.Connection?.RemoteIpAddress?.ToString();
+            if (ip != null)
+            {
+                Log.Information("Password reset request from ip: " + ip + ". For email: " + dto.Data);
+            }
 
-            var decryptedData = dto.Data; //_encodeDecode.EncryptAesManaged(dto.Data);
-
-            int min=100000, max=999999;
+            var decryptedData = dto.Data;
                         
-            if (Regex.IsMatch(decryptedData, "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) { //Email validation
+            if (Regex.IsMatch(decryptedData, "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) { //email validáció
 
                 user? user = await _userRepository.GetUserByEmailAsync(decryptedData);
+                string verificationCode = OTPKey.GenerateKey();
+
                 if (user != null)
                 {
-                    string access_token = _jwtUtils.GenerateAccessToken(dto.Data);
-                    string verificationCode = OTPKey.GenerateKey();
                     _verCodeCache.Create(verificationCode.ToString(), user.Guid);
+                    //CultureInfo currentCulture = Thread.CurrentThread.CurrentCulture;
 
-                    //string htmlTemplate = getEmailTemplate("forgotPassword.html");
-                    //htmlTemplate = htmlTemplate.Replace("{LastName}", user.personal.lastName);
-                    //htmlTemplate = htmlTemplate.Replace("{VerificationCode}", verificationCode);
+                    string htmlTemplate = _mailSender.getEmailTemplate("forgotPassword.html");
+                    htmlTemplate = htmlTemplate.Replace("{LastName}", user.personal.lastName ?? "Felhasználó");
+                    htmlTemplate = htmlTemplate.Replace("{VerificationCode}", verificationCode);
 
-                    ////TODO: Send email
-                    //try
-                    //{
-                    //    _mailSender.SendMail("Elfelejtett jelszó", htmlTemplate, user.personal.firstName + " " + user.personal.lastName, user.email!);
-                    //} catch (Exception ex)
-                    //{
-                    //    Log.Error(ex, "Email sending error");
-                    //}
+                    try
+                    {
+                        _mailSender.SendEmail("Elfelejtett jelszó", 
+                            htmlTemplate, user.personal.firstName + " " + user.personal.lastName, user.email!);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Email sending error", "email: " + user.email);
+                    }
 
+                }
+
+                string access_token = _jwtUtils.GenerateAccessToken(dto.Data+";"+verificationCode, 5);
                     HttpContext.Request.Headers["Authentication"] = access_token;
                     return Ok(access_token);
                 }
-                return NotFound();
+            return ValidationProblem();
             }
 
-            else if (int.TryParse(decryptedData, out int num) && num >= min && num <= max)
+        [HttpPost("password/reset/otp")]
+        [Authenticate]
+        public async Task<IActionResult> PasswordReset_2(OneTimePassword dto)
+        {
+            int min = 100000, max = 999999;
+            
+            if (int.TryParse(dto.otpKey, out int num) && num >= min && num <= max)
             {
-                string token = HttpContext.Request.Headers["Authentication"];
+                string? header = HttpContext.Request.Headers["Authentication"];
+                if (header == null) 
+                    return BadRequest(); //Lehet hogy már lejárt és már nem érvényes vagy hibás.
 
+                string token = header.Split(" ").Last();
                 string? email = _jwtUtils.ValidateAccessToken(token);
                 if (email != null)
                 {
-                    var userGuid = _verCodeCache.GetValue(decryptedData);
+                    var userGuid = _verCodeCache.GetValue(dto.otpKey);
                     if (!string.IsNullOrEmpty(userGuid))
                     {
                         return Ok();
