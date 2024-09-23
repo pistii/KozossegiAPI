@@ -90,6 +90,7 @@ namespace KozossegiAPI
             services.AddScoped<IUserRepository<user>, UserRepository>();
             services.AddScoped<IChatRepository<ChatRoom, Personal>, ChatRepository>();
             services.AddScoped<IPostRepository<PostDto>, PostRepository>();
+            services.AddScoped<ICommentRepository, CommentRepository>();
             services.AddScoped<IPersonalRepository, PersonalRepository>();
             services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<IImageRepository, ImageRepository>();

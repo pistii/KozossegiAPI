@@ -2,10 +2,6 @@
 using KozossegiAPI.DTOs;
 using KozossegiAPI.Models;
 using Microsoft.AspNetCore.Mvc;
-using KozossegiAPI.Models.Cloud;
-using KozossegiAPI.Services;
-using KozossegiAPI.Controllers.Cloud.Helpers;
-using KozossegiAPI.Auth.Helpers;
 using KozossegiAPI.Interfaces;
 
 namespace KozossegiAPI.Controllers

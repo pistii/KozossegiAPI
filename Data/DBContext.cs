@@ -158,33 +158,42 @@ namespace KozossegiAPI.Data
 
             modelBuilder.Entity<Comment>(entity =>
             {
-                //entity.HasKey(p => p.commentId);
+                entity.HasKey(p => p.commentId);
 
                 entity.HasOne(_ => _.Post)
                     .WithMany(x => x.PostComments)
                     .HasForeignKey(i => i.PostId);
 
+                entity.HasOne(p => p.Commenter)
+                    .WithOne(p => p.Commenter)
+                    .HasForeignKey<Comment>(x => x.FK_AuthorId);
+
+                
             });
 
             modelBuilder.Entity<MediaContent>(entity =>
             {
                 entity.HasOne(p => p.Post)
                 .WithOne(p => p.MediaContent)
-                .HasForeignKey<MediaContent>(p => p.MediaContentId);
+                .HasForeignKey<MediaContent>(p => p.FK_PostId);
             });
 
             //https://www.learnentityframeworkcore.com/configuration/many-to-many-relationship-configuration
             modelBuilder.Entity<PersonalPost>(entity =>
             {
-                entity.HasOne(p => p.Personal_posts)
+                entity.HasOne(p => p.Personal)
                 .WithMany(p => p.PersonalPosts)
-                .HasForeignKey(p => p.personId);
+                .HasForeignKey(p => p.AuthorId);
+
+                entity.HasOne(p => p.Personal)
+                .WithMany(p => p.PersonalPosts)
+                .HasForeignKey(p => p.PostedToId);
 
                 entity.HasOne(p => p.Posts)
                .WithMany(p => p.PersonalPosts)
-               .HasForeignKey(p => p.postId);
+               .HasForeignKey(p => p.PostId);
 
-                entity.HasKey(x => new { x.personId, x.postId });
+                entity.HasKey(x => new { x.PersonalPostId });
             });
 
 

@@ -7,10 +7,11 @@ namespace KozossegiAPI.Models
     public class PersonalPost
     {
         [Key]
-        public int personalPostId { get; set; }
-        public int personId { get; set; }
-        public int postId { get; set; }
-        public virtual Personal Personal_posts { get; set; }
+        public int PersonalPostId { get; set; }
+        public int AuthorId { get; set; }
+        public int PostedToId { get; set; }
+        public int PostId { get; set; }
+        public virtual Personal Personal { get; set; }
         public virtual Post Posts { get; set; }
     }
 }

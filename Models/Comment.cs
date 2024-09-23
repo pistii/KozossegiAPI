@@ -14,12 +14,16 @@ namespace KozossegiAPI.Models
         public int commentId { get; set; }
         public int PostId { get; set; }
         public int FK_AuthorId { get; set; }
+        [StringLength(36)]
+        public string CommentToken { get; set; }
         public DateTime CommentDate { get; set; }
         [StringLength(500)]
         public string? CommentText { get; set; }
+        public DateTime? LastModified { get; set; }
         [JsonIgnore]
         public Post Post { get; set; }
-        //[JsonIgnore]
-        //public virtual ICollection<Post> Post { get; set; } = new HashSet<Post>();
+        
+        [JsonIgnore]
+        public virtual Personal? Commenter { get; set; }
     }
 }
