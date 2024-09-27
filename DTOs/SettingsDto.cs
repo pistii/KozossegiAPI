@@ -1,6 +1,4 @@
-﻿using KozossegiAPI.Models;
-using Newtonsoft.Json;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace KozossegiAPI.DTOs
 {
@@ -18,31 +16,6 @@ namespace KozossegiAPI.DTOs
         public ChangePassword? SecuritySettings { get; set; }
     }
 
-    public class UserDto : user
-        {
-        public UserDto(user user, IEnumerable<StudyDto> studyDto)
-        {
-            this.StudiesDto = studyDto;
-            this.email = user.email;
-            this.personal = user.personal;
-            this.SecondaryEmailAddress = user.SecondaryEmailAddress;
-            this.userID = user.userID;
-            this.isOnlineEnabled = user.isOnlineEnabled;
-            this.LastOnline = user.LastOnline;
-        }
-        public UserDto()
-        {
-            
-        }
-
-        public long? selectedStudyId { get; set; }
-        public IEnumerable<StudyDto> StudiesDto { get; set; }
-        [JsonIgnore]
-        public override bool isActivated { get; set; }
-        [JsonIgnore]
-        public override ICollection<Study>? Studies { get; set; }
-
-    }
 
     public class ChangePassword
     {

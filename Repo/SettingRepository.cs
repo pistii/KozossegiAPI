@@ -22,7 +22,7 @@ namespace KozossegiAPI.Repo
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public async Task<object?> GetSettings(int userId)
+        public async Task<SettingDto?> GetSettings(int userId)
         {
             var user = await _dbContext.Personal
                 .Include(p => p.Settings)
