@@ -20,6 +20,11 @@ namespace KozoskodoAPI.Repo
             _storageController = storageController;
         }
 
+        public ChatRepository(DBContext context) : base(context)
+        {
+            _context = context;
+        }
+
         public async Task<IEnumerable<ChatRoom>> GetAllChatRoomAsQuery(int userId)
         {
             var query = await _context.ChatRoom.Include(x => x.ChatContents)

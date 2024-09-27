@@ -13,7 +13,6 @@ namespace KozossegiAPI.Interfaces
         Task<TChatRoom> ChatRoomExists(ChatDto chatRoom);
         List<int> GetChatPartenterIds(int userId);
         Task<TChatRoom> CreateChatRoom(ChatDto chatDto);
-        Task<IQueryable<PersonalChatRoom?>> GetPersonalChatRoom();
         List<ChatContent> GetSortedChatContent(int roomId);
         Task<ChatRoom>? GetChatRoomByUser(int senderId1, int senderId2);
         Task<object> AddChatFile(ChatFile fileUpload);
