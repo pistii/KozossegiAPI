@@ -38,12 +38,7 @@ namespace KozossegiAPI.Repo
 
             foreach (var person in birthdayUsers)
             {
-                //Friend Id-k kigyűjtése. StatusId = 1: ha barátok
-                //var friendIds = await _context.Friendship
-                //    .Where(f => f.UserId == person.id && f.StatusId == 1 || f.FriendId == person.id && f.StatusId == 1)
-                //    .Select(f => f.UserId == person.id && f.StatusId == 1 ? f.FriendId : f.UserId)
-                //    .ToListAsync();
-                var friendIds = await _friendRepository.GetAll(person.id); //TODO: tesztelésre vár
+                var friendIds = await _friendRepository.GetFriendIds(person.id);
 
                 //Formázás
                 string personName = HelperService.GetFullname(person.firstName, person.middleName, person.lastName);
@@ -51,13 +46,13 @@ namespace KozossegiAPI.Repo
 
                 foreach (var friend in friendIds)
                 {
-                    NotificationWithAvatarDto notification = new NotificationWithAvatarDto(friend.id, person.id, person.avatar, birthdayContent, NotificationType.Birthday);
+                    NotificationWithAvatarDto notification = new NotificationWithAvatarDto(friend, person.id, person.avatar, birthdayContent, NotificationType.Birthday);
                     Notification insert = notification;
                     await InsertSaveAsync(insert);
                     //Ha online a felhasználó akkor hubon keresztül értesítjük.
                     try
                     {
-                        await RealtimeNotification(friend.id, notification);
+                        await RealtimeNotification(friend, notification);
                     }
                     catch (Exception ex)
                     {
