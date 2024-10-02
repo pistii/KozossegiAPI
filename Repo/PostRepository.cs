@@ -1,18 +1,26 @@
-﻿using KozossegiAPI.Data;
+﻿using KozossegiAPI.Controllers.Cloud;
+using KozossegiAPI.Controllers.Cloud.Helpers;
+using KozossegiAPI.Data;
 using KozossegiAPI.DTOs;
 using KozossegiAPI.Interfaces;
 using KozossegiAPI.Models;
-using KozossegiAPI.Services;
+using KozossegiAPI.Models.Cloud;
 using Microsoft.EntityFrameworkCore;
 
 namespace KozossegiAPI.Repo
 {
-    public class PostRepository : GenericRepository<PostDto>, IPostRepository<PostDto>, IPostRepository<Comment>
+    public class PostRepository : GenericRepository<PostDto>, IPostRepository<PostDto>
     {
         private readonly DBContext _context;
-        public PostRepository(DBContext context) : base(context)
+        private IStorageRepository _storageController;
+
+        public PostRepository(
+            DBContext context,
+            IStorageRepository storageRepository
+            ) : base( context )
         {
             _context = context;
+            _storageController = storageRepository;
         }
 
         /// <summary>
@@ -30,10 +38,10 @@ namespace KozossegiAPI.Repo
             .Include(c => c.Posts.PostComments)
             .Include(p => p.Posts.PostReactions)
             .Where(p => p.PostedToId == toId)
-                .OrderByDescending(_ => _.Posts.DateOfPost)
-                .AsNoTracking()
-                .Select(p => new PostDto
-                {
+            .OrderByDescending(_ => _.Posts.DateOfPost)
+            .AsNoTracking()
+            .Select(p => new PostDto
+            {
                 PostAuthor = new PostAuthor(
                     p.Personal.avatar,
                     p.Personal.firstName,
@@ -46,8 +54,8 @@ namespace KozossegiAPI.Repo
                 p.Posts.DateOfPost, p.Posts.MediaContent),
                 PostedToUserId = toId,
                 CommentsQty = p.Posts.PostComments.Count,
-                        })
-                .ToListAsync();
+            })
+            .ToListAsync();
 
             if (sortedItems == null) return null;
             int totalPages = await GetTotalPages(sortedItems, itemPerRequest);
@@ -59,12 +67,12 @@ namespace KozossegiAPI.Repo
         public async Task<List<PostDto>> GetImagesAsync(int userId)
         {
             var sortedItems = await _context.PersonalPost
-                .Include(p => p.Posts.MediaContent)
+            .Include(p => p.Posts.MediaContent)
             .Where(p => p.PostedToId == userId && p.Posts.MediaContent != null)
-                .OrderByDescending(_ => _.Posts.DateOfPost)
-                .AsNoTracking()
-                .Select(p => new PostDto
-                {
+            .OrderByDescending(_ => _.Posts.DateOfPost)
+            .AsNoTracking()
+            .Select(p => new PostDto
+            {
                 PostAuthor = new PostAuthor(
                     p.Personal.avatar,
                     p.Personal.firstName,
@@ -73,8 +81,8 @@ namespace KozossegiAPI.Repo
                     p.Personal.id),
                 Post = new Post(p.PostId, p.Posts.Token, p.Posts.PostContent, p.Posts.Likes, p.Posts.Dislikes, p.Posts.DateOfPost, p.Posts.MediaContent),
                 PostedToUserId = userId,
-                })
-                .ToListAsync();
+            })
+            .ToListAsync();
 
             return sortedItems;
         }
