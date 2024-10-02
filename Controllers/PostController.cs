@@ -168,91 +168,41 @@ namespace KozossegiAPI.Controllers
             return NotFound();
         }
     
-
-        //Gets the postId and the modified content of the post
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromForm] CreatePostDto data)
+        [HttpPost("dislike")]
+        [Authorize]
+        public async Task<IActionResult> DislikePost(ReactionDto reactionDto)
         {
-                var post = await _PostRepository.GetByIdAsync<Post>(id);
-                if (post == null || post.Id != id)
-                    return NotFound();
+            var user = (user)HttpContext.Items["User"];
+            string payload = "";
 
-                //Modify only the content and the date of post
-                post.PostContent = data.postContent;
-                post.DateOfPost = DateTime.UtcNow;
-                await _PostRepository.UpdateThenSaveAsync(post);
-                return Ok();
+            if (reactionDto.Type != "dislike")
+            {
+                return BadRequest();
         }
 
-        [HttpDelete("delete/{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var post = await _PostRepository.GetByIdAsync<Post>(id);
+            var post = await _PostRepository.GetPostWithReactionsByTokenAsync(reactionDto.Token);
             if (post == null)
+        {
                 return NotFound();
-
-            //Find the person in the personalPost junction table and remove the connection
-            var personalPost = await _PostRepository.GetByIdAsync<PersonalPost>(post.Id);
-            await _PostRepository.RemoveAsync<PersonalPost>(personalPost);
-            await _PostRepository.RemoveAsync(post);
-            await _PostRepository.SaveAsync();
-            return Ok();
         }
 
-        //Likes or dislikes a post.
-        //Also increments or decrements the number of likes or dislikes
-        /*
-        [HttpPut("action")]
-        public async Task<IActionResult> DoAction(Like_DislikeDto dto)
-        {
-            //TODO: This will be updated when the writing the tests are done. Make it work with comments also from commentcontroller.
 
-            var post = await _PostRepository.GetByIdAsync<Post>(dto.postId);
-            if (post == null) return NotFound();
-            //TODO: Refactor into postDto and return also the userReaction
-            var isUserDidAction = await _context.PostReaction.FirstOrDefaultAsync(u => u.PostId == dto.postId && u.UserId == dto.UserId);
-
-            if (isUserDidAction == null)
-            {
-                PostReaction newReaction = new PostReaction()
+            //Check if user didn't disliked the post
+            if (!post.PostReactions.Any(p => p.UserId == user.userID))
                 {
-                    PostId = dto.postId,
-                    UserId = dto.UserId,
-                    ReactionType = dto.actionType
-                };
-
-                _context.PostReaction.Add(newReaction); //Creates a new entry and updates the post
-                if (dto.actionType == "like")
-                {
-                    post.Likes++;
-                }
-                else if (dto.actionType == "dislike")
-                {
-                    post.Dislikes++;
-                }
+                await _PostRepository.DislikePost(reactionDto, post, user);
             }
-            else
-            {
-                if (isUserDidAction.ReactionType == dto.actionType)
-                { //Ha már ugyanaz az a művelet mint korábban akkor törlés
-                    _context.PostReaction.Remove(isUserDidAction);
-                    if (isUserDidAction.ReactionType == "like")
+            else //already has a reaction. If like, make a dislike action, othervise should remove the dislike
                     {
-                        post.Likes--;
-                    }
-                    else if (isUserDidAction.ReactionType == "dislike")
+                var itemToRemove = post.PostReactions.FirstOrDefault(p => p.UserId == user.userID);
+                if (itemToRemove.ReactionTypeId == 1)
                     {
-                        post.Dislikes--;
+                    await _PostRepository.DislikePost(reactionDto, post, user);
+                    payload = "disliked";
                     }
+                await _PostRepository.RemoveThenSaveAsync(itemToRemove);
                 }
-                if (isUserDidAction.ReactionType != dto.actionType)  //Ha már volt reakció, de más, akkor update
-                {
-                    isUserDidAction.ReactionType = dto.actionType == "like" ? "dislike" : "like";
-                    _context.PostReaction.Update(isUserDidAction);
-                    if (isUserDidAction.ReactionType == "like")
-                    {
-                        post.Likes--;
-                        post.Dislikes++;
+            return Ok(payload);
                     }
 
         [HttpPut("update")]

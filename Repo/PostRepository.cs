@@ -110,5 +110,16 @@ namespace KozossegiAPI.Repo
                     .FirstOrDefaultAsync(p => p.Id == postId);
             return post;
         }
+        public async Task DislikePost(ReactionDto postReaction, Post post, user user)
+        {
+            PostReaction reaction = new()
+            {
+                PostId = post.Id,
+                ReactionTypeId = 2,
+                UserId = user.userID
+            };
+            _context.PostReaction.Add(reaction);
+            await _context.SaveChangesAsync();
+        }
     }
 }
