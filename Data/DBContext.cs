@@ -156,6 +156,15 @@ namespace KozossegiAPI.Data
                     .HasForeignKey(p => p.PostId);
             });
 
+            modelBuilder.Entity<PostReaction>(entity =>
+            {
+                entity.HasKey(p => p.Pk_Id);
+
+                entity.HasMany(r => r.ReactionTypes)
+                .WithOne(p => p.PostReaction)
+                .HasForeignKey(p => p.Id);                
+            });
+
             modelBuilder.Entity<Comment>(entity =>
             {
                 entity.HasKey(p => p.commentId);

@@ -7,14 +7,12 @@ namespace KozossegiAPI.Models
 {
     public class PostReaction
     {
-        [Key]
-        [Column(TypeName = "int(11)")]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int ID_AI { get; set; }
+        public int Pk_Id { get; set; }
         public int PostId { get; set; }
         public int UserId { get; set; }
-        public string? ReactionType { get; set; }
+        public int ReactionTypeId { get; set; }
         [JsonIgnore]
         public Post post { get; set; }
+        public ICollection<ReactionTypes> ReactionTypes { get; set; } = new HashSet<ReactionTypes>();
     }
 }
