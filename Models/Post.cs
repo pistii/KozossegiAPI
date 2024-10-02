@@ -22,13 +22,15 @@ namespace KozossegiAPI.Models
             Dislikes = dislikes;
         }
 
-        public Post(int PostId, string content, int likes, int dislikes, DateTime postDate)
+        public Post(int PostId, string token, string content, int likes, int dislikes, DateTime postDate, MediaContent? mediaContent)
         {
             Id = PostId;
+            Token = token;
             PostContent = content;
             Likes = likes;
             Dislikes = dislikes;
             DateOfPost = postDate;
+            MediaContent = mediaContent;
         }
 
         [Key]
@@ -41,11 +43,11 @@ namespace KozossegiAPI.Models
         public int Likes { get; set; } = 0;
         public int Dislikes { get; set; } = 0;
         public DateTime DateOfPost { get; set; } = DateTime.Now;
+        public DateTime? LastModified { get; set; }
         [StringLength(500)]
         public string? PostContent { get; set; }
         [JsonIgnore]
         public virtual ICollection<Comment> PostComments { get; set; } = new HashSet<Comment>();
-        [JsonIgnore]
         public virtual MediaContent? MediaContent { get; set; }
         public virtual ICollection<PostReaction>? PostReactions { get; set; } = new HashSet<PostReaction>();
 

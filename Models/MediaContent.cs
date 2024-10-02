@@ -12,23 +12,24 @@ namespace KozossegiAPI.Models
         {
             
         }
-        public MediaContent(int mediaContentId, string name, string type)
+        public MediaContent(int postId, string name, string type, long FileSize)
         {
-            this.MediaContentId = mediaContentId;
+            this.FK_PostId = postId;
             this.FileName = name;
             this.MediaType = type;
+            this.FileSize = FileSize;
         }
         [Key]
         [Column(TypeName = "int(11)")]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-        public int MediaContentId { get; set; }
+        public int FK_PostId { get; set; }
         [StringLength(100)]
         public string? FileName { get; set; }
         [StringLength(80)]
         public string MediaType { get; set; }
-        [JsonIgnore]
-        public Post Post { get; set; }
+        public long FileSize { get; set; }
+        public virtual Post Post{ get; set; }
     }
 
     public enum ContentType {

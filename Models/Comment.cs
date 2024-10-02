@@ -22,8 +22,7 @@ namespace KozossegiAPI.Models
         public DateTime? LastModified { get; set; }
         [JsonIgnore]
         public Post Post { get; set; }
+        public Personal AuthorPerson { get; set; }
         
-        [JsonIgnore]
-        public virtual Personal? Commenter { get; set; }
     }
 }
