@@ -103,11 +103,13 @@ namespace KozossegiAPI.Repo
             return post;
         }
 
-        public async Task<Post?> GetPostWithCommentsById(int postId)
+
+        public async Task<Post> GetPostWithReactionsByTokenAsync(string token)
         {
             var post = await _context.Post
-                    .Include(p => p.PostComments)
-                    .FirstOrDefaultAsync(p => p.Id == postId);
+                .Include(p => p.PostReactions)
+                .FirstOrDefaultAsync(p => p.Token == token);
+            if (post == null) return null;
             return post;
         }
 
