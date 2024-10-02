@@ -267,7 +267,15 @@ namespace KozossegiAPI.Controllers
             return Ok(post);
         }
 
-        */
+        [HttpDelete("delete/{token}")]
+        public async Task<IActionResult> Delete(string token)
+        {
+            var post = await _PostRepository.GetPostByTokenAsync(token);
+            if (post == null)
+                return NotFound();
 
+            await _PostRepository.RemovePostAsync(post);
+            return Ok();
+        }
     }
 }
