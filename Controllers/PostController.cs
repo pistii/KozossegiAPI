@@ -254,17 +254,18 @@ namespace KozossegiAPI.Controllers
                         post.Likes--;
                         post.Dislikes++;
                     }
-                    else if (isUserDidAction.ReactionType == "dislike")
-                    {
-                        post.Dislikes--;
-                        post.Likes++;
-                    }
-                }
-            }
 
-            _context.Post.Update(post);
-            await _context.SaveChangesAsync();
-            return Ok(post);
+        [HttpPut("update")]
+        public async Task<IActionResult> Put([FromForm] CreatePostDto data)
+                    {
+            var post = await _PostRepository.GetPostByTokenAsync(data.post.Token);
+            if (post == null)
+                return NotFound();
+
+            post.PostContent = data.post.PostContent;
+            post.LastModified = DateTime.Now;
+            await _PostRepository.UpdateThenSaveAsync(post);
+            return Ok();
         }
 
         [HttpDelete("delete/{token}")]
