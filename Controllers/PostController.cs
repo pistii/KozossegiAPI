@@ -44,17 +44,14 @@ namespace KozossegiAPI.Controllers
         }
 
 
-        /// <summary>
-        /// After authentication and checking the relation between the post viewer and the author of the post and the publicity of the post returns the actual posts.
-        /// </summary>
-        /// <param name="dto"></param>
-        /// <returns></returns>
-        [HttpGet("GetAllPost/{profileId}/{userId}/{currentPage}/")]
-        [HttpGet("GetAllPost/{profileId}/{userId}/{currentPage}/{itemPerRequest}/")]
+        [HttpGet("getAll/{profileId}/{userId}/{currentPage}/")]
+        [HttpGet("getAll/{profileId}/{userId}/{currentPage}/{itemPerRequest}/")]
         public async Task<ContentDto<PostDto>> GetAllPost(int profileId, int userId, int currentPage = 1, int itemPerRequest = 10)
         {
-            return await _PostRepository.GetAllPost(profileId, userId, currentPage, itemPerRequest);
+            var sortedItems = await _PostRepository.GetAllPost(profileId, userId, currentPage, itemPerRequest);
+            return sortedItems;
         }
+
 
         [HttpGet("getPhotos/{profileId}/{cp}/{ipr}")]
         public async Task<ContentDto<PostDto>> GetImages(int profileId, int cp = 1, int ipr = 10)
