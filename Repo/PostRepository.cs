@@ -134,6 +134,32 @@ namespace KozossegiAPI.Repo
 
             return newPost;
         }
+
+        public async Task UploadFile(FileUpload newData, Post dto)
+        {
+            bool isVideo = FileHandlerService.FormatIsVideo(newData.Type);
+            bool isImage = FileHandlerService.FormatIsImage(newData.Type);
+            if (isVideo || isImage)
+            {
+                MediaContent media = new(dto.Id, newData.Name, newData.Type, newData.File.Length); //mentés az adatbázisba
+                
+                var name = await _storageController.AddFile(newData, BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
+                media.FileName = name;
+                await InsertSaveAsync(media);
+            }
+        }
+
+        public async Task RemovePostAsync(Post post)
+        {
+            var personalPost = await _context.PersonalPost.FirstOrDefaultAsync(p => p.PostId == post.Id);
+            if (personalPost != null)
+            {
+                await RemoveAsync<PersonalPost>(personalPost);
+            }
+            await RemoveAsync<Post>(post);
+            await SaveAsync();
+        }
+
         public async Task LikePost(ReactionDto postReaction, Post post, user user)
         {
             PostReaction reaction = new()
