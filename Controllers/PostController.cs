@@ -105,67 +105,42 @@ namespace KozossegiAPI.Controllers
                             await _PostRepository.InsertAsync<MediaContent>(media);
                         }
                     }
-                    else if (!string.IsNullOrEmpty(dto.Type) && dto.File != null)
+
+
+        [HttpPost("like")]
+        [Authorize]
+        public async Task<IActionResult> LikePost(ReactionDto reactionDto)
                     {
-                        return BadRequest("Invalid file format.");
-                    }
-                }
+            var user = (user)HttpContext.Items["User"];
+            string payload = "";
 
-                //Create new junction table with user and postId
-                PersonalPost personalPost = new PersonalPost()
+            if (reactionDto.Type != "like")
                 {
-                    personId = userFromHeader.userID,
-                    postId = newPost.Id
-                };
-                await _PostRepository.InsertSaveAsync<PersonalPost>(personalPost);
-
-                var closerFriends = _chatRepository.GetChatPartenterIds(userFromHeader.userID);
-                var stringLength = dto.postContent.Length > 60 ? dto.postContent.Take(50) + "..." : dto.postContent;
-
-                foreach (var friendId in closerFriends)
-                {
-                    //TODO: Ötlet, ahelyett hogy mindegyik user táblájához csatolok egy külön értesítést, lehetne egyet, amit vagy külön táblába, vagy külön rekorddal kezelve követve EGYSZER mentenék el. Ezáltal egy "feliratkozási" tulajdonságot készítve. 
-                    if (friendId != 0)
-                    {
-                        NotificationWithAvatarDto notificationWithAvatarDto =
-                            new NotificationWithAvatarDto(
-                                friendId,
-                                authorUser.id,
-                                authorUser.avatar,
-                                stringLength,
-                                NotificationType.NewPost);
-                        await _InotificationRepository.RealtimeNotification(friendId, notificationWithAvatarDto);
-
-                        await _PostRepository.InsertSaveAsync<Notification>(notificationWithAvatarDto);
-                    }
-                }
-                await _PostRepository.SaveAsync();
-
-                var postToReturn = new PostDto()
-                {
-                    PostContent = newPost.PostContent,
-                    PostId = newPost.Id,
-                    AuthorId = dto.SourceId,
-                    AuthorAvatar = authorUser.avatar,
-                    Dislikes = 0,
-                    Likes = 0,
-                    FullName = HelperService.GetFullname(authorUser.firstName, authorUser.middleName, authorUser.lastName),
-                    DateOfPost = DateTime.Now,
-                    PostComments = new(),
-                };
-
-                if (!string.IsNullOrEmpty(dto.Name) && dto.File != null)
-                {
-                    postToReturn.MediaContent = new MediaContent()
-                    {
-                        MediaType = dto.Type,
-                        FileName = dto.Name,
-                        Id = postToReturn.PostId,
-                    };
-                }
-                return Ok(postToReturn);
+                return BadRequest();
             }
-            return NotFound();
+
+            var post = await _PostRepository.GetPostWithReactionsByTokenAsync(reactionDto.Token);
+            if (post == null)
+                    {
+                return NotFound();
+                }
+
+            //Check if user didn't liked the post
+            if (!post.PostReactions.Any(p => p.UserId == user.userID))
+                {
+                await _PostRepository.LikePost(reactionDto, post, user);
+            }
+            else  //already has a reaction. If dislike, make a like action, othervise should remove the like
+                {
+                var itemToRemove = post.PostReactions.FirstOrDefault(p => p.UserId == user.userID);
+                if (itemToRemove.ReactionTypeId == 2)
+                    {
+                    await _PostRepository.LikePost(reactionDto, post, user);
+                    payload = "liked";
+                }
+                await _PostRepository.RemoveThenSaveAsync(itemToRemove);
+            }
+            return Ok(payload);
         }
     
         [HttpPost("dislike")]
