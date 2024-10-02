@@ -3,6 +3,7 @@ using KozossegiAPI.DTOs;
 using KozossegiAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using KozossegiAPI.Interfaces;
+using KozossegiAPI.Auth.Helpers;
 
 namespace KozossegiAPI.Controllers
 {
@@ -56,7 +57,7 @@ namespace KozossegiAPI.Controllers
         [HttpGet("getPhotos/{profileId}/{cp}/{ipr}")]
         public async Task<ContentDto<PostDto>> GetImages(int profileId, int cp = 1, int ipr = 10)
         {
-            var sortedItems = await _PostRepository.GetImages(profileId);
+            var sortedItems = await _PostRepository.GetImagesAsync(profileId);
             if (sortedItems == null) return null;
             int totalPages = await _PostRepository.GetTotalPages(sortedItems, ipr);
 
@@ -108,39 +109,39 @@ namespace KozossegiAPI.Controllers
 
                 PostDto postDto = new PostDto(authorUser, postedToUser.id, createdPost);
                 return Ok(postDto);
-                        }
+            }
             return NotFound();
-                    }
+        }
 
 
         [HttpPost("like")]
         [Authorize]
         public async Task<IActionResult> LikePost(ReactionDto reactionDto)
-                    {
+        {
             var user = (user)HttpContext.Items["User"];
             string payload = "";
 
             if (reactionDto.Type != "like")
-                {
+            {
                 return BadRequest();
             }
 
             var post = await _PostRepository.GetPostWithReactionsByTokenAsync(reactionDto.Token);
             if (post == null)
-                    {
+            {
                 return NotFound();
-                }
+            }
 
             //Check if user didn't liked the post
             if (!post.PostReactions.Any(p => p.UserId == user.userID))
-                {
+            {
                 await _PostRepository.LikePost(reactionDto, post, user);
             }
             else  //already has a reaction. If dislike, make a like action, othervise should remove the like
-                {
+            {
                 var itemToRemove = post.PostReactions.FirstOrDefault(p => p.UserId == user.userID);
                 if (itemToRemove.ReactionTypeId == 2)
-                    {
+                {
                     await _PostRepository.LikePost(reactionDto, post, user);
                     payload = "liked";
                 }
@@ -148,7 +149,7 @@ namespace KozossegiAPI.Controllers
             }
             return Ok(payload);
         }
-    
+
         [HttpPost("dislike")]
         [Authorize]
         public async Task<IActionResult> DislikePost(ReactionDto reactionDto)
@@ -159,36 +160,36 @@ namespace KozossegiAPI.Controllers
             if (reactionDto.Type != "dislike")
             {
                 return BadRequest();
-        }
+            }
 
             var post = await _PostRepository.GetPostWithReactionsByTokenAsync(reactionDto.Token);
             if (post == null)
-        {
+            {
                 return NotFound();
-        }
+            }
 
 
             //Check if user didn't disliked the post
             if (!post.PostReactions.Any(p => p.UserId == user.userID))
-                {
+            {
                 await _PostRepository.DislikePost(reactionDto, post, user);
             }
             else //already has a reaction. If like, make a dislike action, othervise should remove the dislike
-                    {
+            {
                 var itemToRemove = post.PostReactions.FirstOrDefault(p => p.UserId == user.userID);
                 if (itemToRemove.ReactionTypeId == 1)
-                    {
+                {
                     await _PostRepository.DislikePost(reactionDto, post, user);
                     payload = "disliked";
-                    }
-                await _PostRepository.RemoveThenSaveAsync(itemToRemove);
                 }
+                await _PostRepository.RemoveThenSaveAsync(itemToRemove);
+            }
             return Ok(payload);
-                    }
+        }
 
         [HttpPut("update")]
         public async Task<IActionResult> Put([FromForm] CreatePostDto data)
-                    {
+        {
             var post = await _PostRepository.GetPostByTokenAsync(data.post.Token);
             if (post == null)
                 return NotFound();
