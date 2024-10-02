@@ -9,10 +9,15 @@ namespace KozossegiAPI.Controllers
     [Route("api/[controller]")]
     public class CommentController : ControllerBase
     {
-        private readonly IPostRepository<Comment> _commentRepository;
-        public CommentController(IPostRepository<Comment> commentRepository)
+        private readonly ICommentRepository _commentRepository;
+        private readonly IPostRepository<PostDto> _postRepository;
+        public CommentController(
+            ICommentRepository commentRepository,
+            IPostRepository<PostDto> postRepository
+            )
         {
             _commentRepository = commentRepository;
+            _postRepository = postRepository;
         }
 
         [HttpGet("{id}")]
@@ -26,79 +31,67 @@ namespace KozossegiAPI.Controllers
             return NotFound();
         }
 
+        [HttpGet("get/{postToken}/{cp}")]
+        public async Task<IActionResult> GetSome(string postToken, int cp)
+        {
+            var post = await _postRepository.GetPostByTokenAsync(postToken);
+            if (post == null) return NotFound();
+
+
+            var comments = await _commentRepository.GetCommentsAsync(post.Id);
+
+            var commentsToReturn = _commentRepository.Paginator(comments, cp);
+            return Ok(commentsToReturn);
+        }
+
+
         //Searches the post by Id and adds a comment for it
         [HttpPost]
-        [Route("newComment")]
+        [Route("new")]
         public async Task<IActionResult> Post(NewCommentDto comment)
         {
             var user = await _commentRepository.GetByIdAsync<Personal>(comment.commenterId);
-            var post = await _commentRepository.GetByIdAsync<Post>(comment.postId);
+            var post = await _postRepository.GetPostByTokenAsync(comment.postToken);
             if (user == null || post == null) return NotFound();
 
-            Comment newComment = new Comment();
-            newComment.PostId = post.Id;
-            newComment.FK_AuthorId = user.id;
-            newComment.CommentDate = DateTime.Now;
-            newComment.CommentText = comment.commentTxt;
-
-            await _commentRepository.InsertSaveAsync<Comment>(newComment);
-                return Ok(newComment);
-            }
-
-        //Delete a comment
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            Comment? comment = await _commentRepository.GetByIdAsync<Comment>(id);
-            if (comment == null) return NotFound();
-            
-            await _commentRepository.RemoveThenSaveAsync(comment);
-            return Ok();
+            CommentDto newComment = await _commentRepository.Create(post.Id, user.id, comment.commentTxt);
+            return Ok(newComment);
         }
 
-        //Modify the comment. Waits for the postId and the modifiable parameters
-        [HttpPut("modify/{id}")]
-        public async Task<IActionResult> Put(int id, NewCommentDto comment)
+        [HttpDelete("delete/{token}")]
+        public async Task<IActionResult> Delete(string token)
         {
-            //var post = await _commentRepository.GetPostWithCommentsById(comment.postId);
-
-            //var targetComment = post?.PostComments?.FirstOrDefault(item => item.commentId == id);
-
-            var targetComment = await _commentRepository.GetByIdAsync<Comment>(comment.CommentId);
-            if (targetComment == null) return NotFound();
-                
-            targetComment.CommentDate = DateTime.Now;
-            targetComment.CommentText = comment.commentTxt;
-
-            await _commentRepository.UpdateThenSaveAsync(targetComment);
-
-            return Ok();
-            
+            Comment commentExist = await _commentRepository.GetByTokenAsync(token);
+            if (commentExist != null)
+            {
+                await _commentRepository.RemoveThenSaveAsync(commentExist);
+                return Ok();
+            }
+            return NotFound();
         }
 
-        //TODO: Do the post like/dislike function
-        //Likes or dislikes a comment.
-        //Also increments or decrements the number of likes or dislikes
-        [HttpPut("{commentId}/{isLikes}/{isIncrement}")]
-        public async Task<IActionResult> DoAction(int commentId, bool isLikes, bool isIncrement)
+        [HttpPut("update")]
+        public async Task<IActionResult> Update(UpdateCommentDto comment)
         {
-            //var comment = await _context.Comment.FindAsync(commentId);
-            var comment = await _commentRepository.GetByIdAsync<Comment>(commentId);
-            if (comment == null) return NotFound();
+            if (comment.commenterId == null || 
+                string.IsNullOrEmpty(comment.CommentToken)
+                )
+                return BadRequest("Commenter and token cannot be empty.");
 
-            //TODO: add like/dislike options for a comment also update the database tables
-            if (isLikes)
+            Comment existing = await _commentRepository.GetByTokenAsync(comment.CommentToken!);
+            if (existing == null)
             {
-                //comment.Loves = isIncrement ? comment. + 1 : comment.Loves - 1;
+                return NotFound();
             }
-            else
+            if (existing.FK_AuthorId != comment.commenterId)
             {
-                //comment.DisLoves = isIncrement ? comment.DisLoves + 1 : comment.DisLoves - 1;
+                return BadRequest("Mit szeretnél?");
             }
 
-            //_context.Update(post);
-            //await _context.SaveChangesAsync();
-            return Ok();
+            existing.LastModified = DateTime.Now;
+            existing.CommentText = comment.CommentTxt;
+            await _commentRepository.UpdateThenSaveAsync(existing);
+            return Ok(existing);
         }
     }
 }
