@@ -111,6 +111,29 @@ namespace KozossegiAPI.Repo
             return post;
         }
 
+        public async Task<Post> Create(CreatePostDto postDto)
+        {
+            Post newPost = new()
+            {
+                Token = Guid.NewGuid().ToString(),
+                PostContent = postDto.post.PostContent
+            };
+
+            await InsertSaveAsync(newPost);
+
+            //Create new junction table with user and postId
+            PersonalPost personalPost = new PersonalPost()
+            {
+                AuthorId = postDto.PostAuthor.AuthorId,
+                PostId = newPost.Id,
+                PostedToId = postDto.PostedToUserId
+            };
+
+
+            await InsertSaveAsync(personalPost);
+
+            return newPost;
+        }
         public async Task LikePost(ReactionDto postReaction, Post post, user user)
         {
             PostReaction reaction = new()

@@ -65,45 +65,51 @@ namespace KozossegiAPI.Controllers
             return new ContentDto<PostDto>(returnValue, totalPages);
         }
 
-        [Authorize]
+        //[Authorize]
         [HttpPost]
-        [Route("createNew")]
-        public async Task<ActionResult<Post>> Post([FromForm] CreatePostDto dto)
+        [Route("new")]
+        public async Task<ActionResult<PostDto>> Post([FromForm] CreatePostDto dto)
         {
-            var userFromHeader = (user?)HttpContext.Items["User"];
-            if (userFromHeader == null) return Unauthorized();
+            //var userFromHeader = (user?)HttpContext.Items["User"];
+            //if (userFromHeader == null) return Unauthorized();
             
 
-            var authorUser = await _PostRepository.GetByIdAsync<Personal>(userFromHeader.userID);
-            
+            var authorUser = await _PostRepository.GetByIdAsync<Personal>(dto.PostAuthor.AuthorId);
+            var postedToUser = await _PostRepository.GetByIdAsync<Personal>(dto.PostedToUserId);
             if (authorUser != null)
             {
-                Post newPost = new()
-                {
-                    SourceId = authorUser.id,
-                    PostContent = dto.postContent,
-                    Dislikes = 0,
-                    Likes = 0
-                };
+                var createdPost = await _PostRepository.Create(dto);
 
-                await _PostRepository.InsertSaveAsync<Post>(newPost);
+                if (dto.FileUpload != null) {
+                    await _PostRepository.UploadFile(dto.FileUpload, createdPost);
+                }
 
-                if (dto.postContent != null)
-                {
-                    bool isVideo = FileHandlerService.FormatIsVideo(dto.Type);
-                    bool isImage = FileHandlerService.FormatIsImage(dto.Type);
-                    //If file is accepted format: save. Otherwise return with badRequest
-                    if (isVideo || isImage)
-                    {
-                        if (dto.File != null)
-                        {
-                            MediaContent media = new(newPost.Id, dto.Name, dto.Type); //mentés az adatbázisba
-                            FileUpload newFile = new FileUpload(dto.Name, dto.Type, dto.File); //mentés a felhőbe
+                //var closerFriends = _chatRepository.GetChatPartenterIds(userFromHeader.userID);
 
-                            var fileName = await _storageController.AddFile(newFile, BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
-                            media.FileName = fileName.ToString();
-                            await _PostRepository.InsertAsync<MediaContent>(media);
+                //TODO: send notification as below
+                //foreach (var friendId in closerFriends)
+                //{
+                //    //TODO: Ötlet, ahelyett hogy mindegyik user táblájához csatolok egy külön értesítést, lehetne egyet, amit vagy külön táblába, vagy külön rekorddal kezelve követve EGYSZER mentenék el. Ezáltal egy "feliratkozási" tulajdonságot készítve. 
+                //    if (friendId != 0)
+                //    {
+                //        NotificationWithAvatarDto notificationWithAvatarDto =
+                //            new NotificationWithAvatarDto(
+                //                friendId,
+                //                authorUser.id,
+                //                authorUser.avatar,
+                //                dto.postContent,
+                //                NotificationType.NewPost);
+                //        await _InotificationRepository.RealtimeNotification(friendId, notificationWithAvatarDto);
+
+                //        await _PostRepository.InsertSaveAsync<Notification>(notificationWithAvatarDto);
+                //    }
+                //}
+                //await _PostRepository.SaveAsync();
+
+                PostDto postDto = new PostDto(authorUser, postedToUser.id, createdPost);
+                return Ok(postDto);
                         }
+            return NotFound();
                     }
 
 
