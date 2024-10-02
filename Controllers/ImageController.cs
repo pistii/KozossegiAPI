@@ -50,26 +50,5 @@ namespace KozossegiAPI.Controllers
             }
             return NotFound();
         }
-
-
-        //No use anymore
-        [HttpGet("{postId}")]
-        public async Task<IActionResult> GetPostImage(int postId)
-        {
-            var content = await _imageRepository.GetPostImage(postId);
-            var imgName = content.FileName;
-
-            var image = await _storageRepository.GetFile(content.FileName!, BucketSelector.IMAGES_BUCKET_NAME);
-
-            return image;
-        }
-
-        [HttpGet("getAll/{userId}")]
-        public async Task<List<PostDto>> GetAll(int userId, int currentPage = 1, int requestItems = 9) //Todo: implements from interface, it is not tested. Currentpage is recently added 1.22 after disabled gcloud 
-        {
-            var postsWithImage = await _imageRepository.GetAll(userId, currentPage, requestItems);
-            return postsWithImage;
-        }
-
     }
 }
