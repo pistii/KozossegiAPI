@@ -32,11 +32,10 @@ namespace KozossegiAPI.Controllers
             //_postPhotoStorage = postPhotoStorage;
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Post>> Get(int id)
+        [HttpGet("get/{token}")]
+        public async Task<ActionResult<Post>> GetByTokenAsync(string token)
         {
-            //var res = await _context.Post.FindAsync(id);
-            var res = await _PostRepository.GetByIdAsync<Post>(id);
+            var res = await _PostRepository.GetPostByTokenAsync(token);
             if (res != null)
             {
                 return Ok(res);

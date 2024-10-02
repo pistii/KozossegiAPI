@@ -111,6 +111,14 @@ namespace KozossegiAPI.Repo
             return sortedItems;
         }
 
+        public async Task<Post> GetPostByTokenAsync(string token)
+        {
+            var post = await _context.Post
+                .FirstOrDefaultAsync(p => p.Token == token);
+            if (post == null) return null;
+            return post;
+        }
+
         public async Task<Post?> GetPostWithCommentsById(int postId)
         {
             var post = await _context.Post
