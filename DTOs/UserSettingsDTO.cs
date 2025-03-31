@@ -7,6 +7,8 @@
     {
         public int Days { get; set; }
         public bool? RemindUserOfUnfulfilledReg { get; set; } = false;
-        public bool isOnlineEnabled = true;
+        public bool isOnlineEnabled { get; set; } = true;
+        public bool PostEnabled { get; set; }
+
     }
 }

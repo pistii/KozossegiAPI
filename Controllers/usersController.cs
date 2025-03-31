@@ -99,7 +99,7 @@ namespace KozossegiAPI.Controllers
                 {
                     var posts = await _postRepository.GetAllPost(profileToViewId, viewerUserId, 1);
                     var friends = await _friendRepository.GetAll(profileToViewId);
-                    var familiarityStatus = await _friendRepository.CheckIfUsersInRelation(profileToViewId, viewerUserId);
+                    var familiarityStatus = await _friendRepository.GetUserRelation(profileToViewId, viewerUserId);
 
                     //await Task.WhenAll(postsTask, familiarityStatusTask);
 
@@ -122,6 +122,23 @@ namespace KozossegiAPI.Controllers
                         else reminduser = false;
                     }
 
+
+                    var userCanPost = false;
+                    if (familiarityStatus == "self" && user.Settings.postCreateEnabledToId == 2)
+                    {
+                        userCanPost = true;
+                    }
+                    else if ((familiarityStatus == "self" || familiarityStatus == "friend") &&
+                        user.Settings.postCreateEnabledToId == 1 || 
+                        user.Settings.postCreateEnabledToId == 2)
+                    {
+                        userCanPost = true;
+                    }
+                    else if (user.Settings.postCreateEnabledToId == 3)
+                    {
+                        userCanPost = true;
+                    }
+
                     ProfilePageDto profilePageDto = new ProfilePageDto()
                     {
                         PersonalInfo = user,
@@ -131,7 +148,8 @@ namespace KozossegiAPI.Controllers
                         settings = new()
                         {
                             isOnlineEnabled = user.users.isOnlineEnabled,
-                            RemindUserOfUnfulfilledReg = reminduser
+                            RemindUserOfUnfulfilledReg = reminduser,
+                            PostEnabled = userCanPost
                         }
                         
                         

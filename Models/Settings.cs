@@ -11,6 +11,8 @@ namespace KozossegiAPI.Models
         [ForeignKey("personal")]
         public int FK_UserId { get; set; }
         public DateTime NextReminder { get; set; }
+        public int postCreateEnabledToId { get; set; }
+
         [JsonIgnore]
         public virtual Personal? personal { get; set; } 
     }

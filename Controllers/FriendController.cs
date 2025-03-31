@@ -181,9 +181,9 @@ namespace KozossegiAPI.Controllers
         }
 
         [HttpGet("relation")]
-        public string GetFamiliarityStatus(int userId, int viewerId)
+        public async Task<string> GetFamiliarityStatus(int userId, int viewerId)
         {
-            string friendship = _friendRepository.CheckIfUsersInRelation(userId, viewerId).Result;
+            string friendship = await _friendRepository.GetUserRelation(userId, viewerId);
             return friendship;
         }
 

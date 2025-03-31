@@ -44,7 +44,7 @@ namespace KozossegiAPI.Data
             {
                 optionsBuilder.UseMySql("server=localhost;user id=root;database=mediadb;Convert Zero Datetime=True", Microsoft.EntityFrameworkCore.ServerVersion.Parse("10.4.20-mariadb"));
             }
-        } //"Server=aws.connect.psdb.cloud;Database=socialmedia;"
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -108,9 +108,18 @@ namespace KozossegiAPI.Data
                     .WithOne(_ => _.PersonalRoom)
                     .HasForeignKey(_ => _.FK_PersonalId);
 
-
+                /*
+                 * 
+                // Kapcsolat beállítása a Setting modellel
+                entity.HasOne(p => p.Setting)
+                    .WithOne(s => s.User)
+                    .HasForeignKey<Setting>(s => s.UserId)
+                    .OnDelete(DeleteBehavior.Cascade); // Ha a user törlődik, a setting is törlődik*
+                */
                 entity.HasOne(p => p.Settings)
-                    .WithOne(p => p.personal);
+                    .WithOne(p => p.personal)
+                    .HasForeignKey<Settings>(s => s.FK_UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(p => p.friends)
                     .WithMany(p => p.GetPersonals)
@@ -173,9 +182,10 @@ namespace KozossegiAPI.Data
                     .WithMany(x => x.PostComments)
                     .HasForeignKey(i => i.PostId);
 
-                entity.HasOne(p => p.Commenter)
-                    .WithOne(p => p.Commenter)
-                    .HasForeignKey<Comment>(x => x.FK_AuthorId);
+                //TODO:URGENT
+                //entity.HasOne(p => p.Commenter)
+                //    .WithOne(p => p.Commenter)
+                //    .HasForeignKey<Comment>(x => x.FK_AuthorId);
 
                 
             });

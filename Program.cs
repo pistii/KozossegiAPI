@@ -195,7 +195,7 @@ namespace KozossegiAPI
                 options.Cookie.IsEssential = true;
             });
             services.AddControllers().AddNewtonsoftJson().AddJsonOptions(options =>
-                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter())); ;
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
             var origins = "http://localhost:5173;http://192.168.0.16:8888";
             services.AddCors(options => options.AddPolicy("AllowAll", p => p

@@ -38,7 +38,7 @@ namespace KozossegiAPI.Controllers
                     {
                         string url = await _storageRepository.AddFile(fileUpload, BucketSelector.AVATAR_BUCKET_NAME);
                         await _imageRepository.UpdateDatabaseImageUrl(fileUpload.UserId, url);
-                        return Ok();
+                        return Ok(url);
                     }
                     catch (Exception ex)
                     {

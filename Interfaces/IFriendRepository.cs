@@ -6,7 +6,7 @@ namespace KozossegiAPI.Interfaces
     {
         Task<IEnumerable<Personal_IsOnlineDto>> GetAll(int id);
         Task<IEnumerable<Personal>> GetAllFriendAsync(int id);
-        public Task<string> CheckIfUsersInRelation(int userId, int viewerId);
+        public Task<string> GetUserRelation(int userId, int viewerId);
         public Task Delete(Friend request);
         public Task Put(Friend_notificationId friendship);
         //public Task<List<Personal>> GetAllFriend(int userId);

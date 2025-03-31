@@ -6,6 +6,15 @@
         {
             
         }
+
+        public FileUpload(string name, string type, IFormFile file, long len)
+        {
+            this.Name = name;
+            this.Type = type;
+            this.File = file;
+
+        }
+
         public FileUpload(string name, string type, IFormFile file)
         {
             this.Name = name;

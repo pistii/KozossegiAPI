@@ -5,6 +5,10 @@
 
 # Private files
 /appsettings.json
+*.pfx
+*.pem
+*.crt
+*.key
 
 # User-specific files
 *.rsuser

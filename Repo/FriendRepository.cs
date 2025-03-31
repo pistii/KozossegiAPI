@@ -57,7 +57,7 @@ namespace KozossegiAPI.Repo
             return friends;
         }
 
-        public async Task<string> CheckIfUsersInRelation(int userId, int viewerId)
+        public async Task<string> GetUserRelation(int userId, int viewerId)
         {
             if (userId == viewerId)
             {
