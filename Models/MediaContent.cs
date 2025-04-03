@@ -29,6 +29,7 @@ namespace KozossegiAPI.Models
         [StringLength(80)]
         public string MediaType { get; set; }
         public long FileSize { get; set; }
+        [JsonIgnore]
         public virtual Post Post{ get; set; }
     }
 

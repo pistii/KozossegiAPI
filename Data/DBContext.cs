@@ -163,6 +163,10 @@ namespace KozossegiAPI.Data
                 entity.HasMany(r => r.PostReactions)
                     .WithOne(p => p.post)
                     .HasForeignKey(p => p.PostId);
+
+                entity.HasOne(p => p.MediaContent)
+                .WithOne(p => p.Post)
+                .HasForeignKey<MediaContent>(p => p.FK_PostId);
             });
 
             modelBuilder.Entity<PostReaction>(entity =>
@@ -188,13 +192,6 @@ namespace KozossegiAPI.Data
                 //    .HasForeignKey<Comment>(x => x.FK_AuthorId);
 
                 
-            });
-
-            modelBuilder.Entity<MediaContent>(entity =>
-            {
-                entity.HasOne(p => p.Post)
-                .WithOne(p => p.MediaContent)
-                .HasForeignKey<MediaContent>(p => p.FK_PostId);
             });
 
             //https://www.learnentityframeworkcore.com/configuration/many-to-many-relationship-configuration
