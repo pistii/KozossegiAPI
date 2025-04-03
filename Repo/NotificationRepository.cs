@@ -86,16 +86,23 @@ namespace KozossegiAPI.Repo
         //  Search the Person's notifications, and create a new Dto from the inherited notification class
         /// </summary>
         /// <returns></returns>
-        public async Task<List<NotificationWithAvatarDto>> GetAll_PersonNotifications(int userId)
-        {
-            return await _context.Notification
-                .Where(_ => _.ReceiverId == userId).Select(n => new NotificationWithAvatarDto(n.ReceiverId, n.SenderId, "", n.notificationContent, n.notificationType)
+        public async Task<List<GetNotification>> GetAllNotifications(int userId)
                 {
-                    notificationId = n.notificationId,
-                    notificationAvatar = _context.Personal.FirstOrDefault(p => p.id == n.ReceiverId).avatar,
-                    createdAt = n.createdAt,
-                    isNew = n.isNew
-                }).ToListAsync();
+            return await _context.UserNotification
+                .Include(n => n.notification)
+                .Include(n => n.personal)
+                .Where(n => n.UserId == userId).Select(n => new GetNotification(
+                        n.NotificationId,
+                        n.notification.AuthorId,
+                        n.UserId,
+                        n.notification.CreatedAt,
+                        n.notification.Message,
+                        n.IsRead,
+                        n.notification.NotificationType,
+                        HelperService.GetEnumDescription(n.notification.NotificationType),
+                        n.personal.avatar
+                    ))
+                .ToListAsync();
         }
 
         public async Task RemoveNotifications(IEnumerable<Notification> entities)
@@ -119,5 +126,14 @@ namespace KozossegiAPI.Repo
             return totalNotification;
         }
 
+        public async Task CreateNotification(CreateNotification cn)
+        {
+            var newNotification = new Notification(cn.AuthorId, cn.Message, cn.NotificationType);
+            await _context.Notification.AddAsync(newNotification);
+            await _context.SaveChangesAsync();
+
+            UserNotification userNotification = new(cn.UserId, newNotification.Id, false);
+            await InsertSaveAsync(userNotification);
+        }
     }
 }

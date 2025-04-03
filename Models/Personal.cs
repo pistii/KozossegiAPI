@@ -64,8 +64,8 @@ namespace KozossegiAPI.Models
         public virtual ICollection<Relationship>? Relationships { get; set; } = new HashSet<Relationship>();
 
         [JsonIgnore]
-        [InverseProperty("notification")]
-        public virtual ICollection<Notification>? Notifications { get; set; } = new HashSet<Notification>();
+        //[InverseProperty("notification")]
+        public virtual ICollection<UserNotification>? UserNotification { get; set; } = new HashSet<UserNotification>();
 
         [JsonIgnore]
         public virtual ICollection<PersonalChatRoom> PersonalChatRooms { get; set; } = new HashSet<PersonalChatRoom>();

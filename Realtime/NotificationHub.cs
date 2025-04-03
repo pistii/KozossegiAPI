@@ -32,7 +32,7 @@ namespace KozossegiAPI.Realtime
         */
         #endregion
 
-        public async Task ReceiveNotification(int userId, NotificationWithAvatarDto dto)
+        public async Task ReceiveNotification(int userId, GetNotification dto)
         {
             foreach (var conn  in _connections.keyValuePairs)
             {
@@ -50,7 +50,7 @@ namespace KozossegiAPI.Realtime
         }
 
 
-        public async Task SendNotification(int toId, NotificationWithAvatarDto dto)
+        public async Task SendNotification(int toId, GetNotification dto)
         {
             foreach (var user in _connections.GetConnectionsById(toId))
             {

@@ -1,4 +1,7 @@
-﻿namespace KozossegiAPI.Services
+﻿using System.ComponentModel;
+using System.Reflection;
+
+namespace KozossegiAPI.Services
 {
     public static class HelperService
     {
@@ -24,6 +27,15 @@
             int minCapitalLetters = 1; //Determines minimum how many capital letters must contain
             return password.Length > 8 && 
                 (password.Where(char.IsUpper).Count() >= minCapitalLetters);
+        }
+
+
+        public static string GetEnumDescription(Enum value)
+        {
+            FieldInfo field = value.GetType().GetField(value.ToString());
+            DescriptionAttribute attribute = field.GetCustomAttribute<DescriptionAttribute>();
+
+            return attribute != null ? attribute.Description : value.ToString();
         }
     }
 }

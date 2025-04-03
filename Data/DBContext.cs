@@ -28,6 +28,7 @@ namespace KozossegiAPI.Data
         public virtual DbSet<PersonalPost> PersonalPost { get; set; }
         public virtual DbSet<Comment>? Comment { get; set; }
         public virtual DbSet<Notification> Notification { get; set; }
+        public virtual DbSet<UserNotification> UserNotification { get; set; }
         public virtual DbSet<PersonalChatRoom> PersonalChatRoom { get; set; }
         public virtual DbSet<ChatRoom> ChatRoom { get; set; }
         public virtual DbSet<ChatContent> ChatContent { get; set; }
@@ -100,9 +101,6 @@ namespace KozossegiAPI.Data
                     .WithOne(x => x.relationship)
                     .HasForeignKey(c => c.relationshipID);
 
-                entity.HasMany(c => c.Notifications)
-                    .WithOne(x => x.notification)
-                    .HasForeignKey(c => c.ReceiverId);
 
                 entity.HasMany(_ => _.PersonalChatRooms)
                     .WithOne(_ => _.PersonalRoom)
@@ -217,10 +215,25 @@ namespace KozossegiAPI.Data
             modelBuilder.Entity<PersonalChatRoom>()
                 .HasKey(x => new { x.FK_PersonalId, x.FK_ChatRoomId });
 
+            modelBuilder.Entity<UserNotification>()
+                .HasKey(x => new { x.UserId, x.NotificationId });
+
+            modelBuilder.Entity<UserNotification>()
+                .HasOne(un => un.personal)
+                .WithMany(p => p.UserNotification)
+                .HasForeignKey(un => un.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserNotification>()
+                .HasOne(un => un.notification)
+                .WithMany(p => p.UserNotification)
+                .HasForeignKey(un => un.NotificationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
 
             modelBuilder.Entity<Notification>(entity =>
             {
-                entity.Property(e => e.notificationType)
+                entity.Property(e => e.NotificationType)
                          .HasConversion(
                          c => c.ToString(),
                          type => (NotificationType)Enum.Parse(typeof(NotificationType), type));

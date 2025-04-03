@@ -98,11 +98,10 @@ namespace KozossegiAPI
             services.AddSingleton<IVerificationCodeCache, VerificationCodeCache>();
             services.AddScoped<IEncodeDecode, EncodeDecode>();
             services.AddSingleton<IChatStorage, ChatStorage>();
-            services.AddHostedService<NotificationService>();
             services.AddScoped<ISettingRepository, SettingRepository>();
             services.AddScoped<IStudyRepository, StudyRepository>();
             services.AddScoped<IMobileRepository<user>, MobileRepository>();
-            
+
             services.AddMemoryCache();
 
             services.AddHttpContextAccessor();
