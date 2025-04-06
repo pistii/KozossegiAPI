@@ -5,13 +5,9 @@ namespace KozossegiAPI.Interfaces
     public interface INotificationRepository : IGenericRepository<Notification>
     {
         Task RealtimeNotification(int toUserId, GetNotification dto);
-        Task BirthdayNotification();
-        Task SelectNotification();
         Task<List<GetNotification>> GetAllNotifications(int userId);
-        Task RemoveNotifications(IEnumerable<Notification> entity);
-        Task<IEnumerable<Notification>> GetDeletableNotifications();
-
-        Task CreateNotification(CreateNotification notification);
-
+        Task<Notification> CreateNotification(CreateNotification cn);
+        Task UpdateNotification(CreateNotification cn);
+        Task<Notification> CreateFriendRequestAcceptedNotification(CreateNotification createNotification);
     }
 }

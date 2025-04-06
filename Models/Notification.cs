@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Drawing.Text;
 using System.Reflection;
 
 namespace KozossegiAPI.Models
@@ -10,19 +11,19 @@ namespace KozossegiAPI.Models
     {
         public Notification()
         {
-            
+
         }
         public Notification(int authorId, string message, NotificationType type)
         {
             this.AuthorId = authorId;
             this.Message = message;
             this.NotificationType = type;
+            this.ExpirationDate = NotificationExpirationCalculator.CalculateExpiration(type);
         }
-
         public int Id { get; set; }
         public int AuthorId { get; set; }
         [StringLength(300)]
-        public string Message {  get; set; }
+        public string Message { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime ExpirationDate { get; set; }
         public NotificationType NotificationType { get; set; }
@@ -34,6 +35,8 @@ namespace KozossegiAPI.Models
         public virtual ICollection<UserNotification>? UserNotification { get; set; } = new HashSet<UserNotification>();
 
     }
+    
+
 
     public enum NotificationType
     {
@@ -59,7 +62,7 @@ namespace KozossegiAPI.Models
         public int AuthorId { get; set; }
         public int UserId { get; set; }
         [StringLength(300)]
-        public string Message { get; set; }
+        public string? Message { get; set; }
         public NotificationType NotificationType { get; set; }
     }
 
@@ -95,5 +98,25 @@ namespace KozossegiAPI.Models
         public NotificationType NotificationType { get; set; }
         public string notificationDescription { get; set; }
         public string? Avatar { get; set; }
+    }
+
+    public class NotificationExpirationCalculator
+    {
+        public NotificationExpirationCalculator()
+        {
+            
+        }
+        public static DateTime CalculateExpiration(NotificationType type)
+        {
+            return type switch
+            {
+                NotificationType.Birthday => DateTime.Now.AddDays(1),
+                NotificationType.FriendRequest => DateTime.Now.AddDays(7),
+                NotificationType.NewPost => DateTime.Now.AddHours(12),
+                NotificationType.FriendRequestAccepted => DateTime.Now.AddHours(12),
+                _ => DateTime.Now.AddDays(10)
+            };
+        }
+
     }
 }

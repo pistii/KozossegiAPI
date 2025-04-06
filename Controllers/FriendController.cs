@@ -67,55 +67,49 @@ namespace KozossegiAPI.Controllers
             return Ok(some);
         }
 
-        [HttpPost("postFriendRequest")]
-        public async Task<IActionResult> postFriendRequest(Notification notification)
+        [HttpPost("create/friendRequest")]
+        public async Task<IActionResult> CreateFriendRequest(CreateNotification notification)
         {
-            var requestedFromUser = await _personalRepository.GetByIdAsync<Personal>(notification.SenderId);
-            var requestedUser = await _friendRepository.GetUserWithNotification(notification.ReceiverId);
+            var author = await _friendRepository.GetUserWithNotification(notification.AuthorId);
+            var receiver = await _friendRepository.GetUserWithNotification(notification.UserId);
 
-            if (requestedUser != null)
-            {
-                //Kikeressük a korábbi értesítést, ha létezik
-                var requestedUsersNotification = requestedUser?.Notifications?.FirstOrDefault(n => n.SenderId == notification.SenderId && n.notificationType == NotificationType.FriendRequest);
+            if (receiver == null || author == null) return NotFound("Invalid user id.");
+            else if (notification.NotificationType != NotificationType.FriendRequest) return BadRequest("Invalid request");
 
-                NotificationWithAvatarDto avatarDto = new NotificationWithAvatarDto(
-                    notification.ReceiverId,
-                    notification.SenderId,
-                    requestedFromUser?.avatar,
-                    HelperService.GetFullname(requestedFromUser!.firstName, requestedFromUser.middleName, requestedFromUser!.lastName) + " ismerősnek jelölt.",
-                    notification.notificationType);
+            //Ellenőrizzük, hogy a küldő user nem kapott-e már barátkérelmet.
+            var authorReceivedRequestBefore = author!.UserNotification
+               .FirstOrDefault(n => n.UserId == notification.AuthorId &&
+               n.notification.NotificationType == NotificationType.FriendRequest);
 
-                if (requestedUsersNotification != null)
+            Notification createdNotification = new();
+            //Létezik korábbi barátkérelem.
+            if (authorReceivedRequestBefore != null)
                 {
-                    //Felülírja a korábbi értesítés dátumát és újként jelöljük meg, ha volt már az adott személytől
-                    requestedUsersNotification.isNew = true;
-                    requestedUsersNotification.createdAt = DateTime.Now;
-                    await _notificationRepository.UpdateThenSaveAsync<Notification>(requestedUsersNotification);
+                createdNotification = await _notificationRepository.CreateFriendRequestAcceptedNotification(notification);
+                await _friendRepository.MakeThemFriend(notification);
                 }
-                //Ha nem létezik, létrehozunk egyet.
                 else
                 {
-                    notification.notificationContent = avatarDto.notificationContent;
-                    requestedUser?.Notifications?.Add(notification);
-                    await _friendRepository.SaveAsync();
-                    avatarDto.notificationId = notification.notificationId;
+                notification.Message = "";
+                createdNotification = await _notificationRepository.CreateNotification(notification);
                 }
 
-
-                if (_connections.ContainsUser(notification.ReceiverId))
+            // Értesítjük az usert hubon keresztül.
+            if (_connections.ContainsUser(notification.UserId))
                 {
-                    //Az user összes létező kapcsolatának kikeresése (mobil/laptop/több böngésző)
-                    var AllUserConnection = _connections.keyValuePairs.Where(c => c.Value == notification.ReceiverId).ToList();
+                //Az user összes létező kapcsolatának kikeresése.
+                var allUserConnection = _connections.keyValuePairs.Where(c => c.Value == notification.UserId).ToList();
+                //Kigyűjtjük a kapcsolati kulcsokat
+                List<string> keys = (from kvp in allUserConnection select kvp.Key).ToList();
+
+                //Az elküldendő objektum
+                var noti = new GetNotification(createdNotification.Id, author.id, receiver.id, createdNotification.CreatedAt,
+                    "", false, NotificationType.FriendRequest, "New friend request.", author.avatar);
                     //Értesítés küldése az összes létező kapcsolat felé.
-                    foreach (var item in AllUserConnection)
-                    {
-                        await _notificationHub.Clients.Client(item.Key).ReceiveNotification(notification.ReceiverId, avatarDto);
+                await _notificationHub.Clients.Clients(keys).ReceiveNotification(notification.UserId, noti);
                     }
+            return Ok();
                 }
-                return Ok("Success");
-            }
-            return NoContent();
-        }
 
         [HttpPut("add")] //if user accepts or rejects the request
         public async Task<IActionResult> Put(Friend_notificationId friendship)
