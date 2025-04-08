@@ -57,21 +57,35 @@ namespace KozossegiAPI.Repo
             return friends;
         }
 
-        public async Task<string> GetUserRelation(int userId, int viewerId)
+
+        /// <summary>
+        /// Mapper method to get relation between two users.
+        /// </summary>
+        /// <param name="userA"></param>
+        /// <param name="userB"></param>
+        /// <returns>Status of the two user.</returns>
+        public async Task<UserRelationshipStatus> GetRelationStatusAsync(int userA, int userB)
         {
-            if (userId == viewerId)
-            {
-                return "self";
+            var relation = await _context.Friendship
+                .FirstOrDefaultAsync(f =>
+                    (f.UserId == userA && f.FriendId == userB) ||
+                    (f.UserId == userB && f.FriendId == userA));
+
+            if (relation == null)
+                return UserRelationshipStatus.Stranger;
+
+            if (relation.StatusId == 1) return UserRelationshipStatus.Friend;
+            if (relation.StatusId == 4 && relation.UserId == userA) 
+                return UserRelationshipStatus.FriendRequestRejected;
+            if (relation.StatusId == 3 && relation.UserId == userA) return UserRelationshipStatus.FriendRequestSent;
+            if (relation.StatusId == 5 && relation.FriendId == userA) return UserRelationshipStatus.FriendRequestReceived;
+
+            if (relation.StatusId == 6)
+                return UserRelationshipStatus.Blocked;
+
+            return UserRelationshipStatus.Stranger;
             }
-            var friendship = await _context.Friendship.FirstOrDefaultAsync(
-               f => f.FriendId == userId && f.UserId == viewerId ||
-               f.FriendId == viewerId && f.UserId == userId);
-            if (friendship != null)
-            {
-                return "friend";
-            }
-            return "nonfriend";
-        }
+
 
         public async Task Delete(Friend request)
         {
