@@ -1,16 +1,21 @@
 ﻿using KozossegiAPI.Models;
+using Newtonsoft.Json;
 using System.Security.Claims;
 
 namespace KozossegiAPI.DTOs
 {
     public class AuthenticateResponse
     {
-        public AuthenticateResponse(Personal personal, string token) {
-            this.personal = personal;
-            this.token = token;
+        public AuthenticateResponse(Personal personal, string token)
+        {
+            this.UserDetails = new UserDetailsDto(personal);
+            this.Token = token;
         }
 
-        public Personal? personal { get; set; }
-        public string token { get; set; }
+
+        [JsonIgnore]
+        public Personal Personal { get; set; }
+        public UserDetailsDto UserDetails { get; set; }
+        public string Token { get; set; }
     }
 }
