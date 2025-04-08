@@ -1,5 +1,7 @@
-﻿using KozossegiAPI.Data;
+﻿using Google.Api;
+using KozossegiAPI.Data;
 using KozossegiAPI.Interfaces;
+using KozossegiAPI.Interfaces.Shared;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -65,6 +67,11 @@ namespace KozossegiAPI.Repo
             return await _context.Set<T>().FindAsync(id);
         }
 
+        public async Task<T?> GetByPublicIdAsync<T>(string publicId) where T : class, IHasPublicId
+        {
+            return await _context.Set<T>().FirstOrDefaultAsync(e => e.PublicId == publicId);
+        }
+
         public async Task UpdateAsync<T>(T entity) where T : class
         {
             _context.Set<T>().Update(entity);
@@ -92,5 +99,25 @@ namespace KozossegiAPI.Repo
             var exists = await _context.Set<T1>().FindAsync(entity);
             return exists != null ? true : false;
         }
+
+
+        public async Task<List<T1>> GetWithIncludeAsync<T1, TProperty>(
+            Expression<Func<T1, TProperty>> includeExpression) where T1 : class
+        {
+            return await _context.Set<T1>()
+                .Include(includeExpression)
+                .ToListAsync();
+        }
+
+        public async Task<T> GetWithIncludeAsync<T, TProperty>(
+            Expression<Func<T, TProperty>> includeExpression,
+            Expression<Func<T, bool>> predicate
+        ) where T : class
+        {
+            return await _context.Set<T>()
+                .Include(includeExpression)
+                .FirstOrDefaultAsync(predicate);
+        }
+        
     }
 }

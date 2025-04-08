@@ -1,10 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using KozossegiAPI.Interfaces.Shared;
 using Newtonsoft.Json;
 
 namespace KozossegiAPI.Models
 {
-   public partial class user
+   public partial class user : IHasPublicId
     {
         
         public user()
@@ -15,6 +16,7 @@ namespace KozossegiAPI.Models
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column(TypeName = "int(11)")]
+        [JsonIgnore]
         public int userID { get; set; }
 
         [StringLength(100)]
@@ -30,10 +32,9 @@ namespace KozossegiAPI.Models
         public string? password { get; set; }
         public DateTime? registrationDate { get; set; } = DateTime.Now;
         public virtual bool isActivated { get; set; } = false;
-        [JsonIgnore]
-        public string? Guid { get; set; }
+        public string PublicId { get; set; }
         public DateTime LastOnline { get; set; }
-        public bool isOnlineEnabled { get; set; }
+        public bool isOnlineEnabled { get; set; } = true;
         public virtual ICollection<UserRestriction> UserRestriction { get; }
         public virtual Personal? personal { get; set; }
         public virtual ICollection<Study>? Studies { get; set; }

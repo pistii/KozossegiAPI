@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using KozossegiAPI.Interfaces.Shared;
+using Newtonsoft.Json;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -7,10 +8,12 @@ using System.Reflection;
 
 namespace KozossegiAPI.Models
 {
-    public class Notification
+    public class Notification : IHasPublicId
     {
         public Notification()
         {
+            this.ExpirationDate = NotificationExpirationCalculator.CalculateExpiration(this.NotificationType);
+            this.PublicId = Guid.NewGuid().ToString("N");
 
         }
         public Notification(int authorId, string message, NotificationType type)
@@ -19,8 +22,11 @@ namespace KozossegiAPI.Models
             this.Message = message;
             this.NotificationType = type;
             this.ExpirationDate = NotificationExpirationCalculator.CalculateExpiration(type);
+            this.PublicId = Guid.NewGuid().ToString("N");
         }
+
         public int Id { get; set; }
+        public string PublicId { get; set; }
         public int AuthorId { get; set; }
         [StringLength(300)]
         public string Message { get; set; }
@@ -46,11 +52,14 @@ namespace KozossegiAPI.Models
         [Description("Friend Request Accepted")]
         FriendRequestAccepted = 1,
 
+        [Description("Friend Request Accepted")]
+        FriendRequestRejected = 2,
+
         [Description("Happy Birthday!")]
-        Birthday = 2,
+        Birthday = 10,
 
         [Description("New Post Available")]
-        NewPost = 3
+        NewPost = 20
     }
 
 
@@ -59,6 +68,18 @@ namespace KozossegiAPI.Models
     /// </summary>
     public class CreateNotification
     {
+        public CreateNotification()
+        {
+            
+        }
+
+        public CreateNotification(int authorId, int userId, NotificationType notificationType, string message = "")
+        {
+            this.AuthorId = authorId;
+            this.UserId = userId;
+            this.Message = message;
+            this.NotificationType = notificationType;
+        }
         public int AuthorId { get; set; }
         public int UserId { get; set; }
         [StringLength(300)]
@@ -74,6 +95,15 @@ namespace KozossegiAPI.Models
         public GetNotification()
         {
             
+        }
+
+        public GetNotification(Notification notification, string avatar)
+        {
+            this.NotificationId = notification.Id;
+            this.AuthorId = notification.AuthorId;
+            this.Avatar = avatar;
+            this.Message = notification.Message;
+            this.NotificationType = notification.NotificationType;
         }
 
         public GetNotification(int notificationId, int authorId, int receiverId, DateTime createdAt, string message, bool isRead, NotificationType notificationType, string notificationDescription, string avatar)
@@ -111,7 +141,7 @@ namespace KozossegiAPI.Models
             return type switch
             {
                 NotificationType.Birthday => DateTime.Now.AddDays(1),
-                NotificationType.FriendRequest => DateTime.Now.AddDays(7),
+                NotificationType.FriendRequest => DateTime.Now.AddDays(30),
                 NotificationType.NewPost => DateTime.Now.AddHours(12),
                 NotificationType.FriendRequestAccepted => DateTime.Now.AddHours(12),
                 _ => DateTime.Now.AddDays(10)

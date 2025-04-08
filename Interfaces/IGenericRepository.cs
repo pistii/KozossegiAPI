@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using KozossegiAPI.Interfaces.Shared;
+using System.Linq.Expressions;
 
 namespace KozossegiAPI.Interfaces
 {
@@ -22,5 +23,8 @@ namespace KozossegiAPI.Interfaces
         Task RemoveThenSaveAsync<T>(T entity) where T : class;
         Task UpdateThenSaveAsync<T>(T entity) where T : class;
         Task<int> GetTotalPages<T>(List<T> items, int itemPerRequest) where T : class;
+        Task<T?> GetByPublicIdAsync<T>(string publicId) where T : class, IHasPublicId;
+        Task<List<T1>> GetWithIncludeAsync<T1, TProperty>(Expression<Func<T1, TProperty>> includeExpression) where T1 : class;
+        Task<T> GetWithIncludeAsync<T, TProperty>(Expression<Func<T, TProperty>> includeExpression, Expression<Func<T, bool>> predicate) where T : class;
     }
 }
