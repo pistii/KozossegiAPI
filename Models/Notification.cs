@@ -16,18 +16,26 @@ namespace KozossegiAPI.Models
             this.PublicId = Guid.NewGuid().ToString("N");
 
         }
-        public Notification(int authorId, string message, NotificationType type)
+        public Notification(int authorId, string message, NotificationType type, string authorPublicId, string authorAvatar, int receiverUserId)
         {
             this.AuthorId = authorId;
             this.Message = message;
             this.NotificationType = type;
             this.ExpirationDate = NotificationExpirationCalculator.CalculateExpiration(type);
             this.PublicId = Guid.NewGuid().ToString("N");
+            this.AuthorPublicId = authorPublicId;
+            this.AuthorAvatar = authorAvatar;
+
+            this.UserNotification.Add(new UserNotification(receiverUserId, this.Id, false));
         }
 
         public int Id { get; set; }
         public string PublicId { get; set; }
         public int AuthorId { get; set; }
+        [ForeignKey(nameof(user.PublicId))]
+        public string AuthorPublicId { get; set; }
+        [StringLength(100)]
+        public string AuthorAvatar { get; set; }
         [StringLength(300)]
         public string Message { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
@@ -97,16 +105,26 @@ namespace KozossegiAPI.Models
             
         }
 
-        public GetNotification(Notification notification, string avatar)
+
+        public GetNotification(Notification notification)
         {
-            this.NotificationId = notification.Id;
-            this.AuthorId = notification.AuthorId;
-            this.Avatar = avatar;
+            this.NotificationId = notification.PublicId;
+            this.AuthorId = notification.AuthorPublicId;
+            this.Avatar = notification.AuthorAvatar;
             this.Message = notification.Message;
             this.NotificationType = notification.NotificationType;
         }
 
-        public GetNotification(int notificationId, int authorId, int receiverId, DateTime createdAt, string message, bool isRead, NotificationType notificationType, string notificationDescription, string avatar)
+        public GetNotification(Notification notification, Personal author)
+        {
+            this.NotificationId = notification.PublicId;
+            this.AuthorId = author.users.PublicId;
+            this.Avatar = author.avatar;
+            this.Message = notification.Message;
+            this.NotificationType = notification.NotificationType;
+        }
+
+        public GetNotification(string notificationId, string authorId, string receiverId, DateTime createdAt, string message, bool isRead, NotificationType notificationType, string notificationDescription, string avatar)
         {
             this.NotificationId = notificationId;
             this.AuthorId = authorId;
@@ -118,9 +136,9 @@ namespace KozossegiAPI.Models
             this.notificationDescription = notificationDescription;
             this.Avatar = avatar;
         }
-        public int NotificationId { get; set; }
-        public int AuthorId { get; set; }
-        public int ReceiverUserId { get; set; }
+        public string NotificationId { get; set; }
+        public string AuthorId { get; set; }
+        public string ReceiverUserId { get; set; }
         [StringLength(300)]
         public string Message { get; set; }
         public DateTime CreatedAt { get; set; }

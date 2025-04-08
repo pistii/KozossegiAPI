@@ -118,6 +118,16 @@ namespace KozossegiAPI.Repo
                 .Include(includeExpression)
                 .FirstOrDefaultAsync(predicate);
         }
-        
+
+
+
+        public async Task<T> GetEntityByPredicateFirstOrDefaultAsync<T>(
+            Expression<Func<T, bool>> predicate
+        ) where T : class
+        {
+            return await _context.Set<T>()
+                .FirstOrDefaultAsync(predicate);
+        }
+
     }
 }

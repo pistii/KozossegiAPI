@@ -76,17 +76,99 @@ namespace KozossegiAPI.Controllers
             }
 
             //Save notification
-            Notification notification = new(authorId, "", NotificationType.FriendRequest);
+            Notification notification = new(authorId, "", NotificationType.FriendRequest, author.users.PublicId, author.avatar, receiverUser.userID);
             await _notificationRepository.InsertSaveAsync(notification);
 
             //Send notification
-            GetNotification getNotification = new(notification, author.avatar);
+            GetNotification getNotification = new(notification, author);
             await _notificationHub.Clients.Users(receiverUser.userID.ToString()).ReceiveNotification(receiverUser.userID, getNotification);
             return Ok();
         }
 
+
         [Authorize]
-        [HttpGet("request/reject/{notificationId}")]
+        [HttpGet("request/reject/fromProfile/{otherUserId}")]
+        public async Task<IActionResult> RejectFriendRequestFromProfilepage(string otherUserId)
+        {
+            var userId = GetUserId();
+
+            var otherUser = await _friendRepository.GetByPublicIdAsync<user>(otherUserId);
+            if (otherUser == null) return NotFound("Invalid user id.");
+
+            Friend friend = new(userId, otherUser.userID, 3);
+            Friend? initialFriendshipExist = await _friendRepository.FriendshipExists(friend);
+            if (initialFriendshipExist == null) return NotFound();
+
+            //Lehet hogy már barátok, vagy egyáltalán nem történt ismerősnek jelölés sem.
+            else if (initialFriendshipExist.StatusId != 3) return BadRequest();
+
+
+            //Kikeressük azt az értesítést amikor a másik felhasználó küldött barátkérelmet
+            Notification result = await _notificationRepository.GetEntityByPredicateFirstOrDefaultAsync<Notification>(p => p.NotificationType == NotificationType.FriendRequest && p.AuthorId == otherUser.userID);
+            if (result != null)
+            {
+                await _notificationRepository.RemoveAsync(result);
+            }
+            _friendRepository.Delete(initialFriendshipExist);
+            await _friendRepository.SaveAsync();
+
+            return Ok();
+        }
+
+        [Authorize]
+        [HttpGet("request/confirm/fromProfile/{otherUserId}")]
+        public async Task<IActionResult> ConfirmFriendRequestFromProfilepage(string otherUserId)
+        {
+            var user = GetUser();
+
+            var otherUser = await _friendRepository.GetByPublicIdAsync<user>(otherUserId);
+            if (otherUser == null) return NotFound("Invalid user id.");
+            if (user == null || user.PublicId == "") return BadRequest("Invalid user.");
+
+            Friend friend = new(user.userID, otherUser.userID, 3);
+            Friend? initialFriendshipExist = await _friendRepository.FriendshipExists(friend);
+            if (initialFriendshipExist == null) return NotFound();
+
+            //Lehet hogy már barátok, vagy egyáltalán nem történt ismerősnek jelölés sem.
+            else if (initialFriendshipExist.StatusId != 3) return BadRequest();
+
+            //Létrehozzuk a baráti kapcsolatot.
+            initialFriendshipExist.StatusId = 1;
+            initialFriendshipExist.FriendshipSince = DateTime.Now;
+            await _friendRepository.UpdateThenSaveAsync(initialFriendshipExist);
+
+            //Kikeressük azt az értesítést amikor a másik felhasználó küldött barátkérelmet
+            Notification result = await _notificationRepository.GetEntityByPredicateFirstOrDefaultAsync<Notification>(p => p.NotificationType == NotificationType.FriendRequest && p.AuthorId == otherUser.userID);
+            if (result != null)
+            {
+                if ((result.ExpirationDate - DateTime.Now).TotalDays < 1)
+                {
+                    result.ExpirationDate = result.ExpirationDate.AddDays(1);
+                }
+                result.NotificationType = NotificationType.FriendRequestAccepted;
+                
+                await _notificationRepository.UpdateThenSaveAsync(result);
+
+                GetNotification getNotification = new(result);
+                await _notificationHub.Clients.Users(otherUser.userID.ToString()).ReceiveNotification(otherUser.userID, getNotification);
+            }
+            else
+            {
+                var userWithPersonal = await _userRepository.GetWithIncludeAsync<Personal, user>(u => u.users, u => u.users.PublicId == user.PublicId);
+
+                Notification notification = new(user.userID, "Friend request confirmed", NotificationType.FriendRequestAccepted, user.PublicId, userWithPersonal.avatar, otherUser.userID);
+                GetNotification getNotification = new(notification, userWithPersonal);
+
+                await _notificationHub.Clients.Users(otherUser.userID.ToString()).ReceiveNotification(otherUser.userID, getNotification);
+            }
+
+
+            return Ok();
+        }
+
+
+        [Authorize]
+        [HttpGet("request/reject/fromNotification/{notificationId}")]
         public async Task<IActionResult> RejectFriendRequest(string notificationId)
         {
             var userId = GetUserId();
@@ -102,11 +184,12 @@ namespace KozossegiAPI.Controllers
 
             await _notificationRepository.RemoveAsync(result);
             _friendRepository.Delete(initialFriendshipExist);
-            return NoContent();
+            await _friendRepository.SaveAsync();
+            return Ok();
         }
 
         [Authorize]
-        [HttpPut("request/confirm/{notificationId}")]
+        [HttpGet("request/confirm/fromNotification/{notificationId}")]
         public async Task<IActionResult> ConfirmFriendRequest(string notificationId)
         {
             var userId = GetUserId();

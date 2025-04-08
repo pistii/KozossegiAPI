@@ -26,5 +26,6 @@ namespace KozossegiAPI.Interfaces
         Task<T?> GetByPublicIdAsync<T>(string publicId) where T : class, IHasPublicId;
         Task<List<T1>> GetWithIncludeAsync<T1, TProperty>(Expression<Func<T1, TProperty>> includeExpression) where T1 : class;
         Task<T> GetWithIncludeAsync<T, TProperty>(Expression<Func<T, TProperty>> includeExpression, Expression<Func<T, bool>> predicate) where T : class;
+        Task<T> GetEntityByPredicateFirstOrDefaultAsync<T>(Expression<Func<T, bool>> predicate) where T : class;
     }
 }

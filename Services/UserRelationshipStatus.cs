@@ -9,7 +9,8 @@ namespace KozossegiAPI.Services
         public bool CanMessage { get; set; }
         public bool IsBlocked { get; set; }
         public bool ShouldShowAddFriend { get; set; }
-        public bool ShouldShowFriendRequest { get; set; }
+        public bool ShouldShowFriendRequestReceived { get; set; }
+        public bool ShouldShowFriendRequestSent { get; set; }
         public bool ShouldShowRemoveFriend { get; set; }
         public bool ShowSettings { get; set; }
         public string? Avatar { get; set; } = null;

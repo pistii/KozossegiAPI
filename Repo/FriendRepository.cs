@@ -18,6 +18,7 @@ namespace KozossegiAPI.Repo
         public async Task<Personal> GetUserWithNotification(int userId)
         {
             var user = await _context.Personal
+                .Include(u => u.users)
                 .Include(p => p.UserNotification)
                 .ThenInclude(n => n.notification)
                 .FirstOrDefaultAsync(p => p.id == userId);
@@ -81,8 +82,8 @@ namespace KozossegiAPI.Repo
             if (relation.StatusId == 1) return UserRelationshipStatus.Friend;
             if (relation.StatusId == 4 && relation.UserId == userA) 
                 return UserRelationshipStatus.FriendRequestRejected;
-            if (relation.StatusId == 3 && relation.UserId == userA) return UserRelationshipStatus.FriendRequestSent;
-            if (relation.StatusId == 5 && relation.FriendId == userA) return UserRelationshipStatus.FriendRequestReceived;
+            if (relation.StatusId == 3 && relation.UserId == userB) return UserRelationshipStatus.FriendRequestSent;
+            if (relation.StatusId == 3 && relation.FriendId == userB) return UserRelationshipStatus.FriendRequestReceived;
 
             if (relation.StatusId == 6)
                 return UserRelationshipStatus.Blocked;
