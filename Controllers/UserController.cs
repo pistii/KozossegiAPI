@@ -9,14 +9,16 @@ using KozossegiAPI.Auth;
 using KozossegiAPI.DTOs;
 using KozossegiAPI.Models;
 using KozossegiAPI.Auth.Helpers;
-using Serilog;
+using ILogger = Serilog;
 using KozossegiAPI.Interfaces;
+using KozossegiAPI.Repo.Helper;
+using Serilog;
 
 namespace KozossegiAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class usersController : ControllerBase
+    public class UserController : BaseController<UserController>
     {
         private readonly IJwtTokenManager _jwtTokenManager;
         private readonly IJwtUtils _jwtUtils;
@@ -26,19 +28,26 @@ namespace KozossegiAPI.Controllers
         private readonly IImageRepository _imageRepository;
         private readonly IPostRepository<PostDto> _postRepository;
         private readonly IUserRepository<user> _userRepository;
+        private readonly ISettingRepository _settingRepository;
+
+        private readonly IPermissionHelper _permissionHelper;
 
         private readonly IMailSender _mailSender;
         private readonly IVerificationCodeCache _verCodeCache;
         private readonly IEncodeDecode _encodeDecode;
         protected readonly string URL_BASE = "https://192.168.0.16:8888";
         
-        public usersController(
+        public UserController(
             IJwtTokenManager jwtTokenManager,
             IJwtUtils jwtUtils,
+
             IFriendRepository friendRepository,
             IPostRepository<PostDto> postRepository,
             IImageRepository imageRepository,
             IUserRepository<user> userRepository,
+            ISettingRepository settingRepository,
+
+            IPermissionHelper permissionHelper,
 
             IMailSender mailSender,
             IVerificationCodeCache verCodeCache,
@@ -47,10 +56,14 @@ namespace KozossegiAPI.Controllers
         {
             _jwtTokenManager = jwtTokenManager;
             _jwtUtils = jwtUtils;
+
             _friendRepository = friendRepository;
             _postRepository = postRepository;
             _imageRepository = imageRepository;
             _userRepository = userRepository;
+            _settingRepository = settingRepository;
+
+            _permissionHelper = permissionHelper;
 
             _mailSender = mailSender;
             _verCodeCache = verCodeCache;
@@ -62,106 +75,79 @@ namespace KozossegiAPI.Controllers
         public async Task<IActionResult> Authenticate(LoginDto login)
         {
             var response = await _jwtTokenManager.Authenticate(login);
-            if (response == null)
-            {
-                return NotFound("Username or password is incorrect");
-            }
+            if (response == null) return NotFound("Username or password is incorrect");
+            if (!response.UserDetails.IsActivated) return BadRequest("Not activated");
 
-            if (response.personal.users.isActivated)
-            {
-            AuthenticateResponse userDto = new AuthenticateResponse(response.personal!, response.token);
-            return Ok(userDto);
-        }
-            return BadRequest("Not activated");
+            return Ok(response);
         }
 
-        // GET: user
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
-        {
-            var user = await _userRepository.GetuserByIdAsync(id);
-            if (user != null)
-            {
-                return Ok(user);
-            }
-            return NotFound();
-        }
-
-        [HttpGet("profilePage/{profileToViewId}/{viewerUserId}")]
         [Authorize]
-        public async Task<IActionResult> GetProfilePage(int profileToViewId, int viewerUserId)
+        [HttpGet("profile/{otherUserId}")]
+        public async Task<IActionResult> GetPermissions(string otherUserId)
         {
-            var user = await _userRepository.GetPersonalWithSettingsAndUserAsync(profileToViewId);
-            const int REMINDER_OF_UNFULFILLED_PERSONAL_INFOS_IN_DAYS = 7;
-            if (user != null)
+            int userId = GetUserId();
+            var userWithPersonal = await _userRepository.GetWithIncludeAsync<Personal, user>(u => u.users, u => u.users.PublicId == otherUserId);
+
+            if (userWithPersonal == null) return NotFound("User not found");
+
+            var permissions = await _permissionHelper.ResolveAsync(userWithPersonal, userId, userWithPersonal.id);
+            return Ok(permissions);
+        }
+
+        //[Authorize]
+        //[HttpGet("get/userData")]
+        //public async Task<IActionResult> GetInitUserData()
+        //{
+        //    int userId = GetUserId();
+
+        //    //UserDetailsDto userDetailsDto = new();
+
+        //    return Ok();
+        //}
+
+        [Authorize]
+        [HttpGet("myProfile")]
+        public async Task<IActionResult> GetMyProfile()
+        {
+            int userId = GetUserId();
+            var user = await _userRepository.GetByIdAsync<Personal>(userId);
+            if (user == null) return NotFound("User not found");
+
+            try
             {
-                try
+                var postsTask = _postRepository.GetAllPost(user.id, userId, 1);
+                var friendsTask = _friendRepository.GetAll(user.id);
+
+                await Task.WhenAll(postsTask, friendsTask);
+
+                var posts = await postsTask;
+                var friends = await friendsTask;
+
+
+                ProfilePageDto profilePageDto = new()
                 {
-                    var posts = await _postRepository.GetAllPost(profileToViewId, viewerUserId, 1);
-                    var friends = await _friendRepository.GetAll(profileToViewId);
-                    var familiarityStatus = await _friendRepository.GetUserRelation(profileToViewId, viewerUserId);
-
-                    //await Task.WhenAll(postsTask, familiarityStatusTask);
-
-                    //var posts = await postsTask;
-                    //var friends = friends;
-                    //var familiarityStatus = await familiarityStatusTask;
-
-                    bool reminduser = false;
-
-                    if (familiarityStatus == "self" && user.users.LastOnline.Year == 1 || //If first login
-                        familiarityStatus == "self" && (DateTime.UtcNow - user.users.LastOnline).TotalDays > REMINDER_OF_UNFULFILLED_PERSONAL_INFOS_IN_DAYS //if the last login was more than 7 days ago,
-                        )  
+                    PersonalInfo = user,
+                    Posts = posts,
+                    Friends = friends.ToList(),
+                    Identity = UserRelationshipStatus.Self,
+                    settings = new()
                     {
-                        if (user.Settings == null)
-                            reminduser = true;
-                        else if (familiarityStatus == "self" && DateTime.UtcNow > user.Settings.NextReminder)
-                        {
-                            reminduser = true;
-                        }
-                        else reminduser = false;
-                    }
-
-
-                    var userCanPost = false;
-                    if (familiarityStatus == "self" && user.Settings.postCreateEnabledToId == 2)
-                    {
-                        userCanPost = true;
-                    }
-                    else if ((familiarityStatus == "self" || familiarityStatus == "friend") &&
-                        user.Settings.postCreateEnabledToId == 1 || 
-                        user.Settings.postCreateEnabledToId == 2)
-                    {
-                        userCanPost = true;
-                    }
-                    else if (user.Settings.postCreateEnabledToId == 3)
-                    {
-                        userCanPost = true;
-                    }
-
-                    ProfilePageDto profilePageDto = new ProfilePageDto()
-                    {
-                        PersonalInfo = user,
-                        Posts = posts,
-                        Friends = friends.ToList(),
-                        PublicityStatus = familiarityStatus,
-                        settings = new()
-                        {
-                            isOnlineEnabled = user.users.isOnlineEnabled,
-                            RemindUserOfUnfulfilledReg = reminduser,
-                            PostEnabled = userCanPost
-                        }
+                        //isOnlineEnabled = user.users.isOnlineEnabled,
+                        //RemindUserOfUnfulfilledReg = reminduser,
+                        //PostEnabled = userCanPost
+                    },
+                    PublicId = user.users.PublicId
                         
-                        
-                    };
-                    return Ok(profilePageDto);
+                };
+                return Ok(profilePageDto);
 
-                }
-                catch (NullReferenceException ex)
-                {
-                    Console.WriteLine("Something went wrong.... " + ex);
-                }
             }
+            catch (Exception ex)
+            {
+                
+                Console.WriteLine("Something went wrong.... " + ex);
+            }
+
             return NotFound();
         }
 
@@ -193,25 +179,21 @@ namespace KozossegiAPI.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> SignUp(RegisterForm user)
         {
-            if (user == null && user.email == null) 
-                return BadRequest("error");
+            if (user.personal == null) return BadRequest("Invalid form");
 
-                user? userExistsByEmail = await _userRepository.GetUserByEmailAsync(user.email);
-            if (userExistsByEmail != null)
-                {
-                    return BadRequest("used email");
-                }
+            user? userExistsByEmail = await _userRepository.GetUserByEmailAsync(user.email);
+            if (userExistsByEmail != null) return BadRequest("used email");
 
-                user newUser = user;
-                newUser.password = Bcry.HashPassword(user.Password);
-                //Guid: https://stackoverflow.com/a/4458925/16689442
-                Guid guid = Guid.NewGuid();
-                user.Guid = guid.ToString("N");
+            user newUser = user;
+            newUser.password = Bcry.HashPassword(user.Password);
+            //Guid: https://stackoverflow.com/a/4458925/16689442
+            Guid guid = Guid.NewGuid();
+            user.PublicId = guid.ToString("N");
 
-                await _userRepository.InsertSaveAsync<user>(newUser);
-
-            await _userRepository.SendActivationEmail(user.email, newUser);
-            return Ok("success");   
+            await _userRepository.InsertSaveAsync<user>(newUser);
+            //TODO:URGENT
+            //await _userRepository.SendActivationEmail(user.email, newUser);
+            return Ok();   
         }
 
         [AllowAnonymous]
@@ -280,7 +262,7 @@ namespace KozossegiAPI.Controllers
 
                 if (user != null)
                 {
-                    _verCodeCache.Create(verificationCode.ToString(), user.Guid);
+                    _verCodeCache.Create(verificationCode.ToString(), user.PublicId);
                     //CultureInfo currentCulture = Thread.CurrentThread.CurrentCulture;
 
                     string htmlTemplate = _mailSender.getEmailTemplate("forgotPassword.html");
@@ -344,7 +326,7 @@ namespace KozossegiAPI.Controllers
                     return BadRequest("not a valid password.");
                 }
                 var userguid = _verCodeCache.GetValue(form.otpKey);
-                var user = await _userRepository.GetByGuid(userguid);
+                var user = await _userRepository.GetByPublicIdAsync<user>(userguid);
 
                 if (user != null)
                 {
@@ -364,7 +346,7 @@ namespace KozossegiAPI.Controllers
         [Authorize]
         public async Task<IActionResult> RestrictUser(RestrictionDto data)
         {
-            user? user = await _userRepository.GetuserByIdAsync(data.userId);
+            user? user = await _userRepository.GetByIdAsync<user>(data.userId);
             if (user != null)
             {
                 Restriction restriction = new Restriction()
