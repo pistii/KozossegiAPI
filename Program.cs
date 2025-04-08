@@ -21,6 +21,8 @@ using System.Threading.RateLimiting;
 using AutoMapper;
 using KozoskodoAPI.Repo;
 using KozossegiAPI.Interfaces;
+using Microsoft.AspNetCore.SignalR;
+using KozossegiAPI.Repo.Helper;
 
 namespace KozossegiAPI
 {
@@ -101,6 +103,10 @@ namespace KozossegiAPI
             services.AddScoped<ISettingRepository, SettingRepository>();
             services.AddScoped<IStudyRepository, StudyRepository>();
             services.AddScoped<IMobileRepository<user>, MobileRepository>();
+            services.AddScoped<IPermissionHelper, PermissionHelper>();
+
+            //Custom UserID provider for signalR
+            services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
 
             services.AddMemoryCache();
 
