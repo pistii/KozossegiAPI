@@ -1,8 +1,11 @@
 ﻿
+using System.ComponentModel.DataAnnotations;
+
 namespace KozossegiAPI.Models
 {
     public class UserRestriction
     {
+        [Key]
         public int UserId { get; set; }
         public int RestrictionId { get; set; }
 

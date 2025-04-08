@@ -22,6 +22,7 @@ namespace KozossegiAPI.Models
         public DateTime? LastModified { get; set; }
         [JsonIgnore]
         public Post Post { get; set; }
+        [ForeignKey("FK_AuthorId")]
         public Personal AuthorPerson { get; set; }
         
     }

@@ -7,6 +7,7 @@ namespace KozossegiAPI.Models
 {
     public class PostReaction
     {
+        [Key]
         public int Pk_Id { get; set; }
         public int PostId { get; set; }
         public int UserId { get; set; }

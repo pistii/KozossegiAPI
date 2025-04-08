@@ -30,6 +30,7 @@ namespace KozossegiAPI.Models
         public string MediaType { get; set; }
         public long FileSize { get; set; }
         [JsonIgnore]
+        [ForeignKey("FK_PostId")]
         public virtual Post Post{ get; set; }
     }
 
