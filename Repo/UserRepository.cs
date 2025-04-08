@@ -29,16 +29,6 @@ namespace KozossegiAPI.Repo
             _mailSender = mailSender;
         }
 
-        public Task<user?> GetuserByIdAsync(int id)
-        {
-            return _dbContext.user.FirstOrDefaultAsync(user => user.userID == id);
-        }
-
-        public async Task<user> GetByGuid(string id)
-        {
-            var user = await _dbContext.user.FirstOrDefaultAsync(u => u.Guid == id);
-            return user;
-        }
 
         public async Task<Personal?> GetPersonalWithSettingsAndUserAsync(int userId)
         {
@@ -46,7 +36,17 @@ namespace KozossegiAPI.Repo
                 .Include(p => p.Settings)
                 .Include(u => u.users)
                 .Include(s => s.activeStudy)
-                .FirstOrDefaultAsync(p => p.id == userId);
+                .FirstOrDefaultAsync(p => p.users.userID == userId);
+            return user;
+        }
+
+        public async Task<Personal?> GetPersonalWithSettingsAndUserAsync(string userId)
+        {
+            var user = await _dbContext.Personal
+                .Include(p => p.Settings)
+                .Include(u => u.users)
+                .Include(s => s.activeStudy)
+                .FirstOrDefaultAsync(p => p.users.PublicId == userId);
             return user;
         }
 
