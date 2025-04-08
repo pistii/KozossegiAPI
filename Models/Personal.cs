@@ -21,14 +21,14 @@ namespace KozossegiAPI.Models
         
         [StringLength(30)]
         [Required(ErrorMessage = "First name is required")]
-        public string? firstName { get; set; }
+        public string firstName { get; set; }
 
         [StringLength(30)]
         public string? middleName { get; set; }
-
+        
         [StringLength(30)]
         [Required(ErrorMessage = "Last name is required")]
-        public string? lastName { get; set; }
+        public string lastName { get; set; }
         public bool isMale { get; set; }
         [StringLength(70)]
         public string? PlaceOfResidence { get; set; }
@@ -73,7 +73,7 @@ namespace KozossegiAPI.Models
         [JsonIgnore]
         public virtual ICollection<PersonalPost> PersonalPosts { get; set; } = new HashSet<PersonalPost>();
         [JsonIgnore]
-        public virtual Settings? Settings { get; set; }
+        public virtual Settings? Settings { get; set; } = new();
 
         //[JsonIgnore]
         //[InverseProperty("GetPersonals")]
