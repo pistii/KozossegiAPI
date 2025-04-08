@@ -1,6 +1,7 @@
 ﻿using KozossegiAPI.Data;
 using KozossegiAPI.Interfaces;
 using KozossegiAPI.Models;
+using KozossegiAPI.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace KozossegiAPI.Repo
@@ -14,9 +15,12 @@ namespace KozossegiAPI.Repo
             _context = context;
         }
 
-        public async Task<Personal?> GetUserWithNotification(int userId)
+        public async Task<Personal> GetUserWithNotification(int userId)
         {
-            var user = await _context.Personal.Include(p => p.Notifications).FirstOrDefaultAsync(p => p.id == userId);
+            var user = await _context.Personal
+                .Include(p => p.UserNotification)
+                .ThenInclude(n => n.notification)
+                .FirstOrDefaultAsync(p => p.id == userId);
             return user;
         }
 
@@ -84,36 +88,34 @@ namespace KozossegiAPI.Repo
                 return UserRelationshipStatus.Blocked;
 
             return UserRelationshipStatus.Stranger;
-            }
+        }
 
 
-        public async Task Delete(Friend request)
+        public void Delete(Friend request)
         {
             _context.Friendship.Remove(request);
         }
-
-        public async Task Put(Friend_notificationId friendship)
-        {
-            friendship.FriendshipSince = DateTime.Now;
-            await _context.Friendship.AddAsync(friendship);
-        }
-
+        
         public async Task<Friend?> FriendshipExists(Friend friendship)
         {
-            return _context.Friendship
-                .FirstOrDefault(friend =>
+            return await _context.Friendship
+                .FirstOrDefaultAsync(friend =>
                 friend.FriendId == friendship.FriendId && friend.UserId == friendship.UserId ||
                 friend.FriendId == friendship.UserId && friend.UserId == friendship.FriendId);
         }
 
-        public async Task<IEnumerable<Personal>> GetAllUserWhoHasBirthdayToday()
+        /// <summary>
+        /// Returns Friend Ids for the given user Id
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public async Task<List<int>> GetFriendIds(int userId)
         {
-            DateOnly today = DateOnly.FromDateTime(DateTime.Now);
-            var birthdayUsers = await _context.Personal
-                .Where(u => u.DateOfBirth.Value.Month == today.Month &&
-                            u.DateOfBirth.Value.Day == today.Day)
+            return await _context.Friendship.Where(friend =>
+                friend.FriendId == userId && friend.StatusId == 1 || 
+                friend.UserId == userId && friend.StatusId == 1)
+                .Select(u => u.FriendId == userId ? u.UserId : u.FriendId)
                 .ToListAsync();
-            return birthdayUsers;
         }
     }
 }
