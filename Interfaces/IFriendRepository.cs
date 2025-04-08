@@ -1,4 +1,5 @@
 ﻿using KozossegiAPI.Models;
+using KozossegiAPI.Services;
 
 namespace KozossegiAPI.Interfaces
 {
@@ -6,13 +7,12 @@ namespace KozossegiAPI.Interfaces
     {
         Task<IEnumerable<Personal_IsOnlineDto>> GetAll(int id);
         Task<IEnumerable<Personal>> GetAllFriendAsync(int id);
-        public Task<string> GetUserRelation(int userId, int viewerId);
-        public Task Delete(Friend request);
-        public Task Put(Friend_notificationId friendship);
+
         //public Task<List<Personal>> GetAllFriend(int userId);
         public Task<Friend?> FriendshipExists(Friend friendship);
         Task<Personal?> GetUserWithNotification(int userId);
         Task<IEnumerable<Personal>> GetAllFriendPersonalAsync(int userId);
-        Task MakeThemFriend(CreateNotification createNotification);
+        Task<UserRelationshipStatus> GetRelationStatusAsync(int userA, int userB);
+        void Delete(Friend request);
     }
 }
