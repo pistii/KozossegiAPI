@@ -37,8 +37,8 @@ namespace KozossegiAPI.Data
         public virtual DbSet<PostReaction> PostReaction { get; set; }
         public virtual DbSet<Study> Study { get; set; }
         public virtual DbSet<Settings> Settings { get; set; }
-
-
+        
+        
         protected override async void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -106,14 +106,6 @@ namespace KozossegiAPI.Data
                     .WithOne(_ => _.PersonalRoom)
                     .HasForeignKey(_ => _.FK_PersonalId);
 
-                /*
-                 * 
-                // Kapcsolat beállítása a Setting modellel
-                entity.HasOne(p => p.Setting)
-                    .WithOne(s => s.User)
-                    .HasForeignKey<Setting>(s => s.UserId)
-                    .OnDelete(DeleteBehavior.Cascade); // Ha a user törlődik, a setting is törlődik*
-                */
                 entity.HasOne(p => p.Settings)
                     .WithOne(p => p.personal)
                     .HasForeignKey<Settings>(s => s.FK_UserId)
