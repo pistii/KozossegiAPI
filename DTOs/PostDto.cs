@@ -9,34 +9,22 @@ namespace KozossegiAPI.DTOs
         {
             
         }
-        public PostDto(Personal author, int postedToUser, Post post, int? commentsQty = 0)
+        public PostDto(Personal author, string postedToUser, Post post, int? commentsQty = 0)
         {
             Post = post;
-            PostAuthor = new PostAuthor(author.avatar, author.firstName, author.middleName, author.lastName, author.id);
+            PostAuthor = new PostAuthor(author.avatar, author.firstName, author.middleName, author.lastName, author.users.PublicId);
+            IsAuthor = author.users.PublicId == postedToUser;
             PostedToUserId = postedToUser;
             CommentsQty = commentsQty;
         }
 
         public Post Post { get; set; }
         public PostAuthor PostAuthor { get; set; }
-        public int PostedToUserId { get; set; }
+        public bool IsAuthor { get; set; }
+        public string PostedToUserId { get; set; }
         public int? CommentsQty { get; set; }
     }
 
-    public class PostToUser
-    {
-        public PostToUser()
-        {
-            
-        }
-
-        public PostToUser(int Id)
-        {
-            this.Id = Id;
-        }
-
-        public int Id { get; set; }
-    }
 
     public class PostAuthor
     {
@@ -44,7 +32,7 @@ namespace KozossegiAPI.DTOs
         {
             
         }
-        public PostAuthor(string avatar, string firstName, string middleName, string lastName, int authorId)
+        public PostAuthor(string avatar, string firstName, string middleName, string lastName, string authorId)
         {
             Avatar = avatar;
             FirstName = firstName;
@@ -54,29 +42,43 @@ namespace KozossegiAPI.DTOs
         }
 
         public string? Avatar { get; set; }
-        public string? FirstName { get; set; }
+        public string FirstName { get; set; }
         public string? MiddleName { get; set; }
-        public string? LastName { get; set; }
-        public int AuthorId { get; set; }
+        public string LastName { get; set; }
+        public string AuthorId { get; set; }
 
     }
     public class CreatePostDto
     {
         public CreatePostDto()
         {
-
+            
         }
-        public CreatePostDto(Personal author, int postedToUserId, Post post, FileUpload file)
+        public CreatePostDto(string postedToUserId, string message, FileUpload file)
         {
-            post = new Post(post.Id, post.PostContent, post.Likes, post.Dislikes);
-            PostAuthor = new PostAuthor(author.avatar, author.firstName, author.middleName, author.lastName, author.id);
+            Message = message;
             PostedToUserId = postedToUserId;
-            FileUpload = new FileUpload(file.Name, file.Type, file.File, file.File.Length);
+            FileUpload = file;
         }
 
         public FileUpload? FileUpload { get; set; }
-        public Post post { get; set; }
-        public PostAuthor PostAuthor { get; set; }
-        public int PostedToUserId { get; set; }
+        public string Message { get; set; }
+        public string PostedToUserId { get; set; }
+    }
+
+    public class UpdatePostDto
+    {
+        public UpdatePostDto()
+        {
+
+        }
+        public UpdatePostDto(string token, string message, FileUpload file)
+        {
+            Message = message;
+            FileUpload = file;
+        }
+        public string Token { get; set; }
+        public FileUpload? FileUpload { get; set; }
+        public string Message { get; set; }
     }
 }
