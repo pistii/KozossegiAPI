@@ -26,7 +26,7 @@ namespace KozossegiAPI.Controllers
         private readonly IFriendRepository _friendRepository;
 
         private readonly IImageRepository _imageRepository;
-        private readonly IPostRepository<PostDto> _postRepository;
+        private readonly IPostRepository _postRepository;
         private readonly IUserRepository<user> _userRepository;
         private readonly ISettingRepository _settingRepository;
 
@@ -42,7 +42,7 @@ namespace KozossegiAPI.Controllers
             IJwtUtils jwtUtils,
 
             IFriendRepository friendRepository,
-            IPostRepository<PostDto> postRepository,
+            IPostRepository postRepository,
             IImageRepository imageRepository,
             IUserRepository<user> userRepository,
             ISettingRepository settingRepository,
@@ -94,62 +94,26 @@ namespace KozossegiAPI.Controllers
             return Ok(permissions);
         }
 
-        //[Authorize]
-        //[HttpGet("get/userData")]
-        //public async Task<IActionResult> GetInitUserData()
-        //{
-        //    int userId = GetUserId();
-
-        //    //UserDetailsDto userDetailsDto = new();
-
-        //    return Ok();
-        //}
-
         [Authorize]
-        [HttpGet("myProfile")]
-        public async Task<IActionResult> GetMyProfile()
+        [HttpGet("get/userData")]
+        public async Task<IActionResult> GetInitUserData()
         {
-            int userId = GetUserId();
-            var user = await _userRepository.GetByIdAsync<Personal>(userId);
-            if (user == null) return NotFound("User not found");
+            user user = GetUser();
 
-            try
+            var friends = await _friendRepository.GetAllFriendAsync(user.userID);
+            var posts = await _postRepository.GetAllPost(user.userID, user.PublicId);
+            
+            var convertedFriends = friends.Select(f => new UserDetailsDto(f)).ToList();
+
+            ProfilePageDto profilePageDto = new()
             {
-                var postsTask = _postRepository.GetAllPost(user.id, userId, 1);
-                var friendsTask = _friendRepository.GetAll(user.id);
+                Friends = convertedFriends,
+                Posts = posts,
+            };
 
-                await Task.WhenAll(postsTask, friendsTask);
-
-                var posts = await postsTask;
-                var friends = await friendsTask;
-
-
-                ProfilePageDto profilePageDto = new()
-                {
-                    PersonalInfo = user,
-                    Posts = posts,
-                    Friends = friends.ToList(),
-                    Identity = UserRelationshipStatus.Self,
-                    settings = new()
-                    {
-                        //isOnlineEnabled = user.users.isOnlineEnabled,
-                        //RemindUserOfUnfulfilledReg = reminduser,
-                        //PostEnabled = userCanPost
-                    },
-                    PublicId = user.users.PublicId
-                        
-                };
-                return Ok(profilePageDto);
-
-            }
-            catch (Exception ex)
-            {
-                
-                Console.WriteLine("Something went wrong.... " + ex);
-            }
-
-            return NotFound();
+            return Ok(profilePageDto);
         }
+
 
         //TODO: The method itself is not so relevant and if there will be implemented an interval communication between the server, this method also can be used cabcatenated
         /// <summary>
