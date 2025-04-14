@@ -5,39 +5,53 @@ using KozossegiAPI.DTOs;
 using KozossegiAPI.Interfaces;
 using KozossegiAPI.Models;
 using KozossegiAPI.Models.Cloud;
+using KozossegiAPI.Repo.Helper;
 using Microsoft.EntityFrameworkCore;
 
 namespace KozossegiAPI.Repo
 {
-    public class PostRepository : GenericRepository<PostDto>, IPostRepository<PostDto>
+    public class PostRepository : GenericRepository<PostDto>, IPostRepository
     {
         private readonly DBContext _context;
-        private IStorageRepository _storageController;
+        private readonly IStorageRepository _storageRepository;
+        private readonly IFriendRepository _friendRepository;
+        private readonly IPermissionHelper _permissionHelper;
 
         public PostRepository(
             DBContext context,
-            IStorageRepository storageRepository
+            IStorageRepository storageRepository,
+            IFriendRepository friendRepository,
+            IPermissionHelper permissionHelper
             ) : base( context )
         {
             _context = context;
-            _storageController = storageRepository;
+            _storageRepository = storageRepository;
+            _friendRepository = friendRepository;
+            _permissionHelper = permissionHelper;
+        }
+
+        public async Task<bool> UserCanCreatePost(int postAuthorId, int postedToUserId)
+        {
+            var postedToUserWithSetting = await GetWithIncludeAsync<Settings, Personal>(i => i.personal, p => p.FK_UserId == postedToUserId);
+            var status = await _friendRepository.GetRelationStatusAsync(postAuthorId, postedToUserWithSetting.FK_UserId);
+            return _permissionHelper.CanPostAccordingToSettings(status, postedToUserWithSetting.PostCreateEnabledToId);
         }
 
         /// <summary>
         /// Get all post with comments
-        /// </summary>
+        /// </summary>_pos
         /// <param name="profileId"></param>
         /// <param name="userId"></param>
         /// <param name="currentPage"></param>
         /// <param name="itemPerRequest"></param>
         /// <returns>PostDto as post with the comments and the media content.</returns>
-        public async Task<ContentDto<PostDto>> GetAllPost(int toId, int authorId, int currentPage = 1, int itemPerRequest = 10)
+        public async Task<ContentDto<PostDto>> GetAllPost(int profileId, string publicUserId, int currentPage = 1, int itemPerRequest = 10)
         {
             var sortedItems = await _context.PersonalPost
             .Include(p => p.Posts.MediaContent)
             .Include(c => c.Posts.PostComments)
             .Include(p => p.Posts.PostReactions)
-            .Where(p => p.PostedToId == toId)
+            .Where(p => p.PostedToId == profileId)
             .OrderByDescending(_ => _.Posts.DateOfPost)
             .AsNoTracking()
             .Select(p => new PostDto
@@ -47,12 +61,13 @@ namespace KozossegiAPI.Repo
                     p.Personal.firstName,
                     p.Personal.middleName,
                     p.Personal.lastName,
-                    p.Personal.id),
+                    p.Personal.users.PublicId),
                 Post = new Post(p.PostId, p.Posts.Token, p.Posts.PostContent, 
                 p.Posts.PostReactions.Count(c => c.ReactionTypeId == 1), //like
                  p.Posts.PostReactions.Count(c => c.ReactionTypeId == 2), //dislike
-                p.Posts.DateOfPost, p.Posts.MediaContent),
-                PostedToUserId = toId,
+                p.Posts.DateOfPost, p.Posts.LastModified, p.Posts.MediaContent),
+                PostedToUserId = publicUserId,
+                IsAuthor = p.Personal.users.PublicId == publicUserId,
                 CommentsQty = p.Posts.PostComments.Count,
             })
             .ToListAsync();
@@ -64,7 +79,7 @@ namespace KozossegiAPI.Repo
             return new ContentDto<PostDto>(returnValue, totalPages);
         }
 
-        public async Task<List<PostDto>> GetImagesAsync(int userId)
+        public async Task<List<PostDto>> GetImagesAsync(int userId, string publicId)
         {
             var sortedItems = await _context.PersonalPost
             .Include(p => p.Posts.MediaContent)
@@ -78,19 +93,20 @@ namespace KozossegiAPI.Repo
                     p.Personal.firstName,
                     p.Personal.middleName,
                     p.Personal.lastName,
-                    p.Personal.id),
-                Post = new Post(p.PostId, p.Posts.Token, p.Posts.PostContent, p.Posts.Likes, p.Posts.Dislikes, p.Posts.DateOfPost, p.Posts.MediaContent),
-                PostedToUserId = userId,
+                    p.Personal.users.PublicId),
+                Post = new Post(p.PostId, p.Posts.Token, p.Posts.PostContent, p.Posts.Likes, p.Posts.Dislikes, p.Posts.DateOfPost, p.Posts.LastModified, p.Posts.MediaContent),
+                PostedToUserId = publicId,
             })
             .ToListAsync();
 
             return sortedItems;
         }
 
-        public async Task<Post> GetPostByTokenAsync(string token)
+        public async Task<PersonalPost> GetPostByTokenAsync(string token)
         {
-            var post = await _context.Post
-                .FirstOrDefaultAsync(p => p.Token == token);
+            var post = await _context.PersonalPost
+                .Include(p => p.Posts)
+                .FirstOrDefaultAsync(p => p.Posts.Token == token);
             if (post == null) return null;
             return post;
         }
@@ -105,22 +121,18 @@ namespace KozossegiAPI.Repo
             return post;
         }
 
-        public async Task<Post> Create(CreatePostDto postDto)
+        public async Task<Post> Create(CreatePostDto postDto, Personal author, int postedToUserId )
         {
-            Post newPost = new()
-            {
-                Token = Guid.NewGuid().ToString(),
-                PostContent = postDto.post.PostContent
-            };
+            Post newPost = new(postDto.Message);
 
             await InsertSaveAsync(newPost);
 
             //Create new junction table with user and postId
             PersonalPost personalPost = new PersonalPost()
             {
-                AuthorId = postDto.PostAuthor.AuthorId,
+                AuthorId = author.id,
                 PostId = newPost.Id,
-                PostedToId = postDto.PostedToUserId
+                PostedToId = postedToUserId, 
             };
 
 
@@ -137,8 +149,8 @@ namespace KozossegiAPI.Repo
             {
                 MediaContent media = new(dto.Id, newData.Name, newData.Type, newData.File.Length); //mentés az adatbázisba
                 
-                var name = await _storageController.AddFile(newData, BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
-                media.FileName = name;
+                var name = await _storageRepository.AddFile(newData, BucketSelector.IMAGES_BUCKET_NAME); //Csak a fájl neve tér vissza
+                media.FileName = name; //Egyelőre felülírjuk, de lehetne originalName a fájlhoz.
                 await InsertSaveAsync(media);
             }
         }
@@ -154,28 +166,19 @@ namespace KozossegiAPI.Repo
             await SaveAsync();
         }
 
-        public async Task LikePost(ReactionDto postReaction, Post post, user user)
+        public async Task LikePost(int postId, int userId, ReactionType reactionType)
         {
-            PostReaction reaction = new()
-            {
-                PostId = post.Id,
-                ReactionTypeId = 1,
-                UserId = user.userID
-            };
+            PostReaction reaction = new(postId, userId, reactionType);
             _context.PostReaction.Add(reaction);
             await _context.SaveChangesAsync();
         }
 
-        public async Task DislikePost(ReactionDto postReaction, Post post, user user)
+        public async Task DislikePost(int postId, int userId, ReactionType reactionType)
         {
-            PostReaction reaction = new()
-            {
-                PostId = post.Id,
-                ReactionTypeId = 2,
-                UserId = user.userID
-            };
+            PostReaction reaction = new(postId, userId, reactionType);
             _context.PostReaction.Add(reaction);
             await _context.SaveChangesAsync();
         }
+
     }
 }

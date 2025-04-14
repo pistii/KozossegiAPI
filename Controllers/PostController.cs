@@ -1,42 +1,33 @@
-﻿using KozossegiAPI.Controllers.Cloud;
-using KozossegiAPI.DTOs;
+﻿using KozossegiAPI.DTOs;
 using KozossegiAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using KozossegiAPI.Interfaces;
 using KozossegiAPI.Auth.Helpers;
+using KozossegiAPI.Repo;
 
 namespace KozossegiAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
-    public class PostController : ControllerBase
+    [Authorize]
+    public class PostController : BaseController<PostController>
     {
-        private IStorageRepository? _storageController;
-        private INotificationRepository _InotificationRepository;
-        private IPostRepository<PostDto> _PostRepository;
-        private IChatRepository<ChatRoom, Personal> _chatRepository;
-        //private IPostPhotoStorage _postPhotoStorage;
+        private readonly IPostRepository _postRepository;
+        private readonly INotificationRepository _notificationRepository;
 
         public PostController(
-
-            IPostRepository<PostDto> postRepository,
-            //IPostPhotoStorage postPhotoStorage,
-            IStorageRepository? storageController = null,
-            INotificationRepository notificationRepository = null,
-            IChatRepository<ChatRoom, Personal> chatRepository = null)
+            IPostRepository postRepository,
+            INotificationRepository notificationRepository
+            )
         {
-            _storageController = storageController;
-            _InotificationRepository = notificationRepository;
-            _PostRepository = postRepository;
-            _chatRepository = chatRepository;
-            //_postPhotoStorage = postPhotoStorage;
+            _postRepository = postRepository;
+            _notificationRepository = notificationRepository;
         }
 
         [HttpGet("get/{token}")]
         public async Task<ActionResult<Post>> GetByTokenAsync(string token)
         {
-            var res = await _PostRepository.GetPostByTokenAsync(token);
+            var res = await _postRepository.GetPostByTokenAsync(token);
             if (res != null)
             {
                 return Ok(res);
@@ -45,169 +36,149 @@ namespace KozossegiAPI.Controllers
         }
 
 
-        [HttpGet("getAll/{profileId}/{userId}/{currentPage}/")]
-        [HttpGet("getAll/{profileId}/{userId}/{currentPage}/{itemPerRequest}/")]
-        public async Task<ContentDto<PostDto>> GetAllPost(int profileId, int userId, int currentPage = 1, int itemPerRequest = 10)
+        [HttpGet("getAll/{profileId}/{currentPage}/")]
+        [HttpGet("getAll/{profileId}/{currentPage}/{itemPerRequest}/")]
+        public async Task<IActionResult> GetAllPost(string profileId, int currentPage = 1, int itemPerRequest = 10)
         {
-            var sortedItems = await _PostRepository.GetAllPost(profileId, userId, currentPage, itemPerRequest);
-            return sortedItems;
+            var userId = GetUserId();
+            var publishedToUser = await _postRepository.GetByPublicIdAsync<user>(profileId);
+            if (profileId == null) return NotFound("User not found");
+
+            var sortedItems = await _postRepository.GetAllPost(publishedToUser.userID, profileId, currentPage, itemPerRequest);
+            return Ok(sortedItems);
         }
 
 
-        [HttpGet("getPhotos/{profileId}/{cp}/{ipr}")]
-        public async Task<ContentDto<PostDto>> GetImages(int profileId, int cp = 1, int ipr = 10)
+        //[HttpGet("getPhotos/{profileId}/{cp}/{ipr}")]
+        //public async Task<ContentDto<PostDto>> GetImages(int profileId, int cp = 1, int ipr = 10)
+        //{
+        //    var sortedItems = await _postRepository.GetImagesAsync(profileId);
+        //    if (sortedItems == null) return null;
+        //    int totalPages = await _postRepository.GetTotalPages(sortedItems, ipr);
+
+        //    var returnValue = _postRepository.Paginator(sortedItems, cp, ipr).ToList();
+
+        //    return new ContentDto<PostDto>(returnValue, totalPages);
+        //}
+
+
+        [HttpPost("new")]
+        public async Task<ActionResult<PostDto>> CreatePost([FromForm] CreatePostDto dto)
         {
-            var sortedItems = await _PostRepository.GetImagesAsync(profileId);
-            if (sortedItems == null) return null;
-            int totalPages = await _PostRepository.GetTotalPages(sortedItems, ipr);
+            var userId = GetUserId();
 
-            var returnValue = _PostRepository.Paginator(sortedItems, cp, ipr).ToList();
+            var authorUser = await _postRepository.GetByIdAsync<Personal>(userId);
+            user? postedToUser = await _postRepository.GetByPublicIdAsync<user>(dto.PostedToUserId);
+            if (postedToUser == null || authorUser == null) return NotFound("Invalid user id");
 
-            return new ContentDto<PostDto>(returnValue, totalPages);
-        }
+            bool canPost = await _postRepository.UserCanCreatePost(postedToUser.userID, userId);
+            if (!canPost) return BadRequest("You cannot create post for this user.");
 
-        //[Authorize]
-        [HttpPost]
-        [Route("new")]
-        public async Task<ActionResult<PostDto>> Post([FromForm] CreatePostDto dto)
-        {
-            //var userFromHeader = (user?)HttpContext.Items["User"];
-            //if (userFromHeader == null) return Unauthorized();
-            
+            var createdPost = await _postRepository.Create(dto, authorUser, authorUser.id);
 
-            var authorUser = await _PostRepository.GetByIdAsync<Personal>(dto.PostAuthor.AuthorId);
-            var postedToUser = await _PostRepository.GetByIdAsync<Personal>(dto.PostedToUserId);
-            if (authorUser != null)
+            if (dto.FileUpload != null)
             {
-                var createdPost = await _PostRepository.Create(dto);
-
-                if (dto.FileUpload != null) {
-                    await _PostRepository.UploadFile(dto.FileUpload, createdPost);
-                }
-
-                //var closerFriends = _chatRepository.GetChatPartenterIds(userFromHeader.userID);
-
-                //TODO: send notification as below
-                //foreach (var friendId in closerFriends)
-                //{
-                //    //TODO: Ötlet, ahelyett hogy mindegyik user táblájához csatolok egy külön értesítést, lehetne egyet, amit vagy külön táblába, vagy külön rekorddal kezelve követve EGYSZER mentenék el. Ezáltal egy "feliratkozási" tulajdonságot készítve. 
-                //    if (friendId != 0)
-                //    {
-                //        NotificationWithAvatarDto notificationWithAvatarDto =
-                //            new NotificationWithAvatarDto(
-                //                friendId,
-                //                authorUser.id,
-                //                authorUser.avatar,
-                //                dto.postContent,
-                //                NotificationType.NewPost);
-                //        await _InotificationRepository.RealtimeNotification(friendId, notificationWithAvatarDto);
-
-                //        await _PostRepository.InsertSaveAsync<Notification>(notificationWithAvatarDto);
-                //    }
-                //}
-                //await _PostRepository.SaveAsync();
-
-                PostDto postDto = new PostDto(authorUser, postedToUser.id, createdPost);
-                return Ok(postDto);
+                await _postRepository.UploadFile(dto.FileUpload, createdPost);
             }
-            return NotFound();
+
+            //Create and send notification if online
+            if (authorUser.id != userId)
+            {
+                CreateNotification createNotification = new(authorUser.id, postedToUser.userID, NotificationType.NewPost);
+
+                await _notificationRepository.SendNotification(postedToUser.userID, authorUser, createNotification);
+            }
+
+            PostDto postDto = new PostDto(authorUser, postedToUser.PublicId, createdPost);
+            return Ok(postDto);
         }
 
 
-        [HttpPost("like")]
-        [Authorize]
-        public async Task<IActionResult> LikePost(ReactionDto reactionDto)
+        [HttpGet("like/{postToken}")]
+        public async Task<IActionResult> LikePost(string postToken)
         {
-            var user = (user)HttpContext.Items["User"];
+            var user = GetUser();
             string payload = "";
 
-            if (reactionDto.Type != "like")
-            {
-                return BadRequest();
-            }
+            var post = await _postRepository.GetPostWithReactionsByTokenAsync(postToken);
+            if (post == null) return NotFound();
 
-            var post = await _PostRepository.GetPostWithReactionsByTokenAsync(reactionDto.Token);
-            if (post == null)
+            var existingReaction = post.PostReactions.FirstOrDefault(p => p.UserId == user.userID);
+            
+            if (existingReaction == null)
             {
-                return NotFound();
+                PostReaction reaction = new(post.Id, user.userID, ReactionType.Like);
+                await _postRepository.InsertSaveAsync(reaction);
             }
-
-            //Check if user didn't liked the post
-            if (!post.PostReactions.Any(p => p.UserId == user.userID))
+            else if (existingReaction.ReactionTypeId == (int)ReactionType.Dislike)
             {
-                await _PostRepository.LikePost(reactionDto, post, user);
+                existingReaction.ReactionTypeId = (int)ReactionType.Like;
+                await _postRepository.UpdateThenSaveAsync(existingReaction);
+                payload = "like";
             }
-            else  //already has a reaction. If dislike, make a like action, othervise should remove the like
+            else 
             {
-                var itemToRemove = post.PostReactions.FirstOrDefault(p => p.UserId == user.userID);
-                if (itemToRemove.ReactionTypeId == 2)
-                {
-                    await _PostRepository.LikePost(reactionDto, post, user);
-                    payload = "liked";
-                }
-                await _PostRepository.RemoveThenSaveAsync(itemToRemove);
+                await _postRepository.RemoveThenSaveAsync(existingReaction);
+                payload = "remove";
             }
             return Ok(payload);
         }
 
-        [HttpPost("dislike")]
-        [Authorize]
-        public async Task<IActionResult> DislikePost(ReactionDto reactionDto)
+        [HttpGet("dislike/{postToken}")]
+        public async Task<IActionResult> DislikePost(string postToken)
         {
-            var user = (user)HttpContext.Items["User"];
+            var user = GetUser();
             string payload = "";
 
-            if (reactionDto.Type != "dislike")
-            {
-                return BadRequest();
-            }
+            var post = await _postRepository.GetPostWithReactionsByTokenAsync(postToken);
+            if (post == null) return NotFound();
 
-            var post = await _PostRepository.GetPostWithReactionsByTokenAsync(reactionDto.Token);
-            if (post == null)
+            var existingReaction = post.PostReactions.FirstOrDefault(p => p.UserId == user.userID);
+            if (existingReaction == null)
             {
-                return NotFound();
+                PostReaction reaction = new(post.Id, user.userID, ReactionType.Dislike);
+                await _postRepository.InsertSaveAsync(reaction);
             }
-
-
-            //Check if user didn't disliked the post
-            if (!post.PostReactions.Any(p => p.UserId == user.userID))
+            else if (existingReaction.ReactionTypeId == (int)ReactionType.Like)
             {
-                await _PostRepository.DislikePost(reactionDto, post, user);
+                existingReaction.ReactionTypeId = (int)ReactionType.Dislike;
+                await _postRepository.UpdateThenSaveAsync(existingReaction);
+                payload = "dislike";
             }
-            else //already has a reaction. If like, make a dislike action, othervise should remove the dislike
+            else
             {
-                var itemToRemove = post.PostReactions.FirstOrDefault(p => p.UserId == user.userID);
-                if (itemToRemove.ReactionTypeId == 1)
-                {
-                    await _PostRepository.DislikePost(reactionDto, post, user);
-                    payload = "disliked";
-                }
-                await _PostRepository.RemoveThenSaveAsync(itemToRemove);
+                await _postRepository.RemoveThenSaveAsync(existingReaction);
+                payload = "remove";
             }
             return Ok(payload);
         }
 
         [HttpPut("update")]
-        public async Task<IActionResult> Put([FromForm] CreatePostDto data)
+        public async Task<IActionResult> Put([FromForm] UpdatePostDto data)
         {
-            var post = await _PostRepository.GetPostByTokenAsync(data.post.Token);
-            if (post == null)
-                return NotFound();
+            var user = GetUser();
 
-            post.PostContent = data.post.PostContent;
-            post.LastModified = DateTime.Now;
-            await _PostRepository.UpdateThenSaveAsync(post);
-            return Ok();
+            var post = await _postRepository.GetPostByTokenAsync(data.Token);
+            if (post == null) return NotFound();
+            if (post.Posts.MediaContent != null) return BadRequest("You cannot upload other file for now.");
+            if (post.AuthorId != user.userID) return Unauthorized();
+
+            post.Posts.PostContent = data.Message;
+            post.Posts.LastModified = DateTime.Now;
+
+            await _postRepository.UpdateThenSaveAsync(post.Posts);
+            return Ok(post.Posts);
         }
 
         [HttpDelete("delete/{token}")]
         public async Task<IActionResult> Delete(string token)
         {
-            var post = await _PostRepository.GetPostByTokenAsync(token);
+            var post = await _postRepository.GetPostByTokenAsync(token);
             if (post == null)
                 return NotFound();
+            else if (post.AuthorId != GetUserId()) return Unauthorized();
 
-            await _PostRepository.RemovePostAsync(post);
+            await _postRepository.RemovePostAsync(post.Posts);
             return Ok();
         }
     }

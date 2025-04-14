@@ -6,4 +6,10 @@
         public string Name { get; set; }
         public PostReaction PostReaction { get; set; }
     }
+
+    public enum ReactionType
+    {
+        Like = 1,
+        Dislike = 2,
+    }
 }

@@ -11,18 +11,16 @@ namespace KozossegiAPI.Models
     {
         public Post()
         {
-            
+            this.Token = Guid.NewGuid().ToString();
         }
 
-        public Post(int PostId, string content, int likes, int dislikes)
+        public Post(string content)
         {
-            Id = PostId;
-            PostContent = content;
-            Likes = likes;
-            Dislikes = dislikes;
+            this.PostContent = content;
+            this.Token = Guid.NewGuid().ToString();
         }
 
-        public Post(int PostId, string token, string content, int likes, int dislikes, DateTime postDate, MediaContent? mediaContent)
+        public Post(int PostId, string token, string content, int likes, int dislikes, DateTime postDate, DateTime? lastModified, MediaContent? mediaContent)
         {
             Id = PostId;
             Token = token;
@@ -30,6 +28,7 @@ namespace KozossegiAPI.Models
             Likes = likes;
             Dislikes = dislikes;
             DateOfPost = postDate;
+            LastModified = lastModified;
             MediaContent = mediaContent;
         }
 
@@ -39,7 +38,7 @@ namespace KozossegiAPI.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         [StringLength(36)]
-        public string Token { get; set; } = new Guid().ToString(); //Generates an empty guid in the next format: 00000000-0000-0000-0000-000000000000
+        public string Token { get; set; }
         public int Likes { get; set; } = 0;
         public int Dislikes { get; set; } = 0;
         public DateTime DateOfPost { get; set; } = DateTime.Now;
