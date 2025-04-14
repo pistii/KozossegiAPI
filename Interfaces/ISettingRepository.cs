@@ -7,6 +7,7 @@ namespace KozossegiAPI.Interfaces
     {
         Task<Personal?> GetPersonalWithSettingsAndUserAsync(int userId);
         Task<SettingDto?> GetSettings(int userId);
+        Task<Settings?> GetUserSettings(int userId);
         Task UpdateChanges(Personal user, SettingDto userInfoDTO);
     }
 }

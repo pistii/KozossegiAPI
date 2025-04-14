@@ -85,5 +85,9 @@ namespace KozossegiAPI.Repo
             await  UpdateThenSaveAsync(user);
         }
 
+        public async Task<Settings?> GetUserSettings(int userId)
+        {
+            return await _dbContext.Settings.FirstOrDefaultAsync(u => u.FK_UserId == userId);
+        }
     }
 }

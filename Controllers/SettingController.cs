@@ -26,12 +26,13 @@ namespace KozossegiAPI.Controllers
 
         [Authorize]
         [HttpGet("get/{id}")]
-        public async Task<IActionResult> GetUserData(int id)
+        public async Task<IActionResult> GetUserData(string id)
         {
-            object? user = await _settingRepository.GetSettings(id);
-            if (user != null)
+            var user = await _settingRepository.GetByPublicIdAsync<user>(id);
+            var userSettings = await _settingRepository.GetSettings(user.userID);
+            if (userSettings != null)
             {
-                return Ok(user);
+                return Ok(userSettings);
             }
             return BadRequest();
         }
