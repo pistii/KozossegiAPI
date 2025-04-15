@@ -16,34 +16,32 @@ namespace KozossegiAPI.Repo
             _context = context;
         }
 
-        public async Task<Comment> GetByTokenAsync(string commentToken)
+
+        public async Task<Comment?> GetCommentByTokenAsync(string token)
         {
-            return await _context.Comment.FirstOrDefaultAsync(p => p.CommentToken == commentToken);
+            var comment = await _context.Comment
+                .Include(c => c.CommentReactions)
+                .FirstOrDefaultAsync(p => p.PublicId == token);
+            return comment;
         }
 
-        public async Task<List<CommentDto>> GetCommentsAsync(int postId)
+        public async Task<ContentDto<CommentDto>> GetCommentsAsync(string userPublicId, int postId, int currentPage = 1, int itemPerPage = 20)
         {
             var sortedItems = await _context.Comment
-           .Where(p => p.PostId == postId)
-           .OrderByDescending(_ => _.CommentDate)
-           .AsNoTracking()
-           .Include(p => p.AuthorPerson)
-            .Select(p =>
-                new CommentDto()
-                {
-                    CommentId = p.commentId,
-                    CommentDate = p.CommentDate,
-                    CommentToken = p.CommentToken,
-                    CommentText = p.CommentText,
-                    LastModified = p.LastModified,
-                    CommentAuthor = new PersonalDto(p.AuthorPerson.id, p.AuthorPerson.firstName, p.AuthorPerson.middleName,
-                   p.AuthorPerson.lastName, p.AuthorPerson.PlaceOfBirth, p.AuthorPerson.avatar,
-                   p.AuthorPerson.DateOfBirth, p.AuthorPerson.PlaceOfBirth,
-                   p.AuthorPerson.Profession, p.AuthorPerson.Workplace)
-                })               
-           .ToListAsync();
+                .Include(c => c.CommentReactions)
+                .Include(p => p.AuthorPerson)
+                .ThenInclude(u => u.users)
+                .Where(p => p.PostId == postId)
+                .OrderByDescending(_ => _.CommentDate)
+                .AsNoTracking()
+                .Select(p =>
+                new CommentDto(p, p.AuthorPerson))
+                .ToListAsync();
 
-            return sortedItems;
+            var returnValue = Paginator(sortedItems, currentPage, itemPerPage).ToList();
+            int totalPages = await GetTotalPages(sortedItems, itemPerPage);
+
+            return new ContentDto<CommentDto>(returnValue, totalPages);
         }
 
         public async Task<CommentDto> Create(int postId, int authorId, string message)
@@ -52,7 +50,7 @@ namespace KozossegiAPI.Repo
             {
                 PostId = postId,
                 FK_AuthorId = authorId,
-                CommentToken = Guid.NewGuid().ToString(),
+                PublicId = Guid.NewGuid().ToString(),
                 CommentDate = DateTime.Now,
                 CommentText = message
             };
@@ -60,7 +58,7 @@ namespace KozossegiAPI.Repo
             await InsertSaveAsync(newComment);
             CommentDto dto = new CommentDto(newComment);
             Personal author = await GetByIdAsync<Personal>(authorId);
-            PersonalDto personalDto = new(authorId, author.firstName, author.middleName, author.lastName, author.PlaceOfResidence, author.avatar, author.DateOfBirth, author.PlaceOfBirth, author.Profession, author.Workplace);
+            PostAuthor personalDto = new PostAuthor(author.avatar, author.firstName, author.middleName, author.lastName, author.users.PublicId);
             dto.CommentAuthor = personalDto;
             return dto;
         }

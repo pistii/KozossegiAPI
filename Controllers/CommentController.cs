@@ -1,19 +1,23 @@
-﻿using KozossegiAPI.DTOs;
+﻿using FirebaseAdmin.Auth;
+using KozossegiAPI.Auth.Helpers;
+using KozossegiAPI.DTOs;
 using KozossegiAPI.Interfaces;
 using KozossegiAPI.Models;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.Design;
 
 namespace KozossegiAPI.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
-    public class CommentController : ControllerBase
+    public class CommentController : BaseController<CommentController>
     {
         private readonly ICommentRepository _commentRepository;
-        private readonly IPostRepository<PostDto> _postRepository;
+        private readonly IPostRepository _postRepository;
         public CommentController(
             ICommentRepository commentRepository,
-            IPostRepository<PostDto> postRepository
+            IPostRepository postRepository
             )
         {
             _commentRepository = commentRepository;
@@ -32,36 +36,35 @@ namespace KozossegiAPI.Controllers
         }
 
         [HttpGet("get/{postToken}/{cp}")]
-        public async Task<IActionResult> GetSome(string postToken, int cp)
+        public async Task<IActionResult> GetComments(string postToken, int cp)
         {
+            var user = GetUser();
             var post = await _postRepository.GetPostByTokenAsync(postToken);
             if (post == null) return NotFound();
 
 
-            var comments = await _commentRepository.GetCommentsAsync(post.Id);
+            var comments = await _commentRepository.GetCommentsAsync(user.PublicId, post.Posts.Id, cp);
 
-            var commentsToReturn = _commentRepository.Paginator(comments, cp);
-            return Ok(commentsToReturn);
+            return Ok(comments);
         }
 
 
-        //Searches the post by Id and adds a comment for it
-        [HttpPost]
-        [Route("new")]
-        public async Task<IActionResult> Post(NewCommentDto comment)
+        //Searches the post by Id and adds a comment to it
+        [HttpPost("create")]
+        public async Task<IActionResult> Post(CreateCommentDto comment)
         {
-            var user = await _commentRepository.GetByIdAsync<Personal>(comment.commenterId);
-            var post = await _postRepository.GetPostByTokenAsync(comment.postToken);
-            if (user == null || post == null) return NotFound();
+            user author = GetUser();
+            var post = await _postRepository.GetPostByTokenAsync(comment.PostToken);
+            if (author == null || post == null) return NotFound();
 
-            CommentDto newComment = await _commentRepository.Create(post.Id, user.id, comment.commentTxt);
+            CommentDto newComment = await _commentRepository.Create(post.Posts.Id, author.userID, comment.Message);
             return Ok(newComment);
         }
 
         [HttpDelete("delete/{token}")]
         public async Task<IActionResult> Delete(string token)
         {
-            Comment commentExist = await _commentRepository.GetByTokenAsync(token);
+            var commentExist = await _commentRepository.GetByPublicIdAsync<Comment>(token);
             if (commentExist != null)
             {
                 await _commentRepository.RemoveThenSaveAsync(commentExist);
@@ -78,7 +81,7 @@ namespace KozossegiAPI.Controllers
                 )
                 return BadRequest("Commenter and token cannot be empty.");
 
-            Comment existing = await _commentRepository.GetByTokenAsync(comment.CommentToken!);
+            var existing = await _commentRepository.GetByPublicIdAsync<Comment>(comment.CommentToken!);
             if (existing == null)
             {
                 return NotFound();
@@ -92,6 +95,68 @@ namespace KozossegiAPI.Controllers
             existing.CommentText = comment.CommentTxt;
             await _commentRepository.UpdateThenSaveAsync(existing);
             return Ok(existing);
+        }
+
+
+
+        [HttpGet("like/{commentId}")]
+        public async Task<IActionResult> LikeComment(string commentId)
+        {
+            var user = GetUser();
+            string payload = "";
+
+            var comment = await _commentRepository.GetCommentByTokenAsync(commentId);
+            if (comment == null) return NotFound();
+
+            var existingReaction = comment.CommentReactions.FirstOrDefault(p => p.FK_UserId == user.userID);
+
+            if (existingReaction == null)
+            {
+                CommentReaction reaction = new(comment.commentId, user.userID, ReactionType.Like);
+                await _commentRepository.InsertSaveAsync(reaction);
+            }
+            else if (existingReaction.ReactionTypeId == (int)ReactionType.Dislike)
+            {
+                existingReaction.ReactionTypeId = (int)ReactionType.Like;
+                await _commentRepository.UpdateThenSaveAsync(existingReaction);
+                payload = "like";
+            }
+            else
+            {
+                await _commentRepository.RemoveThenSaveAsync(existingReaction);
+                payload = "remove";
+            }
+            return Ok(payload);
+        }
+
+
+        [HttpGet("dislike/{commentId}")]
+        public async Task<IActionResult> DislikePost(string commentId)
+        {
+            var user = GetUser();
+            string payload = "";
+
+            var comment = await _commentRepository.GetCommentByTokenAsync(commentId);
+            if (comment == null) return NotFound();
+
+            var existingReaction = comment.CommentReactions.FirstOrDefault(p => p.FK_UserId == user.userID);
+            if (existingReaction == null)
+            {
+                CommentReaction reaction = new(comment.commentId, user.userID, ReactionType.Dislike);
+                await _commentRepository.InsertSaveAsync(reaction);
+            }
+            else if (existingReaction.ReactionTypeId == (int)ReactionType.Like)
+            {
+                existingReaction.ReactionTypeId = (int)ReactionType.Dislike;
+                await _commentRepository.UpdateThenSaveAsync(existingReaction);
+                payload = "dislike";
+            }
+            else
+            {
+                await _commentRepository.RemoveThenSaveAsync(existingReaction);
+                payload = "remove";
+            }
+            return Ok(payload);
         }
     }
 }

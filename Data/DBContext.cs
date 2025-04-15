@@ -27,6 +27,7 @@ namespace KozossegiAPI.Data
         public virtual DbSet<Post> Post { get; set; }
         public virtual DbSet<PersonalPost> PersonalPost { get; set; }
         public virtual DbSet<Comment>? Comment { get; set; }
+        public virtual DbSet<CommentReaction>? CommentReaction { get; set; }
         public virtual DbSet<Notification> Notification { get; set; }
         public virtual DbSet<UserNotification> UserNotification { get; set; }
         public virtual DbSet<PersonalChatRoom> PersonalChatRoom { get; set; }
@@ -176,12 +177,9 @@ namespace KozossegiAPI.Data
                     .WithMany(x => x.PostComments)
                     .HasForeignKey(i => i.PostId);
 
-                //TODO:URGENT
-                //entity.HasOne(p => p.Commenter)
-                //    .WithOne(p => p.Commenter)
-                //    .HasForeignKey<Comment>(x => x.FK_AuthorId);
-
-                
+                entity.HasMany(p => p.CommentReactions)
+                    .WithOne(p => p.Comment)
+                    .HasForeignKey(x => x.FK_CommentId);
             });
 
             //https://www.learnentityframeworkcore.com/configuration/many-to-many-relationship-configuration

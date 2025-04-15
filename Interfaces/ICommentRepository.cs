@@ -7,7 +7,7 @@ namespace KozossegiAPI.Interfaces
     public interface ICommentRepository : IGenericRepository<Comment>
     {
         public Task<CommentDto> Create(int postId, int authorId, string message);
-        Task<Comment> GetByTokenAsync(string commentToken);
-        Task<List<CommentDto>> GetCommentsAsync(int postId);
+        Task<Comment?> GetCommentByTokenAsync(string token);
+        Task<ContentDto<CommentDto>> GetCommentsAsync(string userPublicId, int postId, int currentPage = 1, int itemPerPage = 20);
     }
 }
