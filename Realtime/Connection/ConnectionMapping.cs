@@ -4,7 +4,7 @@ namespace KozossegiAPI.Realtime.Connection
 {
     public class ConnectionMapping : IMapConnections
     {
-        public ConcurrentDictionary<string, int> Connections;
+        private readonly ConcurrentDictionary<string, int> Connections;
         public ConnectionMapping()
         {
             Connections = new ConcurrentDictionary<string, int>();
