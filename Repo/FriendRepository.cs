@@ -71,6 +71,8 @@ namespace KozossegiAPI.Repo
         /// <returns>Status of the two user.</returns>
         public async Task<UserRelationshipStatus> GetRelationStatusAsync(int userA, int userB)
         {
+            if (userA == userB) return UserRelationshipStatus.Self;
+
             var relation = await _context.Friendship
                 .FirstOrDefaultAsync(f =>
                     (f.UserId == userA && f.FriendId == userB) ||
