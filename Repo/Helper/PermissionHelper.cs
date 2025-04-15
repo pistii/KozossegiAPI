@@ -58,7 +58,7 @@ namespace KozossegiAPI.Repo.Helper
             return relation;
         }
 
-        private static bool CanPostAccordingToSettings(UserRelationshipStatus status, int postSettingId)
+        public bool CanPostAccordingToSettings(UserRelationshipStatus status, int postSettingId)
         {
             return postSettingId switch
             {
