@@ -48,11 +48,8 @@ namespace KozossegiAPI.DTOs
 
     public class UpdateCommentDto
     {
-        [Required(AllowEmptyStrings = false, ErrorMessage = "CommentToken field is required")]
-        public string? CommentToken { get; set; }
-        [Required(ErrorMessage = "CommenterId field is required")]
-        public int commenterId { get; set; }
-        public string? CommentTxt { get; set; }
+        public required string CommentToken { get; set; }
+        public required string Message { get; set; }
     }
 
     public class GetComment

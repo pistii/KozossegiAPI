@@ -76,25 +76,19 @@ namespace KozossegiAPI.Controllers
         [HttpPut("update")]
         public async Task<IActionResult> Update(UpdateCommentDto comment)
         {
-            if (comment.commenterId == null || 
-                string.IsNullOrEmpty(comment.CommentToken)
-                )
-                return BadRequest("Commenter and token cannot be empty.");
-
-            var existing = await _commentRepository.GetByPublicIdAsync<Comment>(comment.CommentToken!);
-            if (existing == null)
-            {
-                return NotFound();
-            }
-            if (existing.FK_AuthorId != comment.commenterId)
-            {
-                return BadRequest("Mit szeretnél?");
-            }
+            user author = GetUser();
+            
+            var existing = await _commentRepository.GetByPublicIdAsync<Comment>(comment.CommentToken);
+            if (existing == null) return NotFound();
+            if (existing.FK_AuthorId != author.userID) return Unauthorized();
 
             existing.LastModified = DateTime.Now;
-            existing.CommentText = comment.CommentTxt;
+            existing.CommentText = comment.Message;
             await _commentRepository.UpdateThenSaveAsync(existing);
-            return Ok(existing);
+            
+            var personalData = await _postRepository.GetByIdAsync<Personal>(author.userID);
+            var dto = new CommentDto(existing, personalData);
+            return Ok(dto);
         }
 
 
