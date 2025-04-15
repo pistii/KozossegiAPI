@@ -27,14 +27,17 @@ namespace KozossegiAPI.Repo
         }
 
 
-
-        public async Task RealtimeNotification(int toUserId, GetNotification dto)
+        public async Task SendNotification(int receiverUserId, Personal author, CreateNotification createNotification)
         {
-            if (_connections.ContainsUser(toUserId))
-                foreach (var user in _connections.GetConnectionsById(toUserId))
-                {
-                    await _notificationHub.Clients.Client(user).ReceiveNotification(toUserId, dto);
-                }
+            var notification = new Notification(createNotification.AuthorId, "", createNotification.NotificationType, 
+                author.users!.PublicId,
+                author.avatar ?? "", 
+                createNotification.UserId);
+            await InsertSaveAsync(notification);
+
+            GetNotification getNotification = new(notification);
+            await _notificationHub.Clients.User(receiverUserId.ToString())
+                .ReceiveNotification(receiverUserId, getNotification);
         }
 
         /// <summary>
@@ -45,11 +48,13 @@ namespace KozossegiAPI.Repo
         {
             return await _context.UserNotification
                 .Include(n => n.notification)
-                .Include(n => n.personal)
+                    .ThenInclude(n => n.personal) //Ez a szerző 
+                        .ThenInclude(p => p.users)
+                .Include(n => n.personal) //Ez a receiver
                 .Where(n => n.UserId == userId).Select(n => new GetNotification(
-                        n.NotificationId,
-                        n.notification.AuthorId,
-                        n.UserId,
+                        n.notification.PublicId,
+                        n.notification.personal.users.PublicId,
+                        n.personal.users.PublicId,
                         n.notification.CreatedAt,
                         n.notification.Message,
                         n.IsRead,
@@ -58,35 +63,6 @@ namespace KozossegiAPI.Repo
                         n.personal.avatar
                     ))
                 .ToListAsync();
-        }
-
-        public async Task<Notification> CreateFriendRequestAcceptedNotification(CreateNotification createNotification)
-        {
-            createNotification.NotificationType = NotificationType.FriendRequestAccepted;
-            createNotification.Message = string.Empty;
-            
-            var created = await CreateNotification(createNotification);
-            return created;
-        }
-
-
-        public async Task UpdateNotification(CreateNotification cn)
-        {
-            var newNotification = new Notification(cn.AuthorId, cn.Message, cn.NotificationType);
-            await UpdateThenSaveAsync(newNotification);
-
-            UserNotification userNotification = new(cn.UserId, newNotification.Id, false);
-            await UpdateThenSaveAsync(userNotification);
-        }
-
-        public async Task<Notification> CreateNotification(CreateNotification cn)
-        {
-            var newNotification = new Notification(cn.AuthorId, cn.Message, cn.NotificationType);
-            await InsertSaveAsync(newNotification);
-
-            UserNotification userNotification = new(cn.UserId, newNotification.Id, false);
-            await InsertSaveAsync(userNotification);
-            return newNotification;
         }
     }
 }
