@@ -77,10 +77,6 @@ namespace KozossegiAPI.Controllers
             {
                 user.users.password = Bcrypt.HashPassword(userInfoDTO.SecuritySettings.pass1);
             }
-            else
-            {
-                return BadRequest("Password doesn't match");
-            }
 
 
             var result = await _studyRepository.UpdateStudies(userStudies);
