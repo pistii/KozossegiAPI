@@ -12,7 +12,6 @@ using KozossegiAPI.SMTP;
 using KozossegiAPI.Controllers.Cloud;
 using KozossegiAPI.Repo;
 using KozossegiAPI.Security;
-using KozossegiAPI.Services;
 using KozossegiAPI.Models;
 using KozossegiAPI.DTOs;
 using KozossegiAPI.Storage;
@@ -91,7 +90,7 @@ namespace KozossegiAPI
             services.AddScoped<IFriendRepository, FriendRepository>();
             services.AddScoped<IUserRepository<user>, UserRepository>();
             services.AddScoped<IChatRepository<ChatRoom, Personal>, ChatRepository>();
-            services.AddScoped<IPostRepository<PostDto>, PostRepository>();
+            services.AddScoped<IPostRepository, PostRepository>();
             services.AddScoped<ICommentRepository, CommentRepository>();
             services.AddScoped<IPersonalRepository, PersonalRepository>();
             services.AddScoped<INotificationRepository, NotificationRepository>();
@@ -104,6 +103,7 @@ namespace KozossegiAPI
             services.AddScoped<IStudyRepository, StudyRepository>();
             services.AddScoped<IMobileRepository<user>, MobileRepository>();
             services.AddScoped<IPermissionHelper, PermissionHelper>();
+            services.AddScoped<INavigationRepository, NavigationRepository>();
 
             //Custom UserID provider for signalR
             services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
@@ -128,7 +128,7 @@ namespace KozossegiAPI
                 options.EnableDetailedErrors = true;
                 
             });
-
+            
             var config = new MapperConfiguration(cfg =>
             {
 

@@ -185,13 +185,17 @@ namespace KozossegiAPI.Data
             //https://www.learnentityframeworkcore.com/configuration/many-to-many-relationship-configuration
             modelBuilder.Entity<PersonalPost>(entity =>
             {
-                entity.HasOne(p => p.Personal)
-                .WithMany(p => p.PersonalPosts)
-                .HasForeignKey(p => p.AuthorId);
+                modelBuilder.Entity<PersonalPost>()
+                .HasOne(p => p.Author)
+                .WithMany(a => a.SentPosts)
+                .HasForeignKey(p => p.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(p => p.Personal)
-                .WithMany(p => p.PersonalPosts)
-                .HasForeignKey(p => p.PostedToId);
+                modelBuilder.Entity<PersonalPost>()
+                .HasOne(p => p.Receiver)
+                .WithMany(p => p.ReceivedPosts)
+                .HasForeignKey(p => p.PostedToId)
+                .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(p => p.Posts)
                .WithMany(p => p.PersonalPosts)

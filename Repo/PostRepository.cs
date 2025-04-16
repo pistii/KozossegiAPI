@@ -57,17 +57,17 @@ namespace KozossegiAPI.Repo
             .Select(p => new PostDto
             {
                 PostAuthor = new PostAuthor(
-                    p.Personal.avatar,
-                    p.Personal.firstName,
-                    p.Personal.middleName,
-                    p.Personal.lastName,
-                    p.Personal.users.PublicId),
+                    p.Author.avatar,
+                    p.Author.firstName,
+                    p.Author.middleName,
+                    p.Author.lastName,
+                    p.Author.users.PublicId),
                 Post = new Post(p.PostId, p.Posts.Token, p.Posts.PostContent, 
                 p.Posts.PostReactions.Count(c => c.ReactionTypeId == 1), //like
                  p.Posts.PostReactions.Count(c => c.ReactionTypeId == 2), //dislike
                 p.Posts.DateOfPost, p.Posts.LastModified, p.Posts.MediaContent),
                 PostedToUserId = publicUserId,
-                IsAuthor = p.Personal.users.PublicId == publicUserId,
+                IsAuthor = p.Author.users.PublicId == publicUserId,
                 CommentsQty = p.Posts.PostComments.Count,
             })
             .ToListAsync();
@@ -89,11 +89,11 @@ namespace KozossegiAPI.Repo
             .Select(p => new PostDto
             {
                 PostAuthor = new PostAuthor(
-                    p.Personal.avatar,
-                    p.Personal.firstName,
-                    p.Personal.middleName,
-                    p.Personal.lastName,
-                    p.Personal.users.PublicId),
+                    p.Author.avatar,
+                    p.Author.firstName,
+                    p.Author.middleName,
+                    p.Author.lastName,
+                    p.Author.users.PublicId),
                 Post = new Post(p.PostId, p.Posts.Token, p.Posts.PostContent, p.Posts.Likes, p.Posts.Dislikes, p.Posts.DateOfPost, p.Posts.LastModified, p.Posts.MediaContent),
                 PostedToUserId = publicId,
             })

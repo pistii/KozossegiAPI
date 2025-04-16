@@ -21,14 +21,14 @@ namespace KozossegiAPI.Models
         
         [StringLength(30)]
         [Required(ErrorMessage = "First name is required")]
-        public string firstName { get; set; }
+        public string firstName { get; set; } = null!;
 
         [StringLength(30)]
         public string? middleName { get; set; }
         
         [StringLength(30)]
         [Required(ErrorMessage = "Last name is required")]
-        public string lastName { get; set; }
+        public string lastName { get; set; } = null!;
         public bool isMale { get; set; }
         [StringLength(70)]
         public string? PlaceOfResidence { get; set; }
@@ -64,14 +64,16 @@ namespace KozossegiAPI.Models
         public virtual ICollection<Relationship>? Relationships { get; set; } = new HashSet<Relationship>();
 
         [JsonIgnore]
-        //[InverseProperty("notification")]
         public virtual ICollection<UserNotification>? UserNotification { get; set; } = new HashSet<UserNotification>();
 
         [JsonIgnore]
         public virtual ICollection<PersonalChatRoom> PersonalChatRooms { get; set; } = new HashSet<PersonalChatRoom>();
 
         [JsonIgnore]
-        public virtual ICollection<PersonalPost> PersonalPosts { get; set; } = new HashSet<PersonalPost>();
+        public virtual ICollection<PersonalPost>? SentPosts { get; set; } // AuthorId
+        [JsonIgnore]
+        public virtual ICollection<PersonalPost>? ReceivedPosts { get; set; }  // PostedToId
+
         [JsonIgnore]
         public virtual Settings? Settings { get; set; } = new();
 
@@ -96,9 +98,9 @@ namespace KozossegiAPI.Models
         }
         public int id { get; set; }
         public string firstName { get; set; }
-        public string middleName { get; set; }
+        public string? middleName { get; set; }
         public string lastName { get; set; }
-        public string avatar { get; set; }
+        public string? avatar { get; set; }
         public bool isOnline { get; set; } = false;
     }
 }
