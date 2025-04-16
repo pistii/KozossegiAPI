@@ -50,18 +50,19 @@ namespace KozossegiAPI.Repo
             return friends;
         }
 
-        public async Task<IEnumerable<Personal>> GetAllFriendPersonalAsync(int userId)
+        
+        public async Task<IEnumerable<Personal>> GetFriendsForInitialUserData(int userId)
         {
-            var friends = await _context.Personal
+            var friends = await _context.Personal.Include(user => user.users)
             .Where(p => _context.Friendship
                 .Where(f => (f.FriendId == userId || f.UserId == userId) && f.StatusId == 1)
                 .Select(f => f.UserId == userId ? f.FriendId : f.UserId)
                 .Contains(p.id)
             )
+            .Take(10)
             .ToListAsync();
             return friends;
         }
-
 
         /// <summary>
         /// Mapper method to get relation between two users.

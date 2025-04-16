@@ -100,7 +100,7 @@ namespace KozossegiAPI.Controllers
         {
             user user = GetUser();
 
-            var friends = await _friendRepository.GetAllFriendAsync(user.userID);
+            var friends = await _friendRepository.GetFriendsForInitialUserData(user.userID);
             var posts = await _postRepository.GetAllPost(user.userID, user.PublicId);
             
             var convertedFriends = friends.Select(f => new UserDetailsDto(f)).ToList();
