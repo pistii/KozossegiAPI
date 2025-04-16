@@ -23,7 +23,7 @@ namespace KozossegiAPI.Models
         [Required]
         [RegularExpression(@"^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$", ErrorMessage = "Invalid email format.")]
         public string email { get; set; }
-        [StringLength(30)]
+        [StringLength(100)]
         [RegularExpression(@"^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3}|null)+$", ErrorMessage = "Invalid secondary email format.")]
         public string? SecondaryEmailAddress { get; set; }
         [StringLength(40)]

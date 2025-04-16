@@ -78,6 +78,7 @@ namespace KozossegiAPI.Repo
             user.phoneNumber = userInfoDTO.User.personal.phoneNumber;
             user.users.isOnlineEnabled = userInfoDTO.User.isOnlineEnabled;
             user.users.email = userInfoDTO.User.email;
+            user.Settings.PostCreateEnabledToId = userInfoDTO.User.PostCreateEnabledToId;
 
             if (user.users.email != userInfoDTO.User.SecondaryEmailAddress)
                 user.users.SecondaryEmailAddress = userInfoDTO.User.SecondaryEmailAddress;

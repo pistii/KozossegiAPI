@@ -14,6 +14,7 @@ namespace KozossegiAPI.DTOs
             this.userID = user.userID;
             this.isOnlineEnabled = user.isOnlineEnabled;
             this.LastOnline = user.LastOnline;
+            this.PostCreateEnabledToId = user.personal.Settings.PostCreateEnabledToId;
         }
 
         public UserDto(string email, string SecondaryEmail, int userId, bool isOnlineEnabled, DateTime lastOnline, List<Study> studies)
@@ -41,6 +42,7 @@ namespace KozossegiAPI.DTOs
 
         }
 
+        public int PostCreateEnabledToId { get; set; }
         public long? selectedStudyId { get; set; }
         public IEnumerable<StudyDto> StudiesDto { get; set; }
         [JsonIgnore]

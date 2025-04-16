@@ -1,4 +1,5 @@
-﻿using KozossegiAPI.SMTP.Helpers;
+﻿using KozossegiAPI.Models;
+using KozossegiAPI.SMTP.Helpers;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
@@ -52,6 +53,19 @@ namespace KozossegiAPI.SMTP
             string fullpath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "templates");
             string templatePath = Path.Combine(fullpath, fileName);
             return System.IO.File.ReadAllText(templatePath);
+        }
+
+        public void UserDataChangedEmail(Personal user)
+        {
+            return;
+
+            string fullName = user.middleName == null ? user.firstName + " " + user.lastName : user.firstName + " " + user.middleName + " " + user.lastName;
+
+            var htmlTemplate = getEmailTemplate("userDataChanged.html");
+            htmlTemplate = htmlTemplate.Replace("{userFullName}", user.lastName);
+
+            SendEmail("Módosítás történt a felhasználói fiókodban", htmlTemplate, fullName, user.users.email);
+
         }
 
     }
