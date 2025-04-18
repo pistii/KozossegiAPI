@@ -1,6 +1,4 @@
 
----
-
 ### **Backend – ASP.NET Core 7 + MySQL**
 
 ```md
@@ -55,5 +53,3 @@ Every endpoint used with `api` prefix:
 - gRPC + Kafka + Google Cloud Run
 - MongoDb + Redis cache integration
 - AI bots, background processes are more modularized.
-
----
