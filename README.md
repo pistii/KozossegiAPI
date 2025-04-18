@@ -1,11 +1,59 @@
-KozossegiAPI is the backend of the Kozossegi project. (https://github.com/pistii/kozossegi) 
-Below you can view the current (2024.05.15.) MySql schema and table connections.
-![alt text](https://github.com/pistii/KozossegiAPI/blob/master/dbsetup.png?raw=true)
 
-Some basic features like messaging, posting, notifications are already implemented.
-Waiting for realization:
-- Things like streaming, video or phone calls will be done with SignalR.
-- Images/video/phone calls will be stored in cloud, only the url or path will be stored in the database.
-- AI Chatbot with C# or microservice with python?
-- Better security, however data encoding/decoding mechanism is complete, there should be a way to use generated keys to create more secure encryptions.
-- 
+---
+
+### **Backend – ASP.NET Core 7 + MySQL**
+
+```md
+# KozossegiAPI
+
+This API serves the frontend: [kozossegi frontend](https://github.com/pistii/kozossegi).
+
+
+##  Stack
+
+- ASP.NET Core 7
+- Entity Framework Core
+- MySQL database
+- SignalR (realtime communication)
+- JWT Authentication
+- Hangfire (for background tasks)
+- REST API endpoints
+
+ # Main modules
+
+- User authentication (JWT)
+- Post, Comment, Like, dislike
+- Communication (in realtime with SignalR)
+- Notifications (with automatic and key triggers)
+- Profile and settings
+- AI chatbot integration prepared.
+- Image upload, handle media URLs
+
+## Database
+The MySql database well structured in tables and relations. The (2024.05.15) state:
+![Database connection](https://github.com/pistii/KozossegiAPI/blob/master/dbsetup.png?raw=true)
+
+## Integrated functions
+- Message sending in real time.
+- Comments, Posts
+- Notifications (birthday, friend request in real time)
+- Avatar upload both locally and into cloud.
+- Image uploading prepared and under relocation.
+- SignalR based communication
+- JWT middleware
+- Load balancing
+
+## API endpoints
+
+Every endpoint used with `api` prefix:
+- `POST api/users/authenticate` – login
+- `GET api/notification/getAll/` – request notifications
+- `GET api/post/getAll/` – request posts
+
+# Next steps
+- Microservice architecture (New Repository)
+- gRPC + Kafka + Google Cloud Run
+- MongoDb + Redis cache integration
+- AI bots, background processes are more modularized.
+
+---
