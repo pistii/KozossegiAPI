@@ -17,12 +17,13 @@ namespace KozossegiAPI.SMTP
             _appSettings = appsettings.Value;
 
             if (string.IsNullOrEmpty(_appSettings.Email) ||
-                string.IsNullOrEmpty(_appSettings.Server) ||
-                _appSettings.Port == 0 ||
-                _appSettings.SSL == 0
-                )
+               string.IsNullOrEmpty(_appSettings.Server) ||
+               _appSettings.Port == 0 ||
+               _appSettings.SSL == 0
+               )
             {
-                throw new Exception("No email configuration found.");
+                Console.WriteLine("Email Configuration disabled.");
+               //throw new Exception("No email configuration found.");
             }
         }
 
@@ -57,8 +58,6 @@ namespace KozossegiAPI.SMTP
 
         public void UserDataChangedEmail(Personal user)
         {
-            return;
-
             string fullName = user.middleName == null ? user.firstName + " " + user.lastName : user.firstName + " " + user.middleName + " " + user.lastName;
 
             var htmlTemplate = getEmailTemplate("userDataChanged.html");
