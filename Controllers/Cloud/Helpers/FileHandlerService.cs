@@ -5,22 +5,22 @@ using System.Net.Http.Headers;
 
 namespace KozossegiAPI.Controllers.Cloud.Helpers
 {
-    public class FileHandlerService
+    public static class FileHandlerService
     {
         //Sizes in bytes
         const uint IMAGES_MAX_SIZE = 150_000_000; //15mb
         const uint VIDEOS_MAX_SIZE = 512_000_000; //512mb
         const uint AUDIO_MAX_SIZE = 300_000_000; // 30mb
 
-        public uint GetMaxAudioSize
+        public static uint GetMaxAudioSize
         {
             get { return AUDIO_MAX_SIZE; }
         }
-        public uint GetMaxVideoSize
+        public static uint GetMaxVideoSize
         {
             get { return VIDEOS_MAX_SIZE; }
         }
-        public uint GetMaxImageSize
+        public static uint GetMaxImageSize
         {
             get { return IMAGES_MAX_SIZE; }
         }
@@ -38,35 +38,16 @@ namespace KozossegiAPI.Controllers.Cloud.Helpers
             "audio/wav"
         };
 
-        public static string UploadFile(IFormFile file, string fileName, string fileType, BucketSelector bucketName)
-        {
-            if (!FormatIsValid(fileType) && !FileSizeCorrect(file, fileType))
-            {
-                return null;
-            }
-
-            return null;
-        }
-
         public static bool FileSizeCorrect(IFormFile file, string fileType)
         {
             long size = file.Length;
-            if (imageFormats.Contains(fileType))
+            return fileType switch
             {
-                if (size <= IMAGES_MAX_SIZE)
-                    return true;
-            }
-            else if (audioFormats.Contains(fileType))
-            {
-                if (size <= AUDIO_MAX_SIZE)
-                    return true;
-            }
-            else if (videoFormats.Contains(fileType))
-            {
-                if (size <= VIDEOS_MAX_SIZE)
-                    return true;
-            }
-            return false;
+                var type when imageFormats.Contains(type) && size <= IMAGES_MAX_SIZE => true,
+                var type when audioFormats.Contains(type) && size <= AUDIO_MAX_SIZE => true,
+                var type when videoFormats.Contains(type) && size <= VIDEOS_MAX_SIZE => true,
+                _ => false
+            };
         }
 
         /// <summary>

@@ -8,14 +8,14 @@ namespace KozossegiAPI.DTOs
     {
         public AuthenticateResponse(Personal personal, string token)
         {
-            this.UserDetails = new UserDetailsDto(personal);
+            this.UserDetails = new UserDetailsPermitDto(personal);
             this.Token = token;
         }
 
 
         [JsonIgnore]
         public Personal Personal { get; set; }
-        public UserDetailsDto UserDetails { get; set; }
+        public UserDetailsPermitDto UserDetails { get; set; }
         public string Token { get; set; }
     }
 }

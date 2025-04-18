@@ -13,6 +13,6 @@ namespace KozossegiAPI.Models
         public int FK_ChatRoomId { get; set; }
 
         [JsonIgnore]
-        public virtual Personal PersonalRoom { get; set; }
+        public virtual Personal? PersonalRoom { get; set; }
     }
 }

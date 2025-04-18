@@ -1,10 +1,12 @@
 ﻿using KozossegiAPI.Controllers.Cloud;
+using KozossegiAPI.Controllers.Cloud.Helpers;
 using KozossegiAPI.Data;
 using KozossegiAPI.DTOs;
 using KozossegiAPI.Interfaces;
 using KozossegiAPI.Models;
 using KozossegiAPI.Repo;
 using KozossegiAPI.Services;
+using KozossegiAPI.Storage;
 using Microsoft.EntityFrameworkCore;
 
 namespace KozoskodoAPI.Repo
@@ -12,20 +14,20 @@ namespace KozoskodoAPI.Repo
     public class ChatRepository : GenericRepository<ChatContent>, IChatRepository<ChatRoom, Personal>
     {
         private readonly DBContext _context;
-        private readonly IStorageRepository _storageController;
+        private readonly IStorageRepository _storageRepository;
+        private readonly IChatStorage _chatStorage;
 
-        public ChatRepository(DBContext context, IStorageRepository storageController) : base(context)
+        public ChatRepository(DBContext context, 
+        IStorageRepository storageRepository,
+        IChatStorage chatStorage
+        ) : base(context)
         {
             _context = context;
-            _storageController = storageController;
+            _storageRepository = storageRepository;
+            _chatStorage = chatStorage;
         }
 
-        public ChatRepository(DBContext context) : base(context)
-        {
-            _context = context;
-        }
-
-        public async Task<IEnumerable<ChatRoom>> GetAllChatRoomAsQuery(int userId)
+        public async Task<List<ChatRoomDto>> GetAllChatRoomAsQuery(string authorId, int userId)
         {
             var query = await _context.ChatRoom.Include(x => x.ChatContents)
                 .AsNoTracking()
@@ -42,27 +44,27 @@ namespace KozoskodoAPI.Repo
                 .Include(c => c.ChatFile)
                 .Where(c => chatContentIds.Contains(c.MessageId))
                 .OrderByDescending(c => c.sentDate)
-                .Select(i => i.ToDto())
+                .Select(i => new ChatContentDto(authorId, userId == i.AuthorId, i))
                 .ToListAsync();
 
-            var room = query.Select(cr => new ChatRoomDto
+            var rooms = query.Select(cr => new ChatRoomDto
             {
-                chatRoomId = cr.chatRoomId,
+                chatRoomId = cr.PublicId,
                 endedDateTime = cr.endedDateTime,
-                receiverId = cr.receiverId,
-                senderId = cr.senderId,
+                receiverId = cr.ReceiverPublicId,
+                senderId = authorId,
                 startedDateTime = cr.startedDateTime,
                 ChatContents = chatContents
-                    .Where(cc => cc.chatContentId == cr.chatRoomId)
+                    .Where(cc => cc.chatRoomId == cr.chatRoomId)
                     .Take(20)
                     .ToList()
             }).ToList();
 
 
-            return room;
+            return rooms;
         }
 
-        public async Task<ChatRoom>? GetChatRoomByUser(int user1, int user2)
+        public async Task<ChatRoom?> GetChatRoomByUser(int user1, int user2)
         {
             var chatRoom = await _context.ChatRoom
                 .Include(x => x.ChatContents.OrderByDescending(x => x.sentDate).Take(20))
@@ -71,13 +73,8 @@ namespace KozoskodoAPI.Repo
             return chatRoom;
         }
 
-        //For test only
-        public async Task<IQueryable<PersonalChatRoom?>> GetPersonalChatRoom()
-        {
-            var rooms = _context.PersonalChatRoom.Where(x => x.Id > 0);
-            return rooms;
-        }
-        public async Task<IEnumerable<Personal>> GetMessagePartnersById(List<ChatRoom> all, int userId)
+
+        public async Task<IEnumerable<Personal>> GetMessagePartnersById(List<ChatRoomDto> all, string userId)
         {
             var partnerIds = all
                 .SelectMany(room => new[] { room.senderId, room.receiverId })
@@ -86,12 +83,13 @@ namespace KozoskodoAPI.Repo
                 .ToList();
 
             var result = await _context.Personal
-                .Where(person => partnerIds.Contains(person.id))
+                .Include(u => u.users)
+                .Where(person => partnerIds.Contains(person.users!.PublicId))
                 .ToListAsync();
             return result;
         }
 
-        public async Task<ChatRoom> GetChatRoomById(int id)
+        public async Task<ChatRoom?> GetChatRoomById(int id)
         {
             var chatRoom = await _context.ChatRoom.FirstOrDefaultAsync(r => r.chatRoomId == id);
             return chatRoom;
@@ -110,12 +108,12 @@ namespace KozoskodoAPI.Repo
         }
 
 
-        public async Task<ChatRoom> ChatRoomExists(ChatDto chatRoom)
+        public async Task<ChatRoom?> ChatRoomExists(int senderId, int receiverId)
         {
             var existingChatRoom = await _context.ChatRoom.Include(_ => _.ChatContents)
                     .FirstOrDefaultAsync(room =>
-                (room.senderId == chatRoom.senderId && room.receiverId == chatRoom.receiverId) ||
-                (room.senderId == chatRoom.receiverId && room.receiverId == chatRoom.senderId));
+                (room.senderId == senderId && room.receiverId == receiverId) ||
+                (room.senderId == receiverId && room.receiverId == senderId));
             return existingChatRoom;
         }
 
@@ -127,12 +125,13 @@ namespace KozoskodoAPI.Repo
             return chatPartners;
         }
 
-        public async Task<ChatRoom> CreateChatRoom(ChatDto chatDto)
+        public async Task<ChatRoom> CreateChatRoom(int senderId, int receiverId, string receiverPublicId)
         {
             ChatRoom room = new ChatRoom
             {
-                senderId = chatDto.senderId,
-                receiverId = chatDto.receiverId,
+                senderId = senderId,
+                receiverId = receiverId,
+                ReceiverPublicId = receiverPublicId,
                 startedDateTime = DateTime.Now,
                 endedDateTime = DateTime.Now
             };
@@ -141,11 +140,17 @@ namespace KozoskodoAPI.Repo
             //Create a junction table
             var personalChatRoom = new PersonalChatRoom
             {
-                FK_PersonalId = chatDto.senderId,
+                FK_PersonalId = senderId,
+                FK_ChatRoomId = room.chatRoomId
+            };
+            var personalChatRoom1 = new PersonalChatRoom
+            {
+                FK_PersonalId = receiverId,
                 FK_ChatRoomId = room.chatRoomId
             };
             //_context.PersonalChatRoom.Add(personalChatRoom);
             await InsertSaveAsync(personalChatRoom);
+            await InsertSaveAsync(personalChatRoom1);
 
             return room;
         }
@@ -160,7 +165,8 @@ namespace KozoskodoAPI.Repo
         public async Task<string> GetChatFileTypeAsync(string token)
         {
             var file = await _context.ChatFile.FirstOrDefaultAsync(t => t.FileToken == token);
-            return file.FileType;
+            if (file != null) return file.FileType;
+            return "";
         }
 
         public Task<IEnumerable<ChatRoom>> GetAllChatRoomAsQueryWithLastMessage(int userId)
@@ -168,9 +174,86 @@ namespace KozoskodoAPI.Repo
             throw new NotImplementedException();
         }
 
-        public Task<IEnumerable<ChatRoom>> Search(int chatRoomId, int userId, string keyWord)
+        public async Task<List<ChatContentDto>> GetChatFile(IEnumerable<ChatContentDto> returnValue) 
         {
-            throw new NotImplementedException();
+                IEnumerable<ChatFile> files = returnValue
+                .Where(c => c.ChatFile != null)
+                .Select(c => new ChatFile()
+                {
+                    ChatContentId = c.ChatFile!.ChatContentId,
+                    FileToken = c.ChatFile.FileToken,
+                    FileSize = c.ChatFile.FileSize,
+                    FileType = c.ChatFile.FileType,
+                });
+
+                int size = 0;
+
+                try
+                {
+                    foreach (var file in files)
+                    {
+                        var contentWithFile = returnValue.Where(x => x.ChatFile != null).FirstOrDefault(x => x.ChatFile!.FileToken == file.FileToken);
+                        if (contentWithFile != null)
+                        {
+                            var fileExistInCache = _chatStorage.GetValue(file.FileToken);
+                            if (fileExistInCache != null)
+                            {
+                                contentWithFile.ChatFile!.FileData = fileExistInCache;
+                            }
+                            else
+                            {
+                                var downloadFile = await _storageRepository.GetFileAsByte(file.FileToken, BucketSelector.CHAT_BUCKET_NAME);
+                                _chatStorage.Create(file.FileToken, downloadFile);
+                                contentWithFile.ChatFile!.FileData = downloadFile;
+                            }
+                            size += file.FileSize;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine("Error while downloading file: " + ex);
+                }
+
+                //if (size > 2_000_000)
+                //{
+                //Max uploadable file size is 512 for video, 30MB for audio
+                int MAX_SIZE_PER_FILE = 100_000;
+                foreach (var file in files)
+                {
+                    if (FileHandlerService.FormatIsVideo(file.FileType) || FileHandlerService.FormatIsAudio(file.FileType))
+                    {
+                        if (file.FileSize > MAX_SIZE_PER_FILE) //If file size exceeds the MAX_SIZE_PER_FILE
+                        {
+                            //Return 30% percent of the file
+                            //var endSize = (long)(file.FileSize * 0.30);
+                            //var chunk = await _storageController.GetVideoChunkBytes(file.FileToken, 0, endSize);
+                            var chunk = await _storageRepository.GetFileAsByte(file.FileToken, BucketSelector.CHAT_BUCKET_NAME);
+                            if (chunk != null)
+                            {
+                                var contentsWithFile = returnValue.Where(x => x.ChatFile != null);
+                                var contentWithFile = contentsWithFile.FirstOrDefault(x => x.ChatFile!.FileToken == file.FileToken);
+                                if (contentWithFile != null)
+                                {
+                                    contentWithFile.ChatFile!.FileData = chunk;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var fileBytes = await _storageRepository.GetFileAsByte(file.FileToken, BucketSelector.CHAT_BUCKET_NAME);
+
+                            var contentsWithFile = returnValue.Where(x => x.ChatFile != null);
+                            var contentWithFile = contentsWithFile.FirstOrDefault(x => x.ChatFile!.FileToken == file.FileToken);
+                            if (contentWithFile != null)
+                            {
+                                contentWithFile.ChatFile!.FileData = fileBytes;
+                            }
+                        }
+                    }
+                }
+
+                return returnValue.ToList();
         }
     }
 }

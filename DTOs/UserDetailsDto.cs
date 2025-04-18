@@ -1,19 +1,40 @@
-﻿using KozossegiAPI.Models;
+﻿using KozossegiAPI.Interfaces.Shared;
+using KozossegiAPI.Models;
 
 namespace KozossegiAPI.DTOs
 {
     public class UserDetailsDto
     {
-        public UserDetailsDto(string avatar, string firstname, string middlename, string lastname)
+        public UserDetailsDto()
         {
-            this.PublicId = "";
-            this.Avatar = avatar;
-            this.FirstName = firstname;
-            this.MiddleName = middlename;
-            this.LastName = lastname;
+            
+        }
+        
+       
+        public UserDetailsDto(Personal personal)
+        {
+            PublicId = personal.users!.PublicId;
+            Avatar = personal.avatar;
+            FirstName = personal.firstName;
+            MiddleName = personal.middleName;
+            LastName = personal.lastName;
         }
 
-        public UserDetailsDto(Personal personal)
+        public string PublicId { get; set; }
+        public string? Avatar { get; set; }
+        public string FirstName { get; set; }
+        public string? MiddleName { get; set; }
+        public string LastName { get; set; }
+    }
+
+    public class UserDetailsPermitDto : UserDetailsDto, IUserPermit
+    {
+        public UserDetailsPermitDto()
+        {
+
+        }
+
+         public UserDetailsPermitDto(Personal personal)
         {
             this.PublicId = personal.users!.PublicId;
             this.Avatar = personal.avatar;
@@ -25,15 +46,7 @@ namespace KozossegiAPI.DTOs
             this.IsOnlineEnabled = personal.users.isOnlineEnabled;
         }
 
-        public UserDetailsDto()
-        {
-            
-        }
-        public string PublicId { get; set; }
-        public string? Avatar { get; set; }
-        public string FirstName { get; set; }
-        public string? MiddleName { get; set; }
-        public string LastName { get; set; }
+        
         public bool IsActivated { get; set; } = false;
         public bool IsRestricted { get; set; } = false;
         public bool IsOnlineEnabled { get; set; } = true;

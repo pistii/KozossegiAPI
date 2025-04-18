@@ -35,7 +35,7 @@ namespace KozossegiAPI.Auth.Helpers
         public void OnAuthorization(AuthorizationFilterContext context)
         {
             var userIdFromRoute = context.HttpContext.Request.Body.ToString();
-            var userIdFromHeader = context.HttpContext.Request.Headers[_headerKey].FirstOrDefault();
+            var userIdFromHeader = context.HttpContext.Request.Headers[_headerKey ?? ""].FirstOrDefault();
 
             if (userIdFromRoute == null || userIdFromHeader == null || userIdFromRoute != userIdFromHeader)
             {

@@ -1,10 +1,12 @@
-﻿using KozossegiAPI.Auth;
+﻿using System.Security.Claims;
+using KozossegiAPI.Auth;
 using KozossegiAPI.Auth.Helpers;
 using KozossegiAPI.Data;
 using KozossegiAPI.Interfaces;
 using KozossegiAPI.Models;
 using KozossegiAPI.Models.Cloud;
 using KozossegiAPI.Realtime.Connection;
+using Microsoft.AspNetCore.SignalR;
 
 namespace KozossegiAPI.Realtime
 {
@@ -45,10 +47,11 @@ namespace KozossegiAPI.Realtime
         }
 
 
-        public async Task ReceiveOnlineFriends(int userId)
+        public async Task ReceiveOnlineFriends(string userId)
         {
+            var userIdd = int.Parse(Context.UserIdentifier);
             List<Personal_IsOnlineDto> onlineFriends = new List<Personal_IsOnlineDto>();
-            var friends = await _friendRepo.GetAllFriendAsync(userId);
+            var friends = await _friendRepo.GetAllFriendAsync(userIdd);
 
             foreach (var friend in friends)
             {
@@ -62,7 +65,7 @@ namespace KozossegiAPI.Realtime
                     }
                 }
             }
-            foreach (var user in _connections.GetConnectionsById(userId))
+            foreach (var user in _connections.GetConnectionsById(userIdd))
             {
                 await _connectionHandler.Clients.Client(user).ReceiveOnlineFriends(onlineFriends);
             }
